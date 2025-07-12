@@ -1,0 +1,15 @@
+{
+  "name": "excel",
+  "version": "1.0.0",
+  "description": "网页版Excel",
+  "main": "index.js",
+  "scripts": {
+    "build": "rollup --config rollup.config.mjs"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "typescript": "^5.8.3"
+  }
+}
