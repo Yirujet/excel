@@ -3,10 +3,18 @@
 /// <reference path="./Cell.model.ts" />
 
 namespace Excel {
-  export interface ExcelInstance {
+  export interface ExcelConfiguration {
     name: string;
-    sheets: Array<Sheet.SheetInstance>;
-    tools: Array<Tools.ToolInstance>;
-    cells: Array<Cell.CellInstance>;
+    cssPrefix?: string;
+    sheets?: Sheet.SheetInstance[];
+  }
+
+  export interface ExcelInstance {
+    $el: HTMLElement | null;
+    name: string;
+    cssPrefix: string;
+    sheets: Sheet.SheetInstance[];
+    configuration: ExcelConfiguration;
+    sheetIndex: number;
   }
 }

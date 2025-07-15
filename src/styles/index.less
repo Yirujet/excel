@@ -1,0 +1,21 @@
+@import "./var.less";
+
+@excel-wrapper: ~"@{prefix}-wrapper";
+
+.@{excel-wrapper} {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+
+  & > .@{prefix}-sheet-manage {
+    height: 40px;
+  }
+
+  & > .@{prefix}-tools-render {
+    height: 50px;
+  }
+
+  & > .@{prefix}-sheet-render {
+    flex: 1;
+  }
+}

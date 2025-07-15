@@ -11,6 +11,8 @@ namespace Excel {
       CellFontSize = "fontSize",
       /** 单元格文本加粗工具，用于将单元格内文本设置为加粗样式 */
       CellTextBold = "bold",
+      /** 单元格文本倾斜工具，用于将单元格内文本设置为倾斜样式 */
+      CellTextItalic = "italic",
       /** 单元格文本下划线工具，用于为单元格内文本添加下划线 */
       CellTextUnderline = "underline",
       /** 单元格边框设置工具，用于设置单元格的边框样式 */
