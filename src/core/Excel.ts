@@ -4,21 +4,23 @@ import Sheet from "./Sheet";
 import Element from "../components/Element";
 import "../styles/index.less";
 import "../assets/fonts/iconfont.css";
+import Tool from "./Tool";
 
 class Excel implements Excel.ExcelInstance {
+  static CSS_PREFIX = "excel";
+  private sequence = 0;
+
   $el: HTMLElement | null = null;
   name = "";
-  cssPrefix = "excel";
   sheets: Excel.Sheet.SheetInstance[] = [];
   configuration!: Excel.ExcelConfiguration;
   sheetIndex = 0;
-  private sequence = 0;
 
   constructor(config: Excel.ExcelConfiguration) {
     this.configuration = config;
     this.name = config.name || `Excel-${Date.now()}`;
     if (config.cssPrefix) {
-      this.cssPrefix = config.cssPrefix;
+      Excel.CSS_PREFIX = config.cssPrefix;
     }
     this.sheets = config.sheets || [];
     this.initSheets();
@@ -28,7 +30,7 @@ class Excel implements Excel.ExcelInstance {
 
   render() {
     const excel = new Element("div");
-    excel.addClass(`${this.cssPrefix}-wrapper`);
+    excel.addClass(`${Excel.CSS_PREFIX}-wrapper`);
     const sheetManageRender = this.createSheetManageRender();
     const sheetRender = this.createSheetRender();
     const toolsRender = this.createToolsRender();
@@ -74,15 +76,15 @@ class Excel implements Excel.ExcelInstance {
 
   createSheetManageRender() {
     const sheetManageRender = new Element("div");
-    sheetManageRender.addClass(`${this.cssPrefix}-sheet-manage`);
+    sheetManageRender.addClass(`${Excel.CSS_PREFIX}-sheet-manage`);
     this.sheets.forEach((e) => {
       const sheet = new Element("div");
-      sheet.addClass(`${this.cssPrefix}-sheet`);
+      sheet.addClass(`${Excel.CSS_PREFIX}-sheet`);
       sheet.$el!.innerHTML = e.name;
       sheetManageRender.add(sheet.$el!);
     });
     const addBtn = new Element("div");
-    addBtn.addClass(`${this.cssPrefix}-add-btn`);
+    addBtn.addClass(`${Excel.CSS_PREFIX}-add-btn`);
     addBtn.$el!.innerHTML = "+";
     sheetManageRender.add(addBtn.$el!);
     return sheetManageRender;
@@ -90,7 +92,7 @@ class Excel implements Excel.ExcelInstance {
 
   createSheetRender() {
     const sheetRender = new Element("div");
-    sheetRender.addClass(`${this.cssPrefix}-sheet-render`);
+    sheetRender.addClass(`${Excel.CSS_PREFIX}-sheet-render`);
     const sheet = this.sheets[this.sheetIndex];
     sheetRender.add(sheet.$el!);
     return sheetRender;
@@ -98,7 +100,40 @@ class Excel implements Excel.ExcelInstance {
 
   createToolsRender() {
     const toolsRender = new Element("div");
-    toolsRender.addClass(`${this.cssPrefix}-tools-render`);
+    toolsRender.addClass(`${Excel.CSS_PREFIX}-tools-render`);
+    const sheet = this.sheets[this.sheetIndex];
+    if (sheet.toolsConfig) {
+      if (sheet.toolsConfig.cellFontFamily) {
+        const tool = new Tool("fontFamily" as Excel.Tools.ToolType);
+        tool.addClass(`${Excel.CSS_PREFIX}-tool`);
+        toolsRender.add(tool.$el!);
+      }
+      if (sheet.toolsConfig.cellFontSize) {
+        const tool = new Tool("fontSize" as Excel.Tools.ToolType);
+        tool.addClass(`${Excel.CSS_PREFIX}-tool`);
+        toolsRender.add(tool.$el!);
+      }
+      if (sheet.toolsConfig.cellBold) {
+        const tool = new Tool("bold" as Excel.Tools.ToolType);
+        tool.addClass(`${Excel.CSS_PREFIX}-tool`);
+        toolsRender.add(tool.$el!);
+      }
+      if (sheet.toolsConfig.cellItalic) {
+        const tool = new Tool("italic" as Excel.Tools.ToolType);
+        tool.addClass(`${Excel.CSS_PREFIX}-tool`);
+        toolsRender.add(tool.$el!);
+      }
+      if (sheet.toolsConfig.cellUnderline) {
+        const tool = new Tool("underline" as Excel.Tools.ToolType);
+        tool.addClass(`${Excel.CSS_PREFIX}-tool`);
+        toolsRender.add(tool.$el!);
+      }
+      if (sheet.toolsConfig.cellBorder) {
+        const tool = new Tool("border" as Excel.Tools.ToolType);
+        tool.addClass(`${Excel.CSS_PREFIX}-tool`);
+        toolsRender.add(tool.$el!);
+      }
+    }
     return toolsRender;
   }
 }

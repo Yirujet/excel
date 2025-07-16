@@ -24,9 +24,18 @@ class Sheet implements Excel.Sheet.SheetInstance {
     cellFreeze: true,
   };
 
-  constructor(name: string) {
+  constructor(name: string, toolsConfig?: Partial<Excel.Sheet.toolsConfig>) {
     this.name = name;
+    this.initToolConfig(toolsConfig);
     this.render();
+  }
+
+  initToolConfig(toolsConfig?: Partial<Excel.Sheet.toolsConfig>) {
+    if (toolsConfig) {
+      this.toolsConfig = toolsConfig;
+    } else {
+      this.toolsConfig = Sheet.TOOLS_CONFIG;
+    }
   }
 
   render() {

@@ -12,7 +12,6 @@ namespace Excel {
   export interface ExcelInstance {
     $el: HTMLElement | null;
     name: string;
-    cssPrefix: string;
     sheets: Sheet.SheetInstance[];
     configuration: ExcelConfiguration;
     sheetIndex: number;

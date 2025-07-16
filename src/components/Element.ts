@@ -1,6 +1,9 @@
-export default class Element {
+import ExcelEvent from "../utils/ExcelEvent";
+
+export default class Element extends ExcelEvent {
   $el: HTMLElement | null = null;
   constructor(tagName: string) {
+    super();
     this.$el = document.createElement(tagName);
   }
 
