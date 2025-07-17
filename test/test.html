@@ -26,7 +26,6 @@
   <script>
     const app = document.querySelector("#app");
     const excel = new Excel("test");
-    console.log(excel);
-    app.append(excel.$el);
+    excel.mount(app);
   </script>
 </html>

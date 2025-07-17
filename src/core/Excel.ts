@@ -11,6 +11,7 @@ class Excel implements Excel.ExcelInstance {
   private sequence = 0;
 
   $el: HTMLElement | null = null;
+  $target: HTMLElement | null = null;
   name = "";
   sheets: Excel.Sheet.SheetInstance[] = [];
   configuration!: Excel.ExcelConfiguration;
@@ -22,13 +23,13 @@ class Excel implements Excel.ExcelInstance {
     if (config.cssPrefix) {
       Excel.CSS_PREFIX = config.cssPrefix;
     }
-    this.sheets = config.sheets || [];
-    this.initSheets();
-    this.initSequence();
-    this.render();
   }
 
-  render() {
+  mount(target: HTMLElement) {
+    this.$target = target;
+    this.sheets = this.configuration.sheets || [];
+    this.initSheets();
+    this.initSequence();
     const excel = new Element("div");
     excel.addClass(`${Excel.CSS_PREFIX}-wrapper`);
     const sheetManageRender = this.createSheetManageRender();
@@ -38,11 +39,18 @@ class Excel implements Excel.ExcelInstance {
     excel.add(sheetRender.$el!);
     excel.add(sheetManageRender.$el!);
     this.$el = excel.$el!;
+    this.$target.appendChild(this.$el);
   }
 
   private initSheets() {
+    const { width, height } = this.$target!.getBoundingClientRect();
     if (this.sheets.length === 0) {
-      this.addSheet();
+      this.addSheet(width, height);
+    } else {
+      this.sheets.forEach((item) => {
+        item.width = width;
+        item.height = height;
+      });
     }
   }
 
@@ -64,9 +72,11 @@ class Excel implements Excel.ExcelInstance {
     return `${baseName}-${this.sequence}`;
   }
 
-  addSheet() {
+  addSheet(width: number, height: number) {
     const sheesName = this.getNextSheetName();
     const sheet = new Sheet(sheesName);
+    sheet.width = width;
+    sheet.height = height;
     this.sheets.push(sheet);
   }
 
@@ -94,6 +104,7 @@ class Excel implements Excel.ExcelInstance {
     const sheetRender = new Element("div");
     sheetRender.addClass(`${Excel.CSS_PREFIX}-sheet-render`);
     const sheet = this.sheets[this.sheetIndex];
+    sheet.render();
     sheetRender.add(sheet.$el!);
     return sheetRender;
   }
@@ -116,6 +127,9 @@ class Excel implements Excel.ExcelInstance {
       if (sheet.toolsConfig.cellBold) {
         const tool = new Tool("bold" as Excel.Tools.ToolType);
         tool.addClass(`${Excel.CSS_PREFIX}-tool`);
+        tool.addEvent("cell-text1-bold", () => {
+          console.log("****excel -> tool-text-bold triggered");
+        });
         toolsRender.add(tool.$el!);
       }
       if (sheet.toolsConfig.cellItalic) {
@@ -130,6 +144,52 @@ class Excel implements Excel.ExcelInstance {
       }
       if (sheet.toolsConfig.cellBorder) {
         const tool = new Tool("border" as Excel.Tools.ToolType);
+        tool.addClass(`${Excel.CSS_PREFIX}-tool`);
+        toolsRender.add(tool.$el!);
+      }
+      if (sheet.toolsConfig.cellBackgroundColor) {
+        const tool = new Tool("backgroundColor" as Excel.Tools.ToolType);
+        tool.addClass(`${Excel.CSS_PREFIX}-tool`);
+        toolsRender.add(tool.$el!);
+      }
+      if (sheet.toolsConfig.cellColor) {
+        const tool = new Tool("color" as Excel.Tools.ToolType);
+        tool.addClass(`${Excel.CSS_PREFIX}-tool`);
+        toolsRender.add(tool.$el!);
+      }
+      if (sheet.toolsConfig.cellAlign) {
+        const tool = new Tool("align" as Excel.Tools.ToolType);
+        tool.addClass(`${Excel.CSS_PREFIX}-tool`);
+        toolsRender.add(tool.$el!);
+        toolsRender.add(tool.$el!);
+      }
+      if (sheet.toolsConfig.cellMerge) {
+        const tool = new Tool("merge" as Excel.Tools.ToolType);
+        tool.addClass(`${Excel.CSS_PREFIX}-tool`);
+        toolsRender.add(tool.$el!);
+      }
+      if (sheet.toolsConfig.cellSplit) {
+        const tool = new Tool("split" as Excel.Tools.ToolType);
+        tool.addClass(`${Excel.CSS_PREFIX}-tool`);
+        toolsRender.add(tool.$el!);
+      }
+      if (sheet.toolsConfig.cellFunction) {
+        const tool = new Tool("function" as Excel.Tools.ToolType);
+        tool.addClass(`${Excel.CSS_PREFIX}-tool`);
+        toolsRender.add(tool.$el!);
+      }
+      if (sheet.toolsConfig.cellInsert) {
+        const tool = new Tool("insert" as Excel.Tools.ToolType);
+        tool.addClass(`${Excel.CSS_PREFIX}-tool`);
+        toolsRender.add(tool.$el!);
+      }
+      if (sheet.toolsConfig.cellDiagonal) {
+        const tool = new Tool("diagonal" as Excel.Tools.ToolType);
+        tool.addClass(`${Excel.CSS_PREFIX}-tool`);
+        toolsRender.add(tool.$el!);
+      }
+      if (sheet.toolsConfig.cellFreeze) {
+        const tool = new Tool("freeze" as Excel.Tools.ToolType);
         tool.addClass(`${Excel.CSS_PREFIX}-tool`);
         toolsRender.add(tool.$el!);
       }

@@ -5,6 +5,7 @@ export default class CellTextBold extends Element {
   constructor() {
     super("div");
     this.render();
+    this.initEvents();
   }
 
   render() {
@@ -13,5 +14,11 @@ export default class CellTextBold extends Element {
     icon.addClass("iconfont");
     icon.addClass("icon-bold");
     this.add(icon.$el!);
+  }
+
+  initEvents() {
+    this.addListener("click", () => {
+      this.triggerEvent("click");
+    });
   }
 }

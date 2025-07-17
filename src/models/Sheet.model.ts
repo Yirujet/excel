@@ -6,11 +6,18 @@ namespace Excel {
     };
 
     export interface SheetInstance {
-      $el: HTMLCanvasElement | null;
+      $el: HTMLElement | HTMLCanvasElement | null;
       name: string;
+      width: number;
+      height: number;
       toolsConfig: Partial<toolsConfig>;
       _tools: Tools.ToolInstance[];
       cells: Cell.CellInstance[];
+      scroll: {
+        x: number;
+        y: number;
+      };
+      render: () => void;
     }
   }
 }

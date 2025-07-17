@@ -1,7 +1,7 @@
 import Element from "../../components/Element";
 import Excel from "../../core/Excel";
 
-export default class CellDiagonal extends Element {
+export default class CellTextAlignCenter extends Element {
   constructor() {
     super("div");
     this.render();
@@ -11,7 +11,7 @@ export default class CellDiagonal extends Element {
     this.addClass(`${Excel.CSS_PREFIX}-icon-button`);
     const icon = new Element("i");
     icon.addClass("iconfont");
-    icon.addClass("icon-diagonal");
+    icon.addClass("icon-align-center");
     this.add(icon.$el!);
   }
 }

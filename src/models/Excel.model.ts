@@ -11,6 +11,7 @@ namespace Excel {
 
   export interface ExcelInstance {
     $el: HTMLElement | null;
+    $target: HTMLElement | null;
     name: string;
     sheets: Sheet.SheetInstance[];
     configuration: ExcelConfiguration;

@@ -9,6 +9,9 @@
 
   & > .@{prefix}-sheet-manage {
     height: 40px;
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
   }
 
   & > .@{prefix}-tools-render {
@@ -21,8 +24,13 @@
     box-sizing: border-box;
 
     & > .@{prefix}-tool {
+      display: flex;
+      justify-content: flex-start;
+      align-items: center;
+      gap: 8px;
+
       & > .@{prefix}-icon-button {
-        width: 40px;
+        min-width: 40px;
         height: 40px;
         display: flex;
         justify-content: center;

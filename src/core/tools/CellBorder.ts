@@ -82,16 +82,7 @@ export default class CellBorder extends Element {
     const colorPicker = new Element("input");
     colorPicker.addClass("ui-color-input");
     colorPicker.$el!.setAttribute("type", "color");
-    // const colorPicker = new Element("div");
-    // // colorPicker.addClass("ui-color-input");
-    // const color = new Color(colorPicker.$el!, {
-    //   onShow() {
-    //     const colorPanel = document.querySelector(".ui-color-container");
-    //     borderColorPanel.add(colorPanel as HTMLElement);
-    //     borderColorPanel.$el!.style.width = colorPanel!.clientWidth + "px";
-    //     borderColorPanel.$el!.style.height = colorPanel!.clientHeight + "px";
-    //   },
-    // });
+
     borderColorPanel.add(colorPicker.$el!);
     const borderColorDrop = new Drop(
       borderColorItem.$el!,
@@ -106,7 +97,6 @@ export default class CellBorder extends Element {
           colorPicker.$el?.click();
           setTimeout(() => {
             const colorPanel = document.querySelector(".ui-color-container");
-            console.log(colorPanel);
             if (colorPanel) {
               borderColorPanel.add(colorPanel as HTMLElement);
               borderColorPanel.$el!.style.width =
