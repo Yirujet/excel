@@ -30,7 +30,7 @@ export default [
         presets: ['@babel/preset-env']
       }),
       typescript({ tsconfig: 'tsconfig.json', declaration: true }),
-      terser(),
+      // terser(),
       copy({
         targets: [
           { src: ['src/assets/fonts/iconfont.ttf'], dest: 'lib/fonts' },

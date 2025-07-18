@@ -12,7 +12,7 @@ namespace Excel {
       height: number;
       toolsConfig: Partial<toolsConfig>;
       _tools: Tools.ToolInstance[];
-      cells: Cell.CellInstance[];
+      cells: Cell.CellInstance[][];
       scroll: {
         x: number;
         y: number;

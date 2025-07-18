@@ -6,11 +6,9 @@ import "../styles/index.less";
 import "../assets/fonts/iconfont.css";
 import Tool from "./Tool";
 
-class Excel implements Excel.ExcelInstance {
+class Excel extends Element implements Excel.ExcelInstance {
   static CSS_PREFIX = "excel";
   private sequence = 0;
-
-  $el: HTMLElement | null = null;
   $target: HTMLElement | null = null;
   name = "";
   sheets: Excel.Sheet.SheetInstance[] = [];
@@ -18,8 +16,10 @@ class Excel implements Excel.ExcelInstance {
   sheetIndex = 0;
 
   constructor(config: Excel.ExcelConfiguration) {
+    super("div");
     this.configuration = config;
     this.name = config.name || `Excel-${Date.now()}`;
+    this.addClass(`${Excel.CSS_PREFIX}-wrapper`);
     if (config.cssPrefix) {
       Excel.CSS_PREFIX = config.cssPrefix;
     }
@@ -30,16 +30,13 @@ class Excel implements Excel.ExcelInstance {
     this.sheets = this.configuration.sheets || [];
     this.initSheets();
     this.initSequence();
-    const excel = new Element("div");
-    excel.addClass(`${Excel.CSS_PREFIX}-wrapper`);
     const sheetManageRender = this.createSheetManageRender();
     const sheetRender = this.createSheetRender();
     const toolsRender = this.createToolsRender();
-    excel.add(toolsRender.$el!);
-    excel.add(sheetRender.$el!);
-    excel.add(sheetManageRender.$el!);
-    this.$el = excel.$el!;
-    this.$target.appendChild(this.$el);
+    this.add(toolsRender.$el!);
+    this.add(sheetRender.$el!);
+    this.add(sheetManageRender.$el!);
+    this.$target.appendChild(this.$el!);
   }
 
   private initSheets() {

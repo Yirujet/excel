@@ -22,4 +22,19 @@ export default abstract class ExcelEvent {
       });
     }
   }
+  registerListenerFromOnProp(onObj: any, eventObserver: any) {
+    if (onObj) {
+      Object.entries(onObj).forEach(([eventname, callback]: any) => {
+        this.addEvent(eventname, callback);
+        if (eventname in eventObserver) {
+          const i = eventObserver[eventname].findIndex((e: any) => e === this);
+          if (!!~i) {
+            eventObserver[eventname].splice(i, 1, this);
+          } else {
+            eventObserver[eventname].push(this);
+          }
+        }
+      });
+    }
+  }
 }

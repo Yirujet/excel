@@ -1,11 +1,47 @@
 class Cell implements Excel.Cell.CellInstance {
-  width = null;
-  height = null;
-  rowIndex = null;
-  colIndex = null;
+  width: number | null = null;
+  height: number | null = null;
+  rowIndex: number | null = null;
+  colIndex: number | null = null;
   selected = false;
-  x = null;
-  y = null;
+  cellName: string = "";
+  x: number | null = null;
+  y: number | null = null;
+  position: {
+    leftTop: {
+      x: number;
+      y: number;
+    };
+    rightTop: {
+      x: number;
+      y: number;
+    };
+    rightBottom: {
+      x: number;
+      y: number;
+    };
+    leftBottom: {
+      x: number;
+      y: number;
+    };
+  } = {
+    leftTop: {
+      x: 0,
+      y: 0,
+    },
+    rightTop: {
+      x: 0,
+      y: 0,
+    },
+    rightBottom: {
+      x: 0,
+      y: 0,
+    },
+    leftBottom: {
+      x: 0,
+      y: 0,
+    },
+  };
   textStyle = {
     fontFamily: "sans-serif",
     fontSize: 12,

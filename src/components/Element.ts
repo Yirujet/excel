@@ -1,12 +1,16 @@
-import EventObserver from "../utils/EventObserver";
 import ExcelEvent from "../utils/ExcelEvent";
 
 export default class Element extends ExcelEvent {
   $el: HTMLElement | null = null;
-  eventObserver: EventObserver = new EventObserver();
+  x: any = null;
+  y: any = null;
+  mouseEntered = false;
+  cursor = "default";
   constructor(tagName: string) {
     super();
-    this.$el = document.createElement(tagName);
+    if (tagName) {
+      this.$el = document.createElement(tagName);
+    }
   }
 
   add(el: HTMLElement) {

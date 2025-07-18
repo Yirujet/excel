@@ -1,5 +1,9 @@
 import Element from "../components/Element";
-import cellIndex2CellWord from "../utils/cellIndex2CellWord";
+import $10226 from "../utils/10226";
+import EventObserver from "../utils/EventObserver";
+import Cell from "./Cell";
+import HorizontalScrollbar from "./Scrollbar/HorizontalScrollbar";
+import VerticalScrollbar from "./Scrollbar/VerticalScrollbar";
 
 class Sheet extends Element implements Excel.Sheet.SheetInstance {
   static TOOLS_CONFIG: Excel.Sheet.toolsConfig = {
@@ -23,20 +27,32 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
   static DEFAULT_CELL_HEIGHT = 25;
   static DEFAULT_INDEX_CELL_WIDTH = 50;
   static DEFAULT_CELL_FONT_FAMILY = "宋体";
-  static DEFAULT_CELL_ROW_COUNT = 100;
-  static DEFAULT_CELL_COL_COUNT = 100;
+  static DEFAULT_CELL_ROW_COUNT = 3000;
+  static DEFAULT_CELL_COL_COUNT = 3000;
   name = "";
-  cells: Excel.Cell.CellInstance[] = [];
+  cells: Excel.Cell.CellInstance[][] = [];
   _tools: Excel.Tools.ToolInstance[] = [];
   toolsConfig: Partial<Excel.Sheet.toolsConfig> = {};
   width = 0;
   height = 0;
   scroll: { x: number; y: number } = { x: 0, y: 0 };
+  deviationCompareValue = 10e-6;
+  horizontalScrollBar: HorizontalScrollbar | null = null;
+  verticalScrollBar: VerticalScrollbar | null = null;
+  eventObserver: any = new EventObserver();
+  private ctx: CanvasRenderingContext2D | null = null;
+  realWidth = 0;
+  realHeight = 0;
 
-  constructor(name: string, toolsConfig?: Partial<Excel.Sheet.toolsConfig>) {
+  constructor(
+    name: string,
+    toolsConfig?: Partial<Excel.Sheet.toolsConfig>,
+    cells?: Excel.Cell.CellInstance[][]
+  ) {
     super("canvas");
     this.name = name;
     this.initToolConfig(toolsConfig);
+    this.initCells(cells);
   }
 
   initToolConfig(toolsConfig?: Partial<Excel.Sheet.toolsConfig>) {
@@ -48,85 +64,285 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
   }
 
   render() {
-    const ctx = (this.$el as HTMLCanvasElement).getContext("2d")!;
+    this.ctx = (this.$el as HTMLCanvasElement).getContext("2d")!;
     (this.$el as HTMLCanvasElement).style.width = `${this.width}px`;
     (this.$el as HTMLCanvasElement).style.height = `${this.height}px`;
     (this.$el as HTMLCanvasElement).width =
       this.width * window.devicePixelRatio;
     (this.$el as HTMLCanvasElement).height =
       this.height * window.devicePixelRatio;
-    ctx.translate(0.5, 0.5);
-    ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
-    this.createCells(ctx);
+    this.ctx!.translate(0.5, 0.5);
+    this.ctx!.scale(window.devicePixelRatio, window.devicePixelRatio);
+    this.initScrollbar();
+    this.eventObserver.observe(this.$el as HTMLCanvasElement);
+    this.draw();
   }
 
-  createCells(ctx: CanvasRenderingContext2D) {
-    for (let i = 0; i < Sheet.DEFAULT_CELL_ROW_COUNT + 1; i++) {
-      for (let j = 0; j < Sheet.DEFAULT_CELL_COL_COUNT + 1; j++) {
-        ctx.fillStyle = "#000";
-        ctx.strokeStyle = "#ccc";
-        ctx.textBaseline = "middle";
-        ctx.textAlign = "center";
+  initCells(cells: Excel.Cell.CellInstance[][] | undefined) {
+    if (cells) {
+      this.cells = cells!;
+    } else {
+      this.cells = [];
+      let x = 0;
+      let y = 0;
+      for (let i = 0; i < Sheet.DEFAULT_CELL_ROW_COUNT + 1; i++) {
+        let row: Excel.Cell.CellInstance[] = [];
+        y = i * Sheet.DEFAULT_CELL_HEIGHT;
+        x = 0;
+        for (let j = 0; j < Sheet.DEFAULT_CELL_COL_COUNT + 1; j++) {
+          x =
+            j === 0
+              ? 0
+              : (j - 1) * Sheet.DEFAULT_CELL_WIDTH +
+                Sheet.DEFAULT_INDEX_CELL_WIDTH;
+          const cell = new Cell();
+          cell.x = x;
+          cell.y = y;
+          cell.width =
+            j === 0 ? Sheet.DEFAULT_INDEX_CELL_WIDTH : Sheet.DEFAULT_CELL_WIDTH;
+          cell.height = Sheet.DEFAULT_CELL_HEIGHT;
+          cell.rowIndex = i;
+          cell.colIndex = j;
+          cell.cellName = $10226(j);
+          cell.position = {
+            leftTop: {
+              x,
+              y,
+            },
+            rightTop: {
+              x: x + cell.width,
+              y,
+            },
+            rightBottom: {
+              x: x + cell.width,
+              y: y + cell.height,
+            },
+            leftBottom: {
+              x,
+              y: y + cell.height,
+            },
+          };
+          row.push(cell);
+        }
+        this.cells.push(row);
+      }
+    }
+    if (this.cells.length > 0) {
+      this.realWidth = this.cells[0].reduce((p, c) => p + c.width!, 0);
+      this.realHeight = this.cells[0].reduce((p, c) => p + c.height!, 0);
+    }
+  }
+
+  initScrollbar() {
+    const layout = {
+      x: this.x,
+      y: this.y,
+      width: this.width - 16,
+      height: this.height - 16,
+      headerHeight: Sheet.DEFAULT_CELL_HEIGHT,
+      fixedLeftWidth: Sheet.DEFAULT_INDEX_CELL_WIDTH,
+      bodyHeight: this.height - Sheet.DEFAULT_CELL_HEIGHT,
+      bodyRealWidth: this.realWidth,
+      bodyRealHeight: this.realHeight,
+      deviationCompareValue: this.deviationCompareValue,
+    };
+    this.horizontalScrollBar = new HorizontalScrollbar(
+      layout,
+      this.eventObserver,
+      this.redraw.bind(this)
+    );
+    this.verticalScrollBar = new VerticalScrollbar(
+      layout,
+      this.eventObserver,
+      this.redraw.bind(this)
+    );
+  }
+
+  redraw(percent: number, type: "vertical" | "horizontal") {
+    if (type === "horizontal") {
+      this.scroll.x = Math.abs(percent) * (this.realWidth - this.width);
+    } else {
+      this.scroll.y = Math.abs(percent) * (this.realHeight - this.height);
+    }
+    this.ctx!.clearRect(0, 0, this.width, this.height);
+    this.draw();
+  }
+
+  draw() {
+    this.drawCells();
+    this.drawScrollbar();
+  }
+
+  drawCells() {
+    const minYIndex = this.cells.findIndex(
+      (e) => e[0].position.leftBottom.y! - this.scroll.y > 0
+    );
+    const maxYIndex =
+      this.verticalScrollBar?.percent === 1
+        ? this.cells.length - 1
+        : this.cells.findIndex(
+            (e) => e[0].position.leftTop.y! - this.scroll.y > this.height
+          );
+    const minXIndex = this.cells[0].findIndex(
+      (e) => e.position.rightTop.x! - this.scroll.x > 0
+    );
+    const maxXIndex =
+      this.horizontalScrollBar?.percent === 1
+        ? this.cells[0].length - 1
+        : this.cells[0].findIndex(
+            (e) => e.position.leftTop.x! - this.scroll.x > this.width
+          );
+    // console.log(minXIndex, maxXIndex, minYIndex, maxYIndex);
+    for (let i = minYIndex; i <= maxYIndex; i++) {
+      for (let j = minXIndex; j <= maxXIndex; j++) {
+        const cell = this.cells[i][j];
+        const {
+          position: { leftTop, rightTop, rightBottom, leftBottom },
+        } = cell;
+        if (
+          leftTop.x - this.scroll.x > this.width ||
+          leftBottom.y - this.scroll.y > this.height
+        ) {
+          break;
+        }
+        if (
+          rightTop.x - this.scroll.x < 0 ||
+          rightBottom.y - this.scroll.y < 0
+        ) {
+          continue;
+        }
+        this.ctx!.fillStyle = "#000";
+        this.ctx!.strokeStyle = "#ccc";
+        this.ctx!.textBaseline = "middle";
+        this.ctx!.textAlign = "center";
         if (i === 0) {
+          this.ctx!.strokeRect(
+            cell.x! - this.scroll.x,
+            cell.y! - this.scroll.y,
+            cell.width!,
+            cell.height!
+          );
           if (j > 0) {
-            ctx.strokeRect(
-              Sheet.DEFAULT_INDEX_CELL_WIDTH +
-                (j - 1) * Sheet.DEFAULT_CELL_WIDTH,
-              i * Sheet.DEFAULT_CELL_HEIGHT,
-              Sheet.DEFAULT_CELL_WIDTH,
-              Sheet.DEFAULT_CELL_HEIGHT
-            );
-          } else {
-            ctx.strokeRect(
-              j * Sheet.DEFAULT_INDEX_CELL_WIDTH,
-              i * Sheet.DEFAULT_CELL_HEIGHT,
-              Sheet.DEFAULT_INDEX_CELL_WIDTH,
-              Sheet.DEFAULT_CELL_HEIGHT
-            );
-          }
-          if (j > 0) {
-            const text = cellIndex2CellWord(j);
-            ctx.fillText(
-              text,
-              Sheet.DEFAULT_INDEX_CELL_WIDTH +
-                (j - 1) * Sheet.DEFAULT_CELL_WIDTH +
-                Sheet.DEFAULT_CELL_WIDTH / 2,
-              i * Sheet.DEFAULT_CELL_HEIGHT + Sheet.DEFAULT_CELL_HEIGHT / 2
+            this.ctx!.fillText(
+              cell.cellName,
+              cell.x! + cell.width! / 2 - this.scroll.x,
+              cell.y! + cell.height! / 2 - this.scroll.y
             );
           }
         } else if (j === 0) {
-          ctx.strokeRect(
-            j * Sheet.DEFAULT_INDEX_CELL_WIDTH,
-            i * Sheet.DEFAULT_CELL_HEIGHT,
-            Sheet.DEFAULT_INDEX_CELL_WIDTH,
-            Sheet.DEFAULT_CELL_HEIGHT
+          this.ctx!.strokeRect(
+            cell.x! - this.scroll.x,
+            cell.y! - this.scroll.y,
+            cell.width!,
+            cell.height!
           );
-          ctx.fillText(
+          this.ctx!.fillText(
             i.toString(),
-            j * Sheet.DEFAULT_INDEX_CELL_WIDTH +
-              Sheet.DEFAULT_INDEX_CELL_WIDTH / 2,
-            i * Sheet.DEFAULT_CELL_HEIGHT + Sheet.DEFAULT_CELL_HEIGHT / 2
+            cell.x! + cell.width! / 2 - this.scroll.x,
+            cell.y! + cell.height! / 2 - this.scroll.y
           );
         } else {
-          ctx.save();
-          ctx.setLineDash([2, 4]);
-          ctx.fillText(
+          this.ctx!.save();
+          this.ctx!.setLineDash([2, 4]);
+          this.ctx!.fillText(
             i.toString() + "-" + j.toString(),
-            Sheet.DEFAULT_INDEX_CELL_WIDTH +
-              (j - 1) * Sheet.DEFAULT_CELL_WIDTH +
-              Sheet.DEFAULT_CELL_WIDTH / 2,
-            i * Sheet.DEFAULT_CELL_HEIGHT + Sheet.DEFAULT_CELL_HEIGHT / 2
+            cell.x! + cell.width! / 2 - this.scroll.x,
+            cell.y! + cell.height! / 2 - this.scroll.y
           );
-          ctx.strokeRect(
-            Sheet.DEFAULT_INDEX_CELL_WIDTH + (j - 1) * Sheet.DEFAULT_CELL_WIDTH,
-            i * Sheet.DEFAULT_CELL_HEIGHT,
-            Sheet.DEFAULT_CELL_WIDTH,
-            Sheet.DEFAULT_CELL_HEIGHT
+          this.ctx!.strokeRect(
+            cell.x! - this.scroll.x,
+            cell.y! - this.scroll.y,
+            cell.width!,
+            cell.height!
           );
-          ctx.restore();
+          this.ctx!.restore();
         }
       }
     }
+  }
+
+  drawScrollbar() {
+    if (this.verticalScrollBar!.show) {
+      this.drawVerticalScrollbar();
+    }
+    if (this.horizontalScrollBar!.show) {
+      this.drawHorizontalScrollbar();
+    }
+    if (this.verticalScrollBar!.show && this.horizontalScrollBar!.show) {
+      this.drawScrollbarCoincide();
+    }
+  }
+  drawVerticalScrollbar() {
+    this.ctx!.save();
+    this.ctx!.strokeStyle = this.verticalScrollBar!.track.borderColor;
+    this.ctx!.strokeRect(
+      this.verticalScrollBar!.x,
+      this.verticalScrollBar!.y,
+      this.verticalScrollBar!.track.width,
+      this.verticalScrollBar!.track.height
+    );
+    this.ctx!.fillStyle = this.verticalScrollBar!.track.backgroundColor;
+    this.ctx!.fillRect(
+      this.verticalScrollBar!.x,
+      this.verticalScrollBar!.y,
+      this.verticalScrollBar!.track.width,
+      this.verticalScrollBar!.track.height
+    );
+    this.ctx!.fillStyle = this.verticalScrollBar!.dragging
+      ? this.verticalScrollBar!.thumb.draggingColor
+      : this.verticalScrollBar!.thumb.backgroundColor;
+    this.ctx!.fillRect(
+      this.verticalScrollBar!.x + this.verticalScrollBar!.thumb.padding,
+      this.verticalScrollBar!.y - this.verticalScrollBar!.value,
+      this.verticalScrollBar!.thumb.width,
+      this.verticalScrollBar!.thumb.height
+    );
+    this.ctx!.restore();
+  }
+  drawHorizontalScrollbar() {
+    this.ctx!.save();
+    this.ctx!.strokeStyle = this.horizontalScrollBar!.track.borderColor;
+    this.ctx!.strokeRect(
+      this.horizontalScrollBar!.x,
+      this.horizontalScrollBar!.y,
+      this.horizontalScrollBar!.track.width,
+      this.horizontalScrollBar!.track.height
+    );
+    this.ctx!.fillStyle = this.horizontalScrollBar!.track.backgroundColor;
+    this.ctx!.fillRect(
+      this.horizontalScrollBar!.x,
+      this.horizontalScrollBar!.y,
+      this.horizontalScrollBar!.track.width,
+      this.horizontalScrollBar!.track.height
+    );
+    this.ctx!.fillStyle = this.horizontalScrollBar!.dragging
+      ? this.horizontalScrollBar!.thumb.draggingColor
+      : this.horizontalScrollBar!.thumb.backgroundColor;
+    this.ctx!.fillRect(
+      this.horizontalScrollBar!.x - this.horizontalScrollBar!.value,
+      this.horizontalScrollBar!.y + this.horizontalScrollBar!.thumb.padding,
+      this.horizontalScrollBar!.thumb.width,
+      this.horizontalScrollBar!.thumb.height
+    );
+    this.ctx!.restore();
+  }
+  drawScrollbarCoincide() {
+    this.ctx!.save();
+    this.ctx!.strokeStyle = this.verticalScrollBar!.track.borderColor;
+    this.ctx!.strokeRect(
+      this.verticalScrollBar!.x,
+      this.horizontalScrollBar!.y,
+      this.verticalScrollBar!.track.width,
+      this.horizontalScrollBar!.track.height
+    );
+    this.ctx!.fillStyle = this.verticalScrollBar!.track.backgroundColor;
+    this.ctx!.fillRect(
+      this.verticalScrollBar!.x,
+      this.horizontalScrollBar!.y,
+      this.verticalScrollBar!.track.width,
+      this.horizontalScrollBar!.track.height
+    );
+    this.ctx!.restore();
   }
 }
 

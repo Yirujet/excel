@@ -6,8 +6,27 @@ namespace Excel {
       rowIndex: number | null;
       colIndex: number | null;
       selected?: boolean;
+      cellName: string;
       x: number | null;
       y: number | null;
+      position: {
+        leftTop: {
+          x: number;
+          y: number;
+        };
+        rightTop: {
+          x: number;
+          y: number;
+        };
+        rightBottom: {
+          x: number;
+          y: number;
+        };
+        leftBottom: {
+          x: number;
+          y: number;
+        };
+      };
       textStyle: {
         fontFamily: string;
         fontSize: number;
