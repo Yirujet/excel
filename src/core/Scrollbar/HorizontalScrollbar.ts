@@ -11,14 +11,35 @@ export default class HorizontalScrollbar extends Scrollbar {
     this.thumb.height = 16;
     this.init();
   }
+  init() {
+    if (
+      this.layout.bodyRealWidth >
+      this.layout.width - this.layout.fixedLeftWidth
+    ) {
+      this.show = true;
+    }
+    if (this.show) {
+      this.x = 0;
+      this.y = this.layout.height;
+      this.track.width = this.layout.width;
+      this.thumb.width =
+        this.track.width * (this.track.width / this.layout.bodyRealWidth);
+      if (this.thumb.width < this.thumb.min) {
+        this.thumb.width = this.thumb.min;
+      }
+      this.thumb.padding = (this.track.height - this.thumb.height) / 2;
+    }
+    this.updatePosition();
+    this.initEvents();
+  }
   initEvents() {
     const onStartScroll = (e: any) => {
       this.updatePosition();
-      const { offsetX } = e;
+      const { x } = e;
       this.checkHit(e);
       this.scrollMove(
-        offsetX,
-        "offsetX",
+        x - this.layout.x,
+        "x",
         this.track.width - this.thumb.width,
         this.callback,
         "horizontal"
@@ -40,27 +61,6 @@ export default class HorizontalScrollbar extends Scrollbar {
       mousedown: onStartScroll,
     };
     this.registerListenerFromOnProp(defaultEventListeners, this.eventObserver);
-  }
-  init() {
-    if (
-      this.layout.bodyRealWidth >
-      this.layout.width - this.layout.fixedLeftWidth
-    ) {
-      this.show = true;
-    }
-    if (this.show) {
-      this.x = 0;
-      this.y = this.layout.height;
-      this.track.width = this.layout.width;
-      this.thumb.width =
-        this.track.width * (this.track.width / this.layout.bodyRealWidth);
-      if (this.thumb.width < this.thumb.min) {
-        this.thumb.width = this.thumb.min;
-      }
-      this.thumb.padding = (this.track.height - this.thumb.height) / 2;
-    }
-    this.updatePosition();
-    this.initEvents();
   }
   updatePosition() {
     const horizontalThumbX = this.x! - this.value;

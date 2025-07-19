@@ -84,13 +84,14 @@ export default class Scrollbar extends Element {
       this.moveEvent = throttle((e: any) => {
         if (!this.dragging) return;
         this.isLast = false;
-        let moveVal = e[offsetProp];
+        let moveVal = e[offsetProp] - this.layout[offsetProp];
         if (moveVal > maxMoveVal) {
           moveVal = maxMoveVal;
         }
         if (moveVal < minMoveVal) {
           moveVal = minMoveVal;
         }
+        // console.log("***", e[offsetProp], e, moveVal, maxMoveVal);
         let d = moveVal - offset;
         let direction;
         if (this.lastVal === null) {
@@ -116,6 +117,7 @@ export default class Scrollbar extends Element {
             this.value = 0;
           }
         }
+        // console.log("***", this.isLast, this.value);
         this.percent = this.value / -maxScrollDistance;
         this.lastVal = offset;
         callback(this.percent, type);

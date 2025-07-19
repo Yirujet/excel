@@ -27,8 +27,8 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
   static DEFAULT_CELL_HEIGHT = 25;
   static DEFAULT_INDEX_CELL_WIDTH = 50;
   static DEFAULT_CELL_FONT_FAMILY = "宋体";
-  static DEFAULT_CELL_ROW_COUNT = 3000;
-  static DEFAULT_CELL_COL_COUNT = 3000;
+  static DEFAULT_CELL_ROW_COUNT = 100;
+  static DEFAULT_CELL_COL_COUNT = 100;
   name = "";
   cells: Excel.Cell.CellInstance[][] = [];
   _tools: Excel.Tools.ToolInstance[] = [];
@@ -159,6 +159,7 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
   }
 
   redraw(percent: number, type: "vertical" | "horizontal") {
+    // console.log(type, percent);
     if (type === "horizontal") {
       this.scroll.x = Math.abs(percent) * (this.realWidth - this.width);
     } else {
@@ -177,21 +178,27 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
     const minYIndex = this.cells.findIndex(
       (e) => e[0].position.leftBottom.y! - this.scroll.y > 0
     );
-    const maxYIndex =
+    let maxYIndex = this.cells.findIndex(
+      (e) => e[0].position.leftTop.y! - this.scroll.y > this.height
+    );
+    maxYIndex =
       this.verticalScrollBar?.percent === 1
         ? this.cells.length - 1
-        : this.cells.findIndex(
-            (e) => e[0].position.leftTop.y! - this.scroll.y > this.height
-          );
+        : maxYIndex === -1
+        ? this.cells.length - 1
+        : maxYIndex;
     const minXIndex = this.cells[0].findIndex(
       (e) => e.position.rightTop.x! - this.scroll.x > 0
     );
-    const maxXIndex =
+    let maxXIndex = this.cells[0].findIndex(
+      (e) => e.position.leftTop.x! - this.scroll.x > this.width
+    );
+    maxXIndex =
       this.horizontalScrollBar?.percent === 1
         ? this.cells[0].length - 1
-        : this.cells[0].findIndex(
-            (e) => e.position.leftTop.x! - this.scroll.x > this.width
-          );
+        : maxXIndex === -1
+        ? this.cells[0].length - 1
+        : maxXIndex;
     // console.log(minXIndex, maxXIndex, minYIndex, maxYIndex);
     for (let i = minYIndex; i <= maxYIndex; i++) {
       for (let j = minXIndex; j <= maxXIndex; j++) {

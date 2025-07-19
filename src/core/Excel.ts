@@ -40,9 +40,9 @@ class Excel extends Element implements Excel.ExcelInstance {
   }
 
   private initSheets() {
-    const { width, height } = this.$target!.getBoundingClientRect();
+    const { width, height, x, y } = this.$target!.getBoundingClientRect();
     if (this.sheets.length === 0) {
-      this.addSheet(width, height);
+      this.addSheet(width, height, x, y);
     } else {
       this.sheets.forEach((item) => {
         item.width = width;
@@ -69,9 +69,11 @@ class Excel extends Element implements Excel.ExcelInstance {
     return `${baseName}-${this.sequence}`;
   }
 
-  addSheet(width: number, height: number) {
+  addSheet(width: number, height: number, x: number, y: number) {
     const sheesName = this.getNextSheetName();
     const sheet = new Sheet(sheesName);
+    sheet.x = x;
+    sheet.y = y;
     sheet.width = width;
     sheet.height = height;
     this.sheets.push(sheet);

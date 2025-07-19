@@ -33,11 +33,11 @@ export default class VerticalScrollbar extends Scrollbar {
   initEvents() {
     const onStartScroll = (e: any) => {
       this.updatePosition();
-      const { offsetY } = e;
+      const { y } = e;
       this.checkHit(e);
       this.scrollMove(
-        offsetY,
-        "offsetY",
+        y - this.layout.y,
+        "y",
         this.track.height - this.thumb.height,
         this.callback,
         "vertical"
