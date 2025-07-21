@@ -27,8 +27,8 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
   static DEFAULT_CELL_HEIGHT = 25;
   static DEFAULT_INDEX_CELL_WIDTH = 50;
   static DEFAULT_CELL_FONT_FAMILY = "宋体";
-  static DEFAULT_CELL_ROW_COUNT = 300;
-  static DEFAULT_CELL_COL_COUNT = 300;
+  static DEFAULT_CELL_ROW_COUNT = 1000;
+  static DEFAULT_CELL_COL_COUNT = 1000;
   static DEVIATION_COMPARE_VALUE = 10e-6;
   private ctx: CanvasRenderingContext2D | null = null;
   name = "";
@@ -276,68 +276,14 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
 
   drawScrollbar() {
     if (this.verticalScrollBar!.show) {
-      this.drawVerticalScrollbar();
+      this.verticalScrollBar!.render(this.ctx!);
     }
     if (this.horizontalScrollBar!.show) {
-      this.drawHorizontalScrollbar();
+      this.horizontalScrollBar!.render(this.ctx!);
     }
     if (this.verticalScrollBar!.show && this.horizontalScrollBar!.show) {
       this.drawScrollbarCoincide();
     }
-  }
-  drawVerticalScrollbar() {
-    this.ctx!.save();
-    this.ctx!.strokeStyle = this.verticalScrollBar!.track.borderColor;
-    this.ctx!.strokeRect(
-      this.verticalScrollBar!.x,
-      this.verticalScrollBar!.y,
-      this.verticalScrollBar!.track.width,
-      this.verticalScrollBar!.track.height
-    );
-    this.ctx!.fillStyle = this.verticalScrollBar!.track.backgroundColor;
-    this.ctx!.fillRect(
-      this.verticalScrollBar!.x,
-      this.verticalScrollBar!.y,
-      this.verticalScrollBar!.track.width,
-      this.verticalScrollBar!.track.height
-    );
-    this.ctx!.fillStyle = this.verticalScrollBar!.dragging
-      ? this.verticalScrollBar!.thumb.draggingColor
-      : this.verticalScrollBar!.thumb.backgroundColor;
-    this.ctx!.fillRect(
-      this.verticalScrollBar!.x + this.verticalScrollBar!.thumb.padding,
-      this.verticalScrollBar!.y - this.verticalScrollBar!.value,
-      this.verticalScrollBar!.thumb.width,
-      this.verticalScrollBar!.thumb.height
-    );
-    this.ctx!.restore();
-  }
-  drawHorizontalScrollbar() {
-    this.ctx!.save();
-    this.ctx!.strokeStyle = this.horizontalScrollBar!.track.borderColor;
-    this.ctx!.strokeRect(
-      this.horizontalScrollBar!.x,
-      this.horizontalScrollBar!.y,
-      this.horizontalScrollBar!.track.width,
-      this.horizontalScrollBar!.track.height
-    );
-    this.ctx!.fillStyle = this.horizontalScrollBar!.track.backgroundColor;
-    this.ctx!.fillRect(
-      this.horizontalScrollBar!.x,
-      this.horizontalScrollBar!.y,
-      this.horizontalScrollBar!.track.width,
-      this.horizontalScrollBar!.track.height
-    );
-    this.ctx!.fillStyle = this.horizontalScrollBar!.dragging
-      ? this.horizontalScrollBar!.thumb.draggingColor
-      : this.horizontalScrollBar!.thumb.backgroundColor;
-    this.ctx!.fillRect(
-      this.horizontalScrollBar!.x - this.horizontalScrollBar!.value,
-      this.horizontalScrollBar!.y + this.horizontalScrollBar!.thumb.padding,
-      this.horizontalScrollBar!.thumb.width,
-      this.horizontalScrollBar!.thumb.height
-    );
-    this.ctx!.restore();
   }
   drawScrollbarCoincide() {
     this.ctx!.save();

@@ -69,7 +69,6 @@ export default class HorizontalScrollbar extends Scrollbar {
       e.stopPropagation();
       e.preventDefault();
       if (!this.isHorizontalScrolling) return;
-      // console.log("Horizontal scrolling.");
       const { offsetX, offsetY } = e;
       if (
         offsetX >= this.layout!.x &&
@@ -152,5 +151,22 @@ export default class HorizontalScrollbar extends Scrollbar {
         y: horizontalThumbY + horizontalThumbHeight,
       },
     };
+  }
+  render(ctx: CanvasRenderingContext2D) {
+    ctx.save();
+    ctx.strokeStyle = this.track.borderColor;
+    ctx.strokeRect(this.x, this.y, this.track.width, this.track.height);
+    ctx.fillStyle = this.track.backgroundColor;
+    ctx.fillRect(this.x, this.y, this.track.width, this.track.height);
+    ctx.fillStyle = this.dragging
+      ? this.thumb.draggingColor
+      : this.thumb.backgroundColor;
+    ctx.fillRect(
+      this.x - this.value,
+      this.y + this.thumb.padding,
+      this.thumb.width,
+      this.thumb.height
+    );
+    ctx.restore();
   }
 }

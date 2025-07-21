@@ -66,7 +66,6 @@ export default class VerticalScrollbar extends Scrollbar {
       e.stopPropagation();
       e.preventDefault();
       if (this.isHorizontalScrolling) return;
-      // console.log("Vertical scrolling.");
       const { offsetX, offsetY } = e;
       if (
         offsetX >= this.layout!.x &&
@@ -149,5 +148,22 @@ export default class VerticalScrollbar extends Scrollbar {
         y: verticalThumbY + verticalThumbHeight,
       },
     };
+  }
+  render(ctx: CanvasRenderingContext2D) {
+    ctx.save();
+    ctx.strokeStyle = this.track.borderColor;
+    ctx.strokeRect(this.x, this.y, this.track.width, this.track.height);
+    ctx.fillStyle = this.track.backgroundColor;
+    ctx.fillRect(this.x, this.y, this.track.width, this.track.height);
+    ctx.fillStyle = this.dragging
+      ? this.thumb.draggingColor
+      : this.thumb.backgroundColor;
+    ctx.fillRect(
+      this.x + this.thumb.padding,
+      this.y - this.value,
+      this.thumb.width,
+      this.thumb.height
+    );
+    ctx.restore();
   }
 }
