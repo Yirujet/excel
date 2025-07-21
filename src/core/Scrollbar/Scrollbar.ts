@@ -119,4 +119,30 @@ export default class Scrollbar
       }, 50);
     }
   }
+  render(ctx: CanvasRenderingContext2D) {
+    ctx.save();
+    ctx.strokeStyle = this.track.borderColor;
+    ctx.strokeRect(this.x, this.y, this.track.width, this.track.height);
+    ctx.fillStyle = this.track.backgroundColor;
+    ctx.fillRect(this.x, this.y, this.track.width, this.track.height);
+    ctx.fillStyle = this.dragging
+      ? this.thumb.draggingColor
+      : this.thumb.backgroundColor;
+    if (this.type === "horizontal") {
+      ctx.fillRect(
+        this.x - this.value,
+        this.y + this.thumb.padding,
+        this.thumb.width,
+        this.thumb.height
+      );
+    } else {
+      ctx.fillRect(
+        this.x + this.thumb.padding,
+        this.y - this.value,
+        this.thumb.width,
+        this.thumb.height
+      );
+    }
+    ctx.restore();
+  }
 }

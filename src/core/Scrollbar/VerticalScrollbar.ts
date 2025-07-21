@@ -149,21 +149,4 @@ export default class VerticalScrollbar extends Scrollbar {
       },
     };
   }
-  render(ctx: CanvasRenderingContext2D) {
-    ctx.save();
-    ctx.strokeStyle = this.track.borderColor;
-    ctx.strokeRect(this.x, this.y, this.track.width, this.track.height);
-    ctx.fillStyle = this.track.backgroundColor;
-    ctx.fillRect(this.x, this.y, this.track.width, this.track.height);
-    ctx.fillStyle = this.dragging
-      ? this.thumb.draggingColor
-      : this.thumb.backgroundColor;
-    ctx.fillRect(
-      this.x + this.thumb.padding,
-      this.y - this.value,
-      this.thumb.width,
-      this.thumb.height
-    );
-    ctx.restore();
-  }
 }
