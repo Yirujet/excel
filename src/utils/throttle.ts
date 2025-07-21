@@ -1,4 +1,4 @@
-export default (func: any, interval: number) => {
+export default (func: Excel.Event.FnType, interval: number) => {
   let lastTime = 0;
   return function (...args: any[]) {
     const now = Date.now();

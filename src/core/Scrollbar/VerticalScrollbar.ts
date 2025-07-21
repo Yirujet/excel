@@ -1,27 +1,31 @@
+import EventObserver from "../../utils/EventObserver";
 import throttle from "../../utils/throttle";
 import Scrollbar from "./Scrollbar";
 
 export default class VerticalScrollbar extends Scrollbar {
+  static TRACK_WIDTH = 16;
+  static THUMB_WIDTH = 16;
   constructor(
-    layout: any,
-    eventObserver: any,
-    callback: (...params: any[]) => void
+    layout: Excel.LayoutInfo,
+    eventObserver: EventObserver,
+    globalEventsObserver: EventObserver,
+    callback: Excel.Event.FnType
   ) {
-    super(layout, eventObserver, callback);
-    this.track.width = 16;
-    this.thumb.width = 16;
+    super(layout, eventObserver, globalEventsObserver, callback, "vertical");
+    this.track.width = VerticalScrollbar.TRACK_WIDTH;
+    this.thumb.width = VerticalScrollbar.THUMB_WIDTH;
     this.init();
   }
   init() {
-    if (this.layout.bodyHeight < this.layout.bodyRealHeight) {
+    if (this.layout!.bodyHeight < this.layout!.bodyRealHeight) {
       this.show = true;
     }
     if (this.show) {
-      this.x = this.layout.width;
-      this.y = this.layout.headerHeight;
-      this.track.height = this.layout.height - this.layout.headerHeight;
+      this.x = this.layout!.width;
+      this.y = this.layout!.headerHeight;
+      this.track.height = this.layout!.height - this.layout!.headerHeight;
       this.thumb.height =
-        this.track.height * (this.track.height / this.layout.bodyRealHeight);
+        this.track.height * (this.track.height / this.layout!.bodyRealHeight);
       if (this.thumb.height < this.thumb.min) {
         this.thumb.height = this.thumb.min;
       }
@@ -31,50 +35,54 @@ export default class VerticalScrollbar extends Scrollbar {
     this.initEvents();
   }
   initEvents() {
-    const onStartScroll = (e: any) => {
+    const onStartScroll = (e: MouseEvent) => {
+      if (!this.show) return;
       this.updatePosition();
       const { y } = e;
       this.checkHit(e);
+      if (!this.mouseEntered) return;
       this.scrollMove(
-        y - this.layout.y,
+        y - this.layout!.y,
         "y",
         this.track.height - this.thumb.height,
-        this.callback,
-        "vertical"
+        this.callback
       );
       const onEndScroll = () => {
         this.lastVal = null;
         this.dragging = false;
-        this.callback(this.percent, "vertical");
-        window.removeEventListener("mousemove", this.moveEvent);
+        this.callback(this.percent, this.type);
+        window.removeEventListener("mousemove", this.moveEvent!);
+        this.moveEvent = null;
         window.removeEventListener("mouseup", onEndScroll);
       };
       if (this.dragging) {
-        window.addEventListener("mousemove", this.moveEvent);
+        window.addEventListener("mousemove", this.moveEvent!);
         window.addEventListener("mouseup", onEndScroll);
       }
     };
     this.isLast = false;
-    const onWheel = throttle((e: any) => {
+    const onWheel = throttle((e: WheelEvent) => {
+      if (!this.show) return;
       e.stopPropagation();
       e.preventDefault();
+      if (this.isHorizontalScrolling) return;
+      // console.log("Vertical scrolling.");
       const { offsetX, offsetY } = e;
       if (
-        this.show &&
-        offsetX >= this.layout.x &&
-        offsetX <= this.layout.x + this.layout.width + this.track.width &&
-        offsetY >= this.layout.y &&
-        offsetY <= this.layout.y + this.layout.height
+        offsetX >= this.layout!.x &&
+        offsetX <= this.layout!.x + this.layout!.width + this.track.width &&
+        offsetY >= this.layout!.y &&
+        offsetY <= this.layout!.y + this.layout!.height
       ) {
         this.value -=
-          e.deltaY * (this.track.height / this.layout.bodyRealHeight);
+          e.deltaY * (this.track.height / this.layout!.bodyRealHeight);
         this.isLast = false;
         if (e.deltaY > 0) {
           const deviation = Math.abs(
             this.value + this.track.height - this.thumb.height
           );
           if (
-            deviation < this.layout.deviationCompareValue ||
+            deviation < this.layout!.deviationCompareValue ||
             this.value + this.track.height <= this.thumb.height
           ) {
             this.value = this.thumb.height - this.track.height;
@@ -86,14 +94,37 @@ export default class VerticalScrollbar extends Scrollbar {
           }
         }
         this.percent = this.value / (this.thumb.height - this.track.height);
-        this.callback(this.percent, "vertical");
+        this.callback(this.percent, this.type);
       }
     }, 50);
+    const onKeydown = (e: KeyboardEvent) => {
+      if (e.key === "Shift") {
+        this.isHorizontalScrolling = true;
+      }
+    };
+    const onKeyup = (e: KeyboardEvent) => {
+      if (e.key === "Shift") {
+        this.isHorizontalScrolling = false;
+      }
+    };
     const defaultEventListeners = {
       wheel: onWheel,
       mousedown: onStartScroll,
     };
-    this.registerListenerFromOnProp(defaultEventListeners, this.eventObserver);
+    const globalEventListeners = {
+      keydown: onKeydown,
+      keyup: onKeyup,
+    };
+    this.registerListenerFromOnProp(
+      defaultEventListeners,
+      this.eventObserver,
+      this
+    );
+    this.registerListenerFromOnProp(
+      globalEventListeners,
+      this.globalEventsObserver,
+      this
+    );
   }
   updatePosition() {
     const verticalThumbX = this.x! + this.thumb.padding;

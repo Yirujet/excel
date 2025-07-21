@@ -1,4 +1,4 @@
-const GlobalEvents = {
+const GlobalEvents: Excel.Event.GlobalEvent = {
   mouseleave: {
     dispatchEvents: {
       mouseleave: {
@@ -50,52 +50,56 @@ const GlobalEvents = {
       },
     },
   },
+  keydown: {
+    dispatchEvents: {
+      keydown: {
+        triggerName: "triggerEvent",
+      },
+    },
+  },
+  keyup: {
+    dispatchEvents: {
+      keyup: {
+        triggerName: "triggerEvent",
+      },
+    },
+  },
 };
 
-export default class EventObserver {
-  mouseenter: any[] = [];
-  mouseleave: any[] = [];
-  mousemove: any[] = [];
-  mousedown: any[] = [];
-  mouseup: any[] = [];
-  click: any[] = [];
-  clickoutside: any[] = [];
-  wheel: any[] = [];
+export default class EventObserver implements Excel.Event.ObserverInstance {
+  mouseenter: Excel.Event.ObserverTypes[] = [];
+  mouseleave: Excel.Event.ObserverTypes[] = [];
+  mousemove: Excel.Event.ObserverTypes[] = [];
+  mousedown: Excel.Event.ObserverTypes[] = [];
+  mouseup: Excel.Event.ObserverTypes[] = [];
+  click: Excel.Event.ObserverTypes[] = [];
+  clickoutside: Excel.Event.ObserverTypes[] = [];
+  wheel: Excel.Event.ObserverTypes[] = [];
+  keydown: Excel.Event.ObserverTypes[] = [];
+  keyup: Excel.Event.ObserverTypes[] = [];
   observe(target: HTMLCanvasElement) {
     if (target && "addEventListener" in target) {
       Object.entries(GlobalEvents).forEach(
         ([targetEvent, { dispatchEvents }]) => {
-          const listener = (e: any) => {
+          const listener: Excel.Event.FnType = (...args) => {
             Object.entries(dispatchEvents).forEach(
               ([dispatchEvent, { triggerName }]) => {
-                this[
-                  dispatchEvent as
-                    | "mouseenter"
-                    | "mouseleave"
-                    | "mousemove"
-                    | "mousedown"
-                    | "mouseup"
-                    | "click"
-                    | "clickoutside"
-                    | "wheel"
-                ].forEach((element) => {
-                  element[triggerName].call(element, dispatchEvent, e);
+                this[dispatchEvent as Excel.Event.Type].forEach((element) => {
+                  element[triggerName as "triggerEvent"].call(
+                    element,
+                    dispatchEvent as Excel.Event.Type,
+                    ...args
+                  );
                 });
                 const curActiveElement = this[
-                  dispatchEvent as
-                    | "mouseenter"
-                    | "mouseleave"
-                    | "mousemove"
-                    | "mousedown"
-                    | "mouseup"
-                    | "click"
-                    | "clickoutside"
-                    | "wheel"
+                  dispatchEvent as Excel.Event.Type
                 ].find((element) => element.mouseEntered);
-                if (curActiveElement) {
-                  target.style.cursor = curActiveElement.cursor;
+                if (curActiveElement && target.style) {
+                  target.style.cursor = curActiveElement?.cursor;
                 } else {
-                  target.style.cursor = "default";
+                  if (target.style) {
+                    target.style.cursor = "default";
+                  }
                 }
               }
             );
@@ -105,13 +109,15 @@ export default class EventObserver {
       );
     }
   }
-  clear(gcList: any[]) {
+  clear(gcList: Excel.Event.ObserverTypes[]) {
     for (let name in this) {
       if (Array.isArray(this[name])) {
         gcList.forEach((item) => {
-          let i = (this[name] as any[]).findIndex((e) => e === item);
+          let i = (this[name] as Excel.Event.ObserverTypes[]).findIndex(
+            (e) => e === item
+          );
           if (!!~i) {
-            (this[name] as any[]).splice(i, 1);
+            (this[name] as Excel.Event.ObserverTypes[]).splice(i, 1);
           }
           if (item && item.destroy) {
             item.destroy();

@@ -2,8 +2,8 @@ import ExcelEvent from "../utils/ExcelEvent";
 
 export default class Element extends ExcelEvent {
   $el: HTMLElement | null = null;
-  x: any = null;
-  y: any = null;
+  x!: number;
+  y!: number;
   mouseEntered = false;
   cursor = "default";
   constructor(tagName: string) {
@@ -21,11 +21,11 @@ export default class Element extends ExcelEvent {
     this.$el!.classList.add(className);
   }
 
-  addListener(name: string, callback: (...params: any[]) => void) {
+  addListener(name: string, callback: Excel.Event.FnType) {
     this.$el!.addEventListener(name, callback);
   }
 
-  removeListener(name: string, callback: (...params: any[]) => void) {
+  removeListener(name: string, callback: Excel.Event.FnType) {
     this.$el!.removeEventListener(name, callback);
   }
 }

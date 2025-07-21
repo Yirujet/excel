@@ -1,29 +1,34 @@
+import EventObserver from "../../utils/EventObserver";
+import throttle from "../../utils/throttle";
 import Scrollbar from "./Scrollbar";
 
 export default class HorizontalScrollbar extends Scrollbar {
+  static TRACK_HEIGHT = 16;
+  static THUMB_HEIGHT = 16;
   constructor(
-    layout: any,
-    eventObserver: any,
-    callback: (...params: any[]) => void
+    layout: Excel.LayoutInfo,
+    eventObserver: EventObserver,
+    globalEventsObserver: EventObserver,
+    callback: Excel.Event.FnType
   ) {
-    super(layout, eventObserver, callback);
-    this.track.height = 16;
-    this.thumb.height = 16;
+    super(layout, eventObserver, globalEventsObserver, callback, "horizontal");
+    this.track.height = HorizontalScrollbar.TRACK_HEIGHT;
+    this.thumb.height = HorizontalScrollbar.THUMB_HEIGHT;
     this.init();
   }
   init() {
     if (
-      this.layout.bodyRealWidth >
-      this.layout.width - this.layout.fixedLeftWidth
+      this.layout!.bodyRealWidth >
+      this.layout!.width - this.layout!.fixedLeftWidth
     ) {
       this.show = true;
     }
     if (this.show) {
       this.x = 0;
-      this.y = this.layout.height;
-      this.track.width = this.layout.width;
+      this.y = this.layout!.height;
+      this.track.width = this.layout!.width;
       this.thumb.width =
-        this.track.width * (this.track.width / this.layout.bodyRealWidth);
+        this.track.width * (this.track.width / this.layout!.bodyRealWidth);
       if (this.thumb.width < this.thumb.min) {
         this.thumb.width = this.thumb.min;
       }
@@ -33,34 +38,96 @@ export default class HorizontalScrollbar extends Scrollbar {
     this.initEvents();
   }
   initEvents() {
-    const onStartScroll = (e: any) => {
+    const onStartScroll = (e: MouseEvent) => {
+      if (!this.show) return;
       this.updatePosition();
       const { x } = e;
       this.checkHit(e);
+      if (!this.mouseEntered) return;
       this.scrollMove(
-        x - this.layout.x,
+        x - this.layout!.x,
         "x",
         this.track.width - this.thumb.width,
-        this.callback,
-        "horizontal"
+        this.callback
       );
       const onEndScroll = () => {
         this.lastVal = null;
         this.dragging = false;
-        this.callback(this.percent, "horizontal");
-        window.removeEventListener("mousemove", this.moveEvent);
+        this.callback(this.percent, this.type);
+        window.removeEventListener("mousemove", this.moveEvent!);
         this.moveEvent = null;
         window.removeEventListener("mouseup", onEndScroll);
       };
       if (this.dragging) {
-        window.addEventListener("mousemove", this.moveEvent);
+        window.addEventListener("mousemove", this.moveEvent!);
         window.addEventListener("mouseup", onEndScroll);
+      }
+    };
+    this.isLast = false;
+    const onWheel = throttle((e: WheelEvent) => {
+      if (!this.show) return;
+      e.stopPropagation();
+      e.preventDefault();
+      if (!this.isHorizontalScrolling) return;
+      // console.log("Horizontal scrolling.");
+      const { offsetX, offsetY } = e;
+      if (
+        offsetX >= this.layout!.x &&
+        offsetX <= this.layout!.x + this.layout!.width + this.track.width &&
+        offsetY >= this.layout!.y &&
+        offsetY <= this.layout!.y + this.layout!.height
+      ) {
+        this.value -=
+          e.deltaY * (this.track.width / this.layout!.bodyRealWidth);
+        this.isLast = false;
+        if (e.deltaY > 0) {
+          const deviation = Math.abs(
+            this.value + this.track.width - this.thumb.width
+          );
+          if (
+            deviation < this.layout!.deviationCompareValue ||
+            this.value + this.track.width <= this.thumb.width
+          ) {
+            this.value = this.thumb.width - this.track.width;
+            this.isLast = true;
+          }
+        } else {
+          if (this.value > 0) {
+            this.value = 0;
+          }
+        }
+        this.percent = this.value / (this.thumb.width - this.track.width);
+        this.callback(this.percent, this.type);
+      }
+    }, 50);
+    const onKeydown = (e: KeyboardEvent) => {
+      if (e.key === "Shift") {
+        this.isHorizontalScrolling = true;
+      }
+    };
+    const onKeyup = (e: KeyboardEvent) => {
+      if (e.key === "Shift") {
+        this.isHorizontalScrolling = false;
       }
     };
     const defaultEventListeners = {
       mousedown: onStartScroll,
+      wheel: onWheel,
     };
-    this.registerListenerFromOnProp(defaultEventListeners, this.eventObserver);
+    const globalEventListeners = {
+      keydown: onKeydown,
+      keyup: onKeyup,
+    };
+    this.registerListenerFromOnProp(
+      defaultEventListeners,
+      this.eventObserver,
+      this
+    );
+    this.registerListenerFromOnProp(
+      globalEventListeners,
+      this.globalEventsObserver,
+      this
+    );
   }
   updatePosition() {
     const horizontalThumbX = this.x! - this.value;

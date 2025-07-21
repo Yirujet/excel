@@ -13,10 +13,7 @@ namespace Excel {
       toolsConfig: Partial<toolsConfig>;
       _tools: Tools.ToolInstance[];
       cells: Cell.CellInstance[][];
-      scroll: {
-        x: number;
-        y: number;
-      };
+      scroll: Excel.PositionPoint;
       render: () => void;
     }
   }

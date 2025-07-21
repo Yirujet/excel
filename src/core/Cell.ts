@@ -7,24 +7,7 @@ class Cell implements Excel.Cell.CellInstance {
   cellName: string = "";
   x: number | null = null;
   y: number | null = null;
-  position: {
-    leftTop: {
-      x: number;
-      y: number;
-    };
-    rightTop: {
-      x: number;
-      y: number;
-    };
-    rightBottom: {
-      x: number;
-      y: number;
-    };
-    leftBottom: {
-      x: number;
-      y: number;
-    };
-  } = {
+  position: Excel.Position = {
     leftTop: {
       x: 0,
       y: 0,
@@ -60,6 +43,8 @@ class Cell implements Excel.Cell.CellInstance {
   meta = null;
   value = "";
   fn = null;
+
+  render() {}
 }
 
 export default Cell;

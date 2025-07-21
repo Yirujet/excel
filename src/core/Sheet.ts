@@ -27,8 +27,10 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
   static DEFAULT_CELL_HEIGHT = 25;
   static DEFAULT_INDEX_CELL_WIDTH = 50;
   static DEFAULT_CELL_FONT_FAMILY = "宋体";
-  static DEFAULT_CELL_ROW_COUNT = 100;
-  static DEFAULT_CELL_COL_COUNT = 100;
+  static DEFAULT_CELL_ROW_COUNT = 300;
+  static DEFAULT_CELL_COL_COUNT = 300;
+  static DEVIATION_COMPARE_VALUE = 10e-6;
+  private ctx: CanvasRenderingContext2D | null = null;
   name = "";
   cells: Excel.Cell.CellInstance[][] = [];
   _tools: Excel.Tools.ToolInstance[] = [];
@@ -36,11 +38,10 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
   width = 0;
   height = 0;
   scroll: { x: number; y: number } = { x: 0, y: 0 };
-  deviationCompareValue = 10e-6;
   horizontalScrollBar: HorizontalScrollbar | null = null;
   verticalScrollBar: VerticalScrollbar | null = null;
-  eventObserver: any = new EventObserver();
-  private ctx: CanvasRenderingContext2D | null = null;
+  sheetEventsObserver: EventObserver = new EventObserver();
+  globalEventsObserver: EventObserver = new EventObserver();
   realWidth = 0;
   realHeight = 0;
 
@@ -74,7 +75,8 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
     this.ctx!.translate(0.5, 0.5);
     this.ctx!.scale(window.devicePixelRatio, window.devicePixelRatio);
     this.initScrollbar();
-    this.eventObserver.observe(this.$el as HTMLCanvasElement);
+    this.sheetEventsObserver.observe(this.$el as HTMLCanvasElement);
+    this.globalEventsObserver.observe(window as any);
     this.draw();
   }
 
@@ -103,7 +105,7 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
           cell.height = Sheet.DEFAULT_CELL_HEIGHT;
           cell.rowIndex = i;
           cell.colIndex = j;
-          cell.cellName = $10226(j);
+          cell.cellName = $10226(j - 1);
           cell.position = {
             leftTop: {
               x,
@@ -129,7 +131,7 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
     }
     if (this.cells.length > 0) {
       this.realWidth = this.cells[0].reduce((p, c) => p + c.width!, 0);
-      this.realHeight = this.cells[0].reduce((p, c) => p + c.height!, 0);
+      this.realHeight = this.cells.reduce((p, c) => p + c[0].height!, 0);
     }
   }
 
@@ -137,28 +139,30 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
     const layout = {
       x: this.x,
       y: this.y,
-      width: this.width - 16,
-      height: this.height - 16,
+      width: this.width - VerticalScrollbar.TRACK_WIDTH,
+      height: this.height - HorizontalScrollbar.TRACK_HEIGHT,
       headerHeight: Sheet.DEFAULT_CELL_HEIGHT,
       fixedLeftWidth: Sheet.DEFAULT_INDEX_CELL_WIDTH,
       bodyHeight: this.height - Sheet.DEFAULT_CELL_HEIGHT,
       bodyRealWidth: this.realWidth,
       bodyRealHeight: this.realHeight,
-      deviationCompareValue: this.deviationCompareValue,
+      deviationCompareValue: Sheet.DEVIATION_COMPARE_VALUE,
     };
     this.horizontalScrollBar = new HorizontalScrollbar(
       layout,
-      this.eventObserver,
+      this.sheetEventsObserver,
+      this.globalEventsObserver,
       this.redraw.bind(this)
     );
     this.verticalScrollBar = new VerticalScrollbar(
       layout,
-      this.eventObserver,
+      this.sheetEventsObserver,
+      this.globalEventsObserver,
       this.redraw.bind(this)
     );
   }
 
-  redraw(percent: number, type: "vertical" | "horizontal") {
+  redraw(percent: number, type: Excel.Scrollbar.Type) {
     // console.log(type, percent);
     if (type === "horizontal") {
       this.scroll.x = Math.abs(percent) * (this.realWidth - this.width);
@@ -175,9 +179,10 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
   }
 
   drawCells() {
-    const minYIndex = this.cells.findIndex(
+    let minYIndex = this.cells.findIndex(
       (e) => e[0].position.leftBottom.y! - this.scroll.y > 0
     );
+    minYIndex = Math.max(minYIndex, 0);
     let maxYIndex = this.cells.findIndex(
       (e) => e[0].position.leftTop.y! - this.scroll.y > this.height
     );
@@ -187,9 +192,10 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
         : maxYIndex === -1
         ? this.cells.length - 1
         : maxYIndex;
-    const minXIndex = this.cells[0].findIndex(
+    let minXIndex = this.cells[0].findIndex(
       (e) => e.position.rightTop.x! - this.scroll.x > 0
     );
+    minXIndex = Math.max(minXIndex, 0);
     let maxXIndex = this.cells[0].findIndex(
       (e) => e.position.leftTop.x! - this.scroll.x > this.width
     );
