@@ -22,8 +22,8 @@ export default class VerticalScrollbar extends Scrollbar {
     }
     if (this.show) {
       this.x = this.layout!.width;
-      this.y = this.layout!.headerHeight;
-      this.track.height = this.layout!.height - this.layout!.headerHeight;
+      this.y = this.layout!.y;
+      this.track.height = this.layout!.height;
       this.thumb.height =
         this.track.height * (this.track.height / this.layout!.bodyRealHeight);
       if (this.thumb.height < this.thumb.min) {

@@ -17,6 +17,11 @@ namespace Excel {
       bold: boolean;
     }
 
+    export interface CellFixed {
+      x: boolean;
+      y: boolean;
+    }
+
     export interface CellInstance {
       width: number | null;
       height: number | null;

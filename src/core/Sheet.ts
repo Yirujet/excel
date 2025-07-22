@@ -27,8 +27,8 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
   static DEFAULT_CELL_HEIGHT = 25;
   static DEFAULT_INDEX_CELL_WIDTH = 50;
   static DEFAULT_CELL_FONT_FAMILY = "宋体";
-  static DEFAULT_CELL_ROW_COUNT = 1000;
-  static DEFAULT_CELL_COL_COUNT = 1000;
+  static DEFAULT_CELL_ROW_COUNT = 50;
+  static DEFAULT_CELL_COL_COUNT = 50;
   static DEVIATION_COMPARE_VALUE = 10e-6;
   private ctx: CanvasRenderingContext2D | null = null;
   name = "";
@@ -44,6 +44,13 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
   globalEventsObserver: EventObserver = new EventObserver();
   realWidth = 0;
   realHeight = 0;
+  fixedRowIndex = 2;
+  fixedColIndex = 3;
+  fixedRowCells: Excel.Cell.CellInstance[][] = [];
+  fixedColCells: Excel.Cell.CellInstance[][] = [];
+  fixedCells: Excel.Cell.CellInstance[][] = [];
+  fixedRowHeight = 0;
+  fixedColWidth = 0;
 
   constructor(
     name: string,
@@ -85,6 +92,8 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
       this.cells = cells!;
     } else {
       this.cells = [];
+      this.fixedColWidth = 0;
+      this.fixedRowHeight = 0;
       let x = 0;
       let y = 0;
       for (let i = 0; i < Sheet.DEFAULT_CELL_ROW_COUNT + 1; i++) {
@@ -129,10 +138,27 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
         this.cells.push(row);
       }
     }
+    this.initFixedCells();
     if (this.cells.length > 0) {
       this.realWidth = this.cells[0].reduce((p, c) => p + c.width!, 0);
       this.realHeight = this.cells.reduce((p, c) => p + c[0].height!, 0);
     }
+  }
+
+  initFixedCells() {
+    this.fixedRowCells = this.cells.slice(0, this.fixedRowIndex);
+    this.fixedColCells = this.cells.map((e) => e.slice(0, this.fixedColIndex));
+    this.fixedCells = this.cells
+      .slice(0, this.fixedRowIndex)
+      .map((e) => e.slice(0, this.fixedColIndex));
+    this.fixedRowHeight = this.fixedRowCells.reduce(
+      (p, c) => p + c[0].height!,
+      0
+    );
+    this.fixedColWidth = this.fixedColCells[0].reduce(
+      (p, c) => p + c.width!,
+      0
+    );
   }
 
   initScrollbar() {
@@ -162,66 +188,111 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
     );
   }
 
-  redraw(percent: number, type: Excel.Scrollbar.Type) {
-    // console.log(type, percent);
-    if (type === "horizontal") {
-      this.scroll.x = Math.abs(percent) * (this.realWidth - this.width);
-    } else {
-      this.scroll.y = Math.abs(percent) * (this.realHeight - this.height);
-    }
+  clear() {
     this.ctx!.clearRect(0, 0, this.width, this.height);
+  }
+
+  clearCell(fixedInX: boolean, fixedInY: boolean) {
+    let w = this.width;
+    let h = this.height;
+    if (fixedInX) {
+      w = this.fixedColWidth;
+    }
+    if (fixedInY) {
+      h = this.fixedRowHeight;
+    }
+    this.ctx!.clearRect(0, 0, w, h);
+  }
+
+  updateScroll(percent: number, type: Excel.Scrollbar.Type) {
+    if (type === "horizontal") {
+      this.scroll.x =
+        Math.abs(percent) *
+        (this.realWidth -
+          this.width +
+          (this.verticalScrollBar?.show ? VerticalScrollbar.TRACK_WIDTH : 0));
+    } else {
+      this.scroll.y =
+        Math.abs(percent) *
+        (this.realHeight -
+          this.height +
+          (this.horizontalScrollBar?.show
+            ? HorizontalScrollbar.TRACK_HEIGHT
+            : 0));
+    }
+  }
+
+  redraw(percent: number, type: Excel.Scrollbar.Type) {
+    this.updateScroll(percent, type);
     this.draw();
   }
 
   draw() {
-    this.drawCells();
+    this.drawCells(this.cells, false, false);
+    this.drawCells(this.fixedRowCells, false, true);
+    this.drawCells(this.fixedColCells, true, false);
+    this.drawCells(this.fixedCells, true, true);
     this.drawScrollbar();
   }
-
-  drawCells() {
-    let minYIndex = this.cells.findIndex(
-      (e) => e[0].position.leftBottom.y! - this.scroll.y > 0
+  getRangeInView(
+    cells: Excel.Cell.CellInstance[][],
+    scrollX: number,
+    scrollY: number
+  ) {
+    let minYIndex = cells.findIndex(
+      (e) => e[0].position.leftBottom.y! - scrollY > 0
     );
     minYIndex = Math.max(minYIndex, 0);
-    let maxYIndex = this.cells.findIndex(
-      (e) => e[0].position.leftTop.y! - this.scroll.y > this.height
+    let maxYIndex = cells.findIndex(
+      (e) => e[0].position.leftTop.y! - scrollY > this.height
     );
     maxYIndex =
       this.verticalScrollBar?.percent === 1
-        ? this.cells.length - 1
+        ? cells.length - 1
         : maxYIndex === -1
-        ? this.cells.length - 1
+        ? cells.length - 1
         : maxYIndex;
-    let minXIndex = this.cells[0].findIndex(
-      (e) => e.position.rightTop.x! - this.scroll.x > 0
+    let minXIndex = cells[0].findIndex(
+      (e) => e.position.rightTop.x! - scrollX > 0
     );
     minXIndex = Math.max(minXIndex, 0);
-    let maxXIndex = this.cells[0].findIndex(
-      (e) => e.position.leftTop.x! - this.scroll.x > this.width
+    let maxXIndex = cells[0].findIndex(
+      (e) => e.position.leftTop.x! - scrollX > this.width
     );
     maxXIndex =
       this.horizontalScrollBar?.percent === 1
-        ? this.cells[0].length - 1
+        ? cells[0].length - 1
         : maxXIndex === -1
-        ? this.cells[0].length - 1
+        ? cells[0].length - 1
         : maxXIndex;
-    // console.log(minXIndex, maxXIndex, minYIndex, maxYIndex);
+    return [minXIndex, maxXIndex, minYIndex, maxYIndex];
+  }
+  drawCells(
+    cells: Excel.Cell.CellInstance[][],
+    fixedInX: boolean,
+    fixedInY: boolean
+  ) {
+    this.clearCell(fixedInX, fixedInY);
+    const scrollX = fixedInX ? 0 : this.scroll.x;
+    const scrollY = fixedInY ? 0 : this.scroll.y;
+    const [minXIndex, maxXIndex, minYIndex, maxYIndex] = this.getRangeInView(
+      cells,
+      scrollX,
+      scrollY
+    );
     for (let i = minYIndex; i <= maxYIndex; i++) {
       for (let j = minXIndex; j <= maxXIndex; j++) {
-        const cell = this.cells[i][j];
+        const cell = cells[i][j];
         const {
           position: { leftTop, rightTop, rightBottom, leftBottom },
         } = cell;
         if (
-          leftTop.x - this.scroll.x > this.width ||
-          leftBottom.y - this.scroll.y > this.height
+          leftTop.x - scrollX > this.width ||
+          leftBottom.y - scrollY > this.height
         ) {
           break;
         }
-        if (
-          rightTop.x - this.scroll.x < 0 ||
-          rightBottom.y - this.scroll.y < 0
-        ) {
+        if (rightTop.x - scrollX < 0 || rightBottom.y - scrollY < 0) {
           continue;
         }
         this.ctx!.fillStyle = "#000";
@@ -230,41 +301,41 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
         this.ctx!.textAlign = "center";
         if (i === 0) {
           this.ctx!.strokeRect(
-            cell.x! - this.scroll.x,
-            cell.y! - this.scroll.y,
+            cell.x! - scrollX,
+            cell.y! - scrollY,
             cell.width!,
             cell.height!
           );
           if (j > 0) {
             this.ctx!.fillText(
               cell.cellName,
-              cell.x! + cell.width! / 2 - this.scroll.x,
-              cell.y! + cell.height! / 2 - this.scroll.y
+              cell.x! + cell.width! / 2 - scrollX,
+              cell.y! + cell.height! / 2 - scrollY
             );
           }
         } else if (j === 0) {
           this.ctx!.strokeRect(
-            cell.x! - this.scroll.x,
-            cell.y! - this.scroll.y,
+            cell.x! - scrollX,
+            cell.y! - scrollY,
             cell.width!,
             cell.height!
           );
           this.ctx!.fillText(
             i.toString(),
-            cell.x! + cell.width! / 2 - this.scroll.x,
-            cell.y! + cell.height! / 2 - this.scroll.y
+            cell.x! + cell.width! / 2 - scrollX,
+            cell.y! + cell.height! / 2 - scrollY
           );
         } else {
           this.ctx!.save();
           this.ctx!.setLineDash([2, 4]);
           this.ctx!.fillText(
             i.toString() + "-" + j.toString(),
-            cell.x! + cell.width! / 2 - this.scroll.x,
-            cell.y! + cell.height! / 2 - this.scroll.y
+            cell.x! + cell.width! / 2 - scrollX,
+            cell.y! + cell.height! / 2 - scrollY
           );
           this.ctx!.strokeRect(
-            cell.x! - this.scroll.x,
-            cell.y! - this.scroll.y,
+            cell.x! - scrollX,
+            cell.y! - scrollY,
             cell.width!,
             cell.height!
           );
@@ -273,7 +344,6 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
       }
     }
   }
-
   drawScrollbar() {
     if (this.verticalScrollBar!.show) {
       this.verticalScrollBar!.render(this.ctx!);

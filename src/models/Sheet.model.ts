@@ -14,6 +14,11 @@ namespace Excel {
       _tools: Tools.ToolInstance[];
       cells: Cell.CellInstance[][];
       scroll: Excel.PositionPoint;
+      fixedRowIndex: number;
+      fixedColIndex: number;
+      fixedRowCells: Cell.CellInstance[][];
+      fixedColCells: Cell.CellInstance[][];
+      fixedCells: Cell.CellInstance[][];
       render: () => void;
     }
   }
