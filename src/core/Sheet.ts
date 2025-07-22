@@ -232,6 +232,7 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
     this.drawCells(this.fixedRowCells, false, true);
     this.drawCells(this.fixedColCells, true, false);
     this.drawCells(this.fixedCells, true, true);
+    this.drawFixedShadow();
     this.drawScrollbar();
   }
   getRangeInView(
@@ -372,6 +373,56 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
       this.horizontalScrollBar!.track.height
     );
     this.ctx!.restore();
+  }
+  drawFixedRowCellsShadow() {
+    const gradientOffset = 6;
+    const startColor = "rgba(0, 0, 0, 0.12)";
+    const stopColor = "transparent";
+    const gradient = this.ctx!.createLinearGradient(
+      this.width / 2,
+      this.fixedRowHeight,
+      this.width / 2,
+      this.fixedRowHeight + gradientOffset
+    );
+    gradient.addColorStop(0, startColor);
+    gradient.addColorStop(1, stopColor);
+    this.ctx!.save();
+    this.ctx!.fillStyle = gradient;
+    this.ctx!.fillRect(0, this.fixedRowHeight, this.width, gradientOffset);
+    this.ctx!.restore();
+  }
+  drawFixedColCellsShadow() {
+    const gradientOffset = 6;
+    const startColor = "rgba(0, 0, 0, 0.12)";
+    const stopColor = "transparent";
+    const gradient = this.ctx!.createLinearGradient(
+      this.fixedColWidth,
+      this.height / 2,
+      this.fixedColWidth + gradientOffset,
+      this.height / 2
+    );
+    gradient.addColorStop(0, startColor);
+    gradient.addColorStop(1, stopColor);
+    this.ctx!.save();
+    this.ctx!.fillStyle = gradient;
+    this.ctx!.fillRect(this.fixedColWidth, 0, gradientOffset, this.height);
+    this.ctx!.restore();
+  }
+  drawFixedShadow() {
+    if (
+      this.fixedRowCells.length > 0 &&
+      this.verticalScrollBar!.show &&
+      this.verticalScrollBar!.percent > 0
+    ) {
+      this.drawFixedRowCellsShadow();
+    }
+    if (
+      this.fixedColCells.length > 0 &&
+      this.horizontalScrollBar!.show &&
+      this.horizontalScrollBar!.percent > 0
+    ) {
+      this.drawFixedColCellsShadow();
+    }
   }
 }
 
