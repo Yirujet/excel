@@ -30,6 +30,9 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
   static DEFAULT_CELL_ROW_COUNT = 50;
   static DEFAULT_CELL_COL_COUNT = 50;
   static DEVIATION_COMPARE_VALUE = 10e-6;
+  static DEFAULT_GRADIENT_OFFSET = 6;
+  static DEFAULT_GRADIENT_START_COLOR = "rgba(0, 0, 0, 0.12)";
+  static DEFAULT_GRADIENT_STOP_COLOR = "transparent";
   private ctx: CanvasRenderingContext2D | null = null;
   name = "";
   cells: Excel.Cell.CellInstance[][] = [];
@@ -44,8 +47,8 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
   globalEventsObserver: EventObserver = new EventObserver();
   realWidth = 0;
   realHeight = 0;
-  fixedRowIndex = 2;
-  fixedColIndex = 3;
+  fixedRowIndex = 1;
+  fixedColIndex = 1;
   fixedRowCells: Excel.Cell.CellInstance[][] = [];
   fixedColCells: Excel.Cell.CellInstance[][] = [];
   fixedCells: Excel.Cell.CellInstance[][] = [];
@@ -100,6 +103,8 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
         let row: Excel.Cell.CellInstance[] = [];
         y = i * Sheet.DEFAULT_CELL_HEIGHT;
         x = 0;
+        let fixedColRows: Excel.Cell.CellInstance[] = [];
+        let fixedRows: Excel.Cell.CellInstance[] = [];
         for (let j = 0; j < Sheet.DEFAULT_CELL_COL_COUNT + 1; j++) {
           x =
             j === 0
@@ -133,32 +138,30 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
               y: y + cell.height,
             },
           };
+          if (j < this.fixedColIndex) {
+            fixedColRows.push(cell);
+            if (i < this.fixedRowIndex) {
+              fixedRows.push(cell);
+            }
+            if (i === 0) {
+              this.fixedColWidth += cell.width!;
+            }
+          }
           row.push(cell);
+        }
+        this.fixedColCells.push(fixedColRows);
+        if (i < this.fixedRowIndex) {
+          this.fixedCells.push(fixedRows);
+          this.fixedRowCells.push(row);
+          this.fixedRowHeight += row[0].height!;
         }
         this.cells.push(row);
       }
     }
-    this.initFixedCells();
     if (this.cells.length > 0) {
       this.realWidth = this.cells[0].reduce((p, c) => p + c.width!, 0);
       this.realHeight = this.cells.reduce((p, c) => p + c[0].height!, 0);
     }
-  }
-
-  initFixedCells() {
-    this.fixedRowCells = this.cells.slice(0, this.fixedRowIndex);
-    this.fixedColCells = this.cells.map((e) => e.slice(0, this.fixedColIndex));
-    this.fixedCells = this.cells
-      .slice(0, this.fixedRowIndex)
-      .map((e) => e.slice(0, this.fixedColIndex));
-    this.fixedRowHeight = this.fixedRowCells.reduce(
-      (p, c) => p + c[0].height!,
-      0
-    );
-    this.fixedColWidth = this.fixedColCells[0].reduce(
-      (p, c) => p + c.width!,
-      0
-    );
   }
 
   initScrollbar() {
@@ -192,7 +195,7 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
     this.ctx!.clearRect(0, 0, this.width, this.height);
   }
 
-  clearCell(fixedInX: boolean, fixedInY: boolean) {
+  clearCells(fixedInX: boolean, fixedInY: boolean) {
     let w = this.width;
     let h = this.height;
     if (fixedInX) {
@@ -228,10 +231,16 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
   }
 
   draw() {
-    this.drawCells(this.cells, false, false);
-    this.drawCells(this.fixedRowCells, false, true);
-    this.drawCells(this.fixedColCells, true, false);
-    this.drawCells(this.fixedCells, true, true);
+    this.drawCells(
+      this.cells,
+      false,
+      false,
+      this.fixedColIndex,
+      this.fixedRowIndex
+    );
+    this.drawCells(this.fixedRowCells, false, true, this.fixedColIndex, null);
+    this.drawCells(this.fixedColCells, true, false, null, this.fixedRowIndex);
+    this.drawCells(this.fixedCells, true, true, null, null);
     this.drawFixedShadow();
     this.drawScrollbar();
   }
@@ -271,9 +280,11 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
   drawCells(
     cells: Excel.Cell.CellInstance[][],
     fixedInX: boolean,
-    fixedInY: boolean
+    fixedInY: boolean,
+    ignoreXIndex: number | null,
+    ignoreYIndex: number | null
   ) {
-    this.clearCell(fixedInX, fixedInY);
+    this.clearCells(fixedInX, fixedInY);
     const scrollX = fixedInX ? 0 : this.scroll.x;
     const scrollY = fixedInY ? 0 : this.scroll.y;
     const [minXIndex, maxXIndex, minYIndex, maxYIndex] = this.getRangeInView(
@@ -282,7 +293,9 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
       scrollY
     );
     for (let i = minYIndex; i <= maxYIndex; i++) {
+      if (ignoreYIndex !== null && i < ignoreYIndex) continue;
       for (let j = minXIndex; j <= maxXIndex; j++) {
+        if (ignoreXIndex !== null && j < ignoreXIndex) continue;
         const cell = cells[i][j];
         const {
           position: { leftTop, rightTop, rightBottom, leftBottom },
@@ -375,37 +388,41 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
     this.ctx!.restore();
   }
   drawFixedRowCellsShadow() {
-    const gradientOffset = 6;
-    const startColor = "rgba(0, 0, 0, 0.12)";
-    const stopColor = "transparent";
     const gradient = this.ctx!.createLinearGradient(
       this.width / 2,
       this.fixedRowHeight,
       this.width / 2,
-      this.fixedRowHeight + gradientOffset
+      this.fixedRowHeight + Sheet.DEFAULT_GRADIENT_OFFSET
     );
-    gradient.addColorStop(0, startColor);
-    gradient.addColorStop(1, stopColor);
+    gradient.addColorStop(0, Sheet.DEFAULT_GRADIENT_START_COLOR);
+    gradient.addColorStop(1, Sheet.DEFAULT_GRADIENT_STOP_COLOR);
     this.ctx!.save();
     this.ctx!.fillStyle = gradient;
-    this.ctx!.fillRect(0, this.fixedRowHeight, this.width, gradientOffset);
+    this.ctx!.fillRect(
+      0,
+      this.fixedRowHeight,
+      this.width,
+      Sheet.DEFAULT_GRADIENT_OFFSET
+    );
     this.ctx!.restore();
   }
   drawFixedColCellsShadow() {
-    const gradientOffset = 6;
-    const startColor = "rgba(0, 0, 0, 0.12)";
-    const stopColor = "transparent";
     const gradient = this.ctx!.createLinearGradient(
       this.fixedColWidth,
       this.height / 2,
-      this.fixedColWidth + gradientOffset,
+      this.fixedColWidth + Sheet.DEFAULT_GRADIENT_OFFSET,
       this.height / 2
     );
-    gradient.addColorStop(0, startColor);
-    gradient.addColorStop(1, stopColor);
+    gradient.addColorStop(0, Sheet.DEFAULT_GRADIENT_START_COLOR);
+    gradient.addColorStop(1, Sheet.DEFAULT_GRADIENT_STOP_COLOR);
     this.ctx!.save();
     this.ctx!.fillStyle = gradient;
-    this.ctx!.fillRect(this.fixedColWidth, 0, gradientOffset, this.height);
+    this.ctx!.fillRect(
+      this.fixedColWidth,
+      0,
+      Sheet.DEFAULT_GRADIENT_OFFSET,
+      this.height
+    );
     this.ctx!.restore();
   }
   drawFixedShadow() {
