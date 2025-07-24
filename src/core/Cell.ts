@@ -32,19 +32,55 @@ class Cell implements Excel.Cell.CellInstance {
     italic: false,
     underline: false,
     backgroundColor: "",
-    color: "",
-    align: "",
+    color: "#000",
+    align: "left",
   };
   borderStyle = {
     solid: false,
-    color: "",
+    color: "#ccc",
     bold: false,
   };
   meta = null;
   value = "";
   fn = null;
+  fixed = false;
 
-  render() {}
+  render(ctx: CanvasRenderingContext2D, scrollX: number, scrollY: number) {
+    if (this.fixed) {
+      ctx.save();
+      ctx.strokeStyle = "#ccc";
+      ctx.strokeRect(
+        this.x! - scrollX,
+        this.y! - scrollY,
+        this.width!,
+        this.height!
+      );
+      ctx.restore();
+    } else {
+      ctx.save();
+      ctx.setLineDash([2, 4]);
+      ctx.strokeStyle = "#ccc";
+      ctx.textBaseline = "middle";
+      ctx.textAlign = "center";
+      ctx.strokeRect(
+        this.x! - scrollX,
+        this.y! - scrollY,
+        this.width!,
+        this.height!
+      );
+      ctx.restore();
+    }
+    ctx.save();
+    ctx.fillStyle = "#000";
+    ctx.textBaseline = "middle";
+    ctx.textAlign = "center";
+    ctx.fillText(
+      this.value,
+      this.x! + this.width! / 2 - scrollX,
+      this.y! + this.height! / 2 - scrollY
+    );
+    ctx.restore();
+  }
 }
 
 export default Cell;

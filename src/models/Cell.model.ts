@@ -37,6 +37,12 @@ namespace Excel {
       meta: any | null;
       value: string;
       fn: string | null;
+      fixed?: boolean;
+      render(
+        ctx: CanvasRenderingContext2D,
+        scrollX: number,
+        scrollY: number
+      ): void;
     }
   }
 }

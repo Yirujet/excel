@@ -138,7 +138,20 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
               y: y + cell.height,
             },
           };
+          if (i === 0) {
+            cell.value = cell.cellName;
+          }
+          if (j === 0) {
+            cell.value = i.toString();
+          }
+          if (i > 0 && j > 0) {
+            cell.value = i.toString() + "-" + j.toString();
+          }
+          if (i < this.fixedRowIndex) {
+            cell.fixed = true;
+          }
           if (j < this.fixedColIndex) {
+            cell.fixed = true;
             fixedColRows.push(cell);
             if (i < this.fixedRowIndex) {
               fixedRows.push(cell);
@@ -309,52 +322,7 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
         if (rightTop.x - scrollX < 0 || rightBottom.y - scrollY < 0) {
           continue;
         }
-        this.ctx!.fillStyle = "#000";
-        this.ctx!.strokeStyle = "#ccc";
-        this.ctx!.textBaseline = "middle";
-        this.ctx!.textAlign = "center";
-        if (i === 0) {
-          this.ctx!.strokeRect(
-            cell.x! - scrollX,
-            cell.y! - scrollY,
-            cell.width!,
-            cell.height!
-          );
-          if (j > 0) {
-            this.ctx!.fillText(
-              cell.cellName,
-              cell.x! + cell.width! / 2 - scrollX,
-              cell.y! + cell.height! / 2 - scrollY
-            );
-          }
-        } else if (j === 0) {
-          this.ctx!.strokeRect(
-            cell.x! - scrollX,
-            cell.y! - scrollY,
-            cell.width!,
-            cell.height!
-          );
-          this.ctx!.fillText(
-            i.toString(),
-            cell.x! + cell.width! / 2 - scrollX,
-            cell.y! + cell.height! / 2 - scrollY
-          );
-        } else {
-          this.ctx!.save();
-          this.ctx!.setLineDash([2, 4]);
-          this.ctx!.fillText(
-            i.toString() + "-" + j.toString(),
-            cell.x! + cell.width! / 2 - scrollX,
-            cell.y! + cell.height! / 2 - scrollY
-          );
-          this.ctx!.strokeRect(
-            cell.x! - scrollX,
-            cell.y! - scrollY,
-            cell.width!,
-            cell.height!
-          );
-          this.ctx!.restore();
-        }
+        cell.render(this.ctx!, scrollX, scrollY);
       }
     }
   }
