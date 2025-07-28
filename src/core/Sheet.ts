@@ -27,8 +27,9 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
   static DEFAULT_CELL_HEIGHT = 25;
   static DEFAULT_INDEX_CELL_WIDTH = 50;
   static DEFAULT_CELL_FONT_FAMILY = "宋体";
-  static DEFAULT_CELL_ROW_COUNT = 50;
-  static DEFAULT_CELL_COL_COUNT = 50;
+  static DEFAULT_CELL_ROW_COUNT = 30;
+  static DEFAULT_CELL_COL_COUNT = 30;
+  static DEFAULT_CELL_LINE_DASH = [2, 4];
   static DEVIATION_COMPARE_VALUE = 10e-6;
   static DEFAULT_GRADIENT_OFFSET = 6;
   static DEFAULT_GRADIENT_START_COLOR = "rgba(0, 0, 0, 0.12)";
@@ -144,6 +145,9 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
           if (j === 0) {
             cell.value = i.toString();
           }
+          if (i === 0 && j === 0) {
+            cell.hidden = true;
+          }
           if (i > 0 && j > 0) {
             cell.value = i.toString() + "-" + j.toString();
           }
@@ -159,6 +163,22 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
             if (i === 0) {
               this.fixedColWidth += cell.width!;
             }
+          }
+          if (i < this.fixedRowIndex || j < this.fixedColIndex) {
+            cell.borderStyle = {
+              solid: true,
+              color: "#ccc",
+              bold: false,
+            };
+            cell.textStyle.fontSize = 13;
+            cell.textStyle.align = "center";
+          } else {
+            cell.borderStyle = {
+              solid: false,
+              color: "#ccc",
+              bold: false,
+            };
+            cell.textStyle.align = "center";
           }
           row.push(cell);
         }
@@ -257,6 +277,7 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
     this.drawFixedShadow();
     this.drawScrollbar();
   }
+
   getRangeInView(
     cells: Excel.Cell.CellInstance[][],
     scrollX: number,
@@ -290,6 +311,7 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
         : maxXIndex;
     return [minXIndex, maxXIndex, minYIndex, maxYIndex];
   }
+
   drawCells(
     cells: Excel.Cell.CellInstance[][],
     fixedInX: boolean,
@@ -326,6 +348,7 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
       }
     }
   }
+
   drawScrollbar() {
     if (this.verticalScrollBar!.show) {
       this.verticalScrollBar!.render(this.ctx!);
@@ -337,6 +360,7 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
       this.drawScrollbarCoincide();
     }
   }
+
   drawScrollbarCoincide() {
     this.ctx!.save();
     this.ctx!.strokeStyle = this.verticalScrollBar!.track.borderColor;
@@ -355,6 +379,7 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
     );
     this.ctx!.restore();
   }
+
   drawFixedRowCellsShadow() {
     const gradient = this.ctx!.createLinearGradient(
       this.width / 2,
@@ -367,13 +392,14 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
     this.ctx!.save();
     this.ctx!.fillStyle = gradient;
     this.ctx!.fillRect(
-      0,
+      this.fixedColWidth,
       this.fixedRowHeight,
       this.width,
       Sheet.DEFAULT_GRADIENT_OFFSET
     );
     this.ctx!.restore();
   }
+
   drawFixedColCellsShadow() {
     const gradient = this.ctx!.createLinearGradient(
       this.fixedColWidth,
@@ -387,12 +413,13 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
     this.ctx!.fillStyle = gradient;
     this.ctx!.fillRect(
       this.fixedColWidth,
-      0,
+      this.fixedRowHeight,
       Sheet.DEFAULT_GRADIENT_OFFSET,
       this.height
     );
     this.ctx!.restore();
   }
+
   drawFixedShadow() {
     if (
       this.fixedRowCells.length > 0 &&

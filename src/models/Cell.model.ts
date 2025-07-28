@@ -38,6 +38,7 @@ namespace Excel {
       value: string;
       fn: string | null;
       fixed?: boolean;
+      hidden?: boolean;
       render(
         ctx: CanvasRenderingContext2D,
         scrollX: number,
