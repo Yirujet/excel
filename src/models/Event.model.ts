@@ -53,7 +53,10 @@ namespace Excel {
       destroy?: Excel.Event.FnType;
     };
 
-    export type ObserverTypes = Excel.Scrollbar.ScrollbarInstance &
+    export type ObserverTypes = (
+      | Excel.Scrollbar.ScrollbarInstance
+      | Excel.Cell.CellInstance
+    ) &
       EventInstance;
 
     export type ObserverInstance = {

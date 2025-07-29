@@ -1,14 +1,16 @@
+import getTextMetrics from "../utils/getTextMetrics";
 import Sheet from "./Sheet";
+import Element from "../components/Element";
+import EventObserver from "../utils/EventObserver";
+import debounce from "../utils/debounce";
 
-class Cell implements Excel.Cell.CellInstance {
+class Cell extends Element implements Excel.Cell.CellInstance {
   width: number | null = null;
   height: number | null = null;
   rowIndex: number | null = null;
   colIndex: number | null = null;
   selected = false;
   cellName: string = "";
-  x: number | null = null;
-  y: number | null = null;
   position: Excel.Position = {
     leftTop: {
       x: 0,
@@ -47,6 +49,77 @@ class Cell implements Excel.Cell.CellInstance {
   fn = null;
   fixed = false;
   hidden = false;
+  scrollX = 0;
+  scrollY = 0;
+  eventObserver: EventObserver;
+
+  constructor(eventObserver: EventObserver) {
+    super("");
+    this.eventObserver = eventObserver;
+    this.init();
+  }
+
+  init() {
+    this.initEvents();
+  }
+
+  initEvents() {
+    const onMouseMove = debounce((e: MouseEvent) => {
+      if (this.fixed) return;
+      this.checkHit(e);
+      if (!this.mouseEntered) return;
+      // console.log(e, this.value);
+    }, 50);
+
+    const defaultEventListeners = {
+      mousemove: onMouseMove,
+    };
+    this.registerListenerFromOnProp(
+      defaultEventListeners,
+      this.eventObserver,
+      this
+    );
+  }
+
+  updatePosition() {
+    this.position = {
+      leftTop: {
+        x: this.x!,
+        y: this.y!,
+      },
+      rightTop: {
+        x: this.x! + this.width!,
+        y: this.y!,
+      },
+      rightBottom: {
+        x: this.x! + this.width!,
+        y: this.y! + this.height!,
+      },
+      leftBottom: {
+        x: this.x!,
+        y: this.y! + this.height!,
+      },
+    };
+  }
+
+  checkHit(e: MouseEvent) {
+    const { offsetX, offsetY } = e;
+    if (
+      !(
+        offsetX < this.position!.leftTop.x - Sheet.SCROLL_X ||
+        offsetX > this.position!.rightTop.x - Sheet.SCROLL_X ||
+        offsetY < this.position!.leftTop.y - Sheet.SCROLL_Y ||
+        offsetY > this.position!.leftBottom.y - Sheet.SCROLL_Y
+      )
+    ) {
+      console.log(this.value, Sheet.SCROLL_X, Sheet.SCROLL_X);
+      this.mouseEntered = true;
+      this.cursor = "pointer";
+    } else {
+      this.mouseEntered = false;
+      this.cursor = "default";
+    }
+  }
 
   setBorderStyle(ctx: CanvasRenderingContext2D) {
     if (!this.borderStyle.solid) {
@@ -71,68 +144,112 @@ class Cell implements Excel.Cell.CellInstance {
     ctx.fillStyle = this.textStyle.color;
   }
 
-  getTextAlignOffsetX() {
+  getTextAlignOffsetX(baseWidth: number) {
     if (this.textStyle.align === "left") {
       return 0;
     }
     if (this.textStyle.align === "center") {
-      return this.width! / 2;
+      return baseWidth / 2;
     }
-    return this.width!;
+    return baseWidth;
   }
 
   render(ctx: CanvasRenderingContext2D, scrollX: number, scrollY: number) {
+    this.scrollX = scrollX;
+    this.scrollY = scrollY;
     if (this.fixed) {
-      ctx.save();
-      this.setBorderStyle(ctx);
-      ctx.strokeRect(
-        this.x! - scrollX,
-        this.y! - scrollY,
-        this.width!,
-        this.height!
-      );
-      ctx.restore();
+      this.drawFixedCell(ctx);
     } else {
-      ctx.save();
-      this.setBorderStyle(ctx);
-      ctx.beginPath();
-      ctx.moveTo(
-        this.position.rightTop.x - scrollX,
-        this.position.rightTop.y - scrollY
-      );
-      ctx.lineTo(
-        this.position.rightBottom.x - scrollX,
-        this.position.rightBottom.y - scrollY
-      );
-      ctx.closePath();
-      ctx.stroke();
-      ctx.restore();
-      ctx.save();
-      this.setBorderStyle(ctx);
-      ctx.beginPath();
-      ctx.moveTo(
-        this.position.leftBottom.x - scrollX,
-        this.position.leftBottom.y - scrollY
-      );
-      ctx.lineTo(
-        this.position.rightBottom.x - scrollX,
-        this.position.rightBottom.y - scrollY
-      );
-      ctx.closePath();
-      ctx.stroke();
-      ctx.restore();
+      this.drawDataCell(ctx);
     }
     if (!this.hidden) {
-      ctx.save();
-      this.setTextStyle(ctx);
-      const textAlignOffsetX = this.getTextAlignOffsetX();
-      ctx.fillText(
-        this.value,
-        this.x! + textAlignOffsetX - scrollX,
-        this.y! + this.height! / 2 - scrollY
-      );
-      ctx.restore();
+      const textAlignOffsetX = this.getTextAlignOffsetX(this.width!);
+      this.drawDataCellText(ctx, textAlignOffsetX);
+      if (this.textStyle.underline) {
+        this.drawDataCellUnderline(ctx, textAlignOffsetX);
+      }
     }
+  }
+
+  drawFixedCell(ctx: CanvasRenderingContext2D) {
+    ctx.save();
+    this.setBorderStyle(ctx);
+    ctx.strokeRect(
+      this.x! - this.scrollX,
+      this.y! - this.scrollY,
+      this.width!,
+      this.height!
+    );
+    ctx.restore();
+  }
+
+  drawDataCell(ctx: CanvasRenderingContext2D) {
+    ctx.save();
+    this.setBorderStyle(ctx);
+    ctx.beginPath();
+    ctx.moveTo(
+      this.position.rightTop.x - this.scrollX,
+      this.position.rightTop.y - this.scrollY
+    );
+    ctx.lineTo(
+      this.position.rightBottom.x - this.scrollX,
+      this.position.rightBottom.y - this.scrollY
+    );
+    ctx.closePath();
+    ctx.stroke();
+    ctx.restore();
+    ctx.save();
+    this.setBorderStyle(ctx);
+    ctx.beginPath();
+    ctx.moveTo(
+      this.position.leftBottom.x - this.scrollX,
+      this.position.leftBottom.y - this.scrollY
+    );
+    ctx.lineTo(
+      this.position.rightBottom.x - this.scrollX,
+      this.position.rightBottom.y - this.scrollY
+    );
+    ctx.closePath();
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  drawDataCellText(ctx: CanvasRenderingContext2D, textAlignOffsetX: number) {
+    ctx.save();
+    this.setTextStyle(ctx);
+    ctx.fillText(
+      this.value,
+      this.x! + textAlignOffsetX - this.scrollX,
+      this.y! + this.height! / 2 - this.scrollY
+    );
+    ctx.restore();
+  }
+
+  drawDataCellUnderline(
+    ctx: CanvasRenderingContext2D,
+    textAlignOffsetX: number
+  ) {
+    const { width: wordWidth, height: wordHeight } = getTextMetrics(
+      this.value,
+      this.textStyle.fontSize
+    );
+    const underlineOffset = this.getTextAlignOffsetX(wordWidth);
+    ctx.save();
+    ctx.translate(0, 0.5);
+    ctx.lineWidth = 0.5;
+    ctx.strokeStyle = this.textStyle.color;
+    ctx.beginPath();
+    ctx.moveTo(
+      this.x! + textAlignOffsetX - this.scrollX - underlineOffset,
+      this.y! + this.height! / 2 - this.scrollY + wordHeight / 2
+    );
+    ctx.lineTo(
+      this.x! + textAlignOffsetX - this.scrollX - underlineOffset + wordWidth,
+      this.y! + this.height! / 2 - this.scrollY + wordHeight / 2
+    );
+    ctx.closePath();
+    ctx.stroke();
+    ctx.restore();
   }
 }
 

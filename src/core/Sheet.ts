@@ -27,13 +27,16 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
   static DEFAULT_CELL_HEIGHT = 25;
   static DEFAULT_INDEX_CELL_WIDTH = 50;
   static DEFAULT_CELL_FONT_FAMILY = "宋体";
-  static DEFAULT_CELL_ROW_COUNT = 30;
-  static DEFAULT_CELL_COL_COUNT = 30;
+  static DEFAULT_CELL_ROW_COUNT = 50;
+  static DEFAULT_CELL_COL_COUNT = 50;
   static DEFAULT_CELL_LINE_DASH = [2, 4];
   static DEVIATION_COMPARE_VALUE = 10e-6;
   static DEFAULT_GRADIENT_OFFSET = 6;
   static DEFAULT_GRADIENT_START_COLOR = "rgba(0, 0, 0, 0.12)";
   static DEFAULT_GRADIENT_STOP_COLOR = "transparent";
+  static SCROLL_X = 0;
+  static SCROLL_Y = 0;
+  static SCROLLING = false;
   private ctx: CanvasRenderingContext2D | null = null;
   name = "";
   cells: Excel.Cell.CellInstance[][] = [];
@@ -112,7 +115,7 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
               ? 0
               : (j - 1) * Sheet.DEFAULT_CELL_WIDTH +
                 Sheet.DEFAULT_INDEX_CELL_WIDTH;
-          const cell = new Cell();
+          const cell = new Cell(this.sheetEventsObserver);
           cell.x = x;
           cell.y = y;
           cell.width =
@@ -121,24 +124,7 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
           cell.rowIndex = i;
           cell.colIndex = j;
           cell.cellName = $10226(j - 1);
-          cell.position = {
-            leftTop: {
-              x,
-              y,
-            },
-            rightTop: {
-              x: x + cell.width,
-              y,
-            },
-            rightBottom: {
-              x: x + cell.width,
-              y: y + cell.height,
-            },
-            leftBottom: {
-              x,
-              y: y + cell.height,
-            },
-          };
+          cell.updatePosition();
           if (i === 0) {
             cell.value = cell.cellName;
           }
@@ -151,11 +137,7 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
           if (i > 0 && j > 0) {
             cell.value = i.toString() + "-" + j.toString();
           }
-          if (i < this.fixedRowIndex) {
-            cell.fixed = true;
-          }
           if (j < this.fixedColIndex) {
-            cell.fixed = true;
             fixedColRows.push(cell);
             if (i < this.fixedRowIndex) {
               fixedRows.push(cell);
@@ -165,6 +147,7 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
             }
           }
           if (i < this.fixedRowIndex || j < this.fixedColIndex) {
+            cell.fixed = true;
             cell.borderStyle = {
               solid: true,
               color: "#ccc",
@@ -198,14 +181,22 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
   }
 
   initScrollbar() {
+    const bodyHeight = this.height - Sheet.DEFAULT_CELL_HEIGHT;
+    const verticalScrollbarShow = bodyHeight < this.realHeight;
+    const horizontalScrollbarShow =
+      this.realWidth > this.width - Sheet.DEFAULT_INDEX_CELL_WIDTH;
     const layout = {
       x: this.x,
       y: this.y,
-      width: this.width - VerticalScrollbar.TRACK_WIDTH,
-      height: this.height - HorizontalScrollbar.TRACK_HEIGHT,
+      width:
+        this.width -
+        (verticalScrollbarShow ? VerticalScrollbar.TRACK_WIDTH : 0),
+      height:
+        this.height -
+        (horizontalScrollbarShow ? HorizontalScrollbar.TRACK_HEIGHT : 0),
       headerHeight: Sheet.DEFAULT_CELL_HEIGHT,
       fixedLeftWidth: Sheet.DEFAULT_INDEX_CELL_WIDTH,
-      bodyHeight: this.height - Sheet.DEFAULT_CELL_HEIGHT,
+      bodyHeight,
       bodyRealWidth: this.realWidth,
       bodyRealHeight: this.realHeight,
       deviationCompareValue: Sheet.DEVIATION_COMPARE_VALUE,
@@ -247,6 +238,7 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
         (this.realWidth -
           this.width +
           (this.verticalScrollBar?.show ? VerticalScrollbar.TRACK_WIDTH : 0));
+      Sheet.SCROLL_X = this.scroll.x;
     } else {
       this.scroll.y =
         Math.abs(percent) *
@@ -255,6 +247,7 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
           (this.horizontalScrollBar?.show
             ? HorizontalScrollbar.TRACK_HEIGHT
             : 0));
+      Sheet.SCROLL_Y = this.scroll.y;
     }
   }
 

@@ -39,6 +39,10 @@ namespace Excel {
       fn: string | null;
       fixed?: boolean;
       hidden?: boolean;
+      mouseEntered?: boolean;
+      cursor?: string;
+      scrollX: number;
+      scrollY: number;
       render(
         ctx: CanvasRenderingContext2D,
         scrollX: number,

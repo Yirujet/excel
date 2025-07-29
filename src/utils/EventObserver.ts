@@ -95,7 +95,7 @@ export default class EventObserver implements Excel.Event.ObserverInstance {
                   dispatchEvent as Excel.Event.Type
                 ].find((element) => element.mouseEntered);
                 if (curActiveElement && target.style) {
-                  target.style.cursor = curActiveElement?.cursor;
+                  target.style.cursor = curActiveElement?.cursor || "default";
                 } else {
                   if (target.style) {
                     target.style.cursor = "default";
