@@ -1,7 +1,6 @@
 import getTextMetrics from "../utils/getTextMetrics";
 import Sheet from "./Sheet";
 import Element from "../components/Element";
-import EventObserver from "../utils/EventObserver";
 import debounce from "../utils/debounce";
 
 class Cell extends Element implements Excel.Cell.CellInstance {
@@ -51,25 +50,22 @@ class Cell extends Element implements Excel.Cell.CellInstance {
   hidden = false;
   scrollX = 0;
   scrollY = 0;
-  eventObserver: EventObserver;
+  eventObserver: Excel.Event.ObserverInstance;
 
-  constructor(eventObserver: EventObserver) {
-    super("");
+  constructor(eventObserver: Excel.Event.ObserverInstance) {
+    super("", true);
     this.eventObserver = eventObserver;
     this.init();
   }
 
-  init() {
-    this.initEvents();
-  }
+  init() {}
 
   initEvents() {
     const onMouseMove = debounce((e: MouseEvent) => {
-      if (this.fixed) return;
       this.checkHit(e);
+      if (this.fixed) return;
       if (!this.mouseEntered) return;
-      // console.log(e, this.value);
-    }, 50);
+    }, 100);
 
     const defaultEventListeners = {
       mousemove: onMouseMove,
@@ -79,27 +75,6 @@ class Cell extends Element implements Excel.Cell.CellInstance {
       this.eventObserver,
       this
     );
-  }
-
-  updatePosition() {
-    this.position = {
-      leftTop: {
-        x: this.x!,
-        y: this.y!,
-      },
-      rightTop: {
-        x: this.x! + this.width!,
-        y: this.y!,
-      },
-      rightBottom: {
-        x: this.x! + this.width!,
-        y: this.y! + this.height!,
-      },
-      leftBottom: {
-        x: this.x!,
-        y: this.y! + this.height!,
-      },
-    };
   }
 
   checkHit(e: MouseEvent) {
@@ -112,12 +87,15 @@ class Cell extends Element implements Excel.Cell.CellInstance {
         offsetY > this.position!.leftBottom.y - Sheet.SCROLL_Y
       )
     ) {
-      console.log(this.value, Sheet.SCROLL_X, Sheet.SCROLL_X);
+      console.log(this.value);
       this.mouseEntered = true;
-      this.cursor = "pointer";
+      if (this.fixed) {
+        this.cursor = "s-resize";
+      } else {
+        this.cursor = "cell";
+      }
     } else {
       this.mouseEntered = false;
-      this.cursor = "default";
     }
   }
 
@@ -144,6 +122,27 @@ class Cell extends Element implements Excel.Cell.CellInstance {
     ctx.fillStyle = this.textStyle.color;
   }
 
+  updatePosition() {
+    this.position = {
+      leftTop: {
+        x: this.x!,
+        y: this.y!,
+      },
+      rightTop: {
+        x: this.x! + this.width!,
+        y: this.y!,
+      },
+      rightBottom: {
+        x: this.x! + this.width!,
+        y: this.y! + this.height!,
+      },
+      leftBottom: {
+        x: this.x!,
+        y: this.y! + this.height!,
+      },
+    };
+  }
+
   getTextAlignOffsetX(baseWidth: number) {
     if (this.textStyle.align === "left") {
       return 0;
@@ -154,7 +153,16 @@ class Cell extends Element implements Excel.Cell.CellInstance {
     return baseWidth;
   }
 
-  render(ctx: CanvasRenderingContext2D, scrollX: number, scrollY: number) {
+  render(
+    ctx: CanvasRenderingContext2D,
+    scrollX: number,
+    scrollY: number,
+    isEnd: boolean
+  ) {
+    if (isEnd) {
+      this.clearEvents!(this.eventObserver, this);
+      this.initEvents();
+    }
     this.scrollX = scrollX;
     this.scrollY = scrollY;
     if (this.fixed) {

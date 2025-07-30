@@ -1,5 +1,4 @@
 import Element from "../../components/Element";
-import EventObserver from "../../utils/EventObserver";
 import throttle from "../../utils/throttle";
 
 export default class Scrollbar
@@ -34,13 +33,13 @@ export default class Scrollbar
   layout: Excel.LayoutInfo | null = null;
   isHorizontalScrolling = false;
   callback: Excel.Event.FnType = () => {};
-  eventObserver: EventObserver;
-  globalEventsObserver: EventObserver;
+  eventObserver: Excel.Event.ObserverInstance;
+  globalEventsObserver: Excel.Event.ObserverInstance;
   type: Excel.Scrollbar.Type = "vertical";
   constructor(
     layout: Excel.LayoutInfo,
-    eventObserver: EventObserver,
-    globalEventsObserver: EventObserver,
+    eventObserver: Excel.Event.ObserverInstance,
+    globalEventsObserver: Excel.Event.ObserverInstance,
     callback: Excel.Event.FnType,
     type: Excel.Scrollbar.Type
   ) {
@@ -63,7 +62,8 @@ export default class Scrollbar
     ) {
       this.mouseEntered = true;
       this.cursor = "default";
-      this.dragging = true;
+    } else {
+      this.mouseEntered = false;
     }
   }
   scrollMove(

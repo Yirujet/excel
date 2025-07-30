@@ -22,7 +22,7 @@ namespace Excel {
       y: boolean;
     }
 
-    export interface CellInstance {
+    export interface CellInstance extends Excel.Event.EventInstance {
       width: number | null;
       height: number | null;
       rowIndex: number | null;
@@ -43,10 +43,12 @@ namespace Excel {
       cursor?: string;
       scrollX: number;
       scrollY: number;
+      events: Record<string, Array<Excel.Event.FnType>>;
       render(
         ctx: CanvasRenderingContext2D,
         scrollX: number,
-        scrollY: number
+        scrollY: number,
+        isEnd: boolean
       ): void;
     }
   }

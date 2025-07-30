@@ -85,7 +85,7 @@ export default class EventObserver implements Excel.Event.ObserverInstance {
             Object.entries(dispatchEvents).forEach(
               ([dispatchEvent, { triggerName }]) => {
                 this[dispatchEvent as Excel.Event.Type].forEach((element) => {
-                  element[triggerName as "triggerEvent"].call(
+                  element[triggerName as "triggerEvent"]?.call(
                     element,
                     dispatchEvent as Excel.Event.Type,
                     ...args
@@ -95,11 +95,7 @@ export default class EventObserver implements Excel.Event.ObserverInstance {
                   dispatchEvent as Excel.Event.Type
                 ].find((element) => element.mouseEntered);
                 if (curActiveElement && target.style) {
-                  target.style.cursor = curActiveElement?.cursor || "default";
-                } else {
-                  if (target.style) {
-                    target.style.cursor = "default";
-                  }
+                  document.body.style.cursor = curActiveElement?.cursor || "";
                 }
               }
             );
@@ -135,5 +131,31 @@ export default class EventObserver implements Excel.Event.ObserverInstance {
     this.click = [];
     this.clickoutside = [];
     this.wheel = [];
+  }
+  clearEventsWhenReRender() {
+    Object.entries(GlobalEvents).forEach(
+      ([targetEvent, { dispatchEvents }]) => {
+        Object.entries(dispatchEvents).forEach(
+          ([dispatchEvent, { triggerName }]) => {
+            this[dispatchEvent as Excel.Event.Type].forEach((element) => {
+              if (element.clearEventsWhenReRender) {
+                let i = (
+                  this[
+                    dispatchEvent as Excel.Event.Type
+                  ] as Excel.Event.ObserverTypes[]
+                ).findIndex((e) => e === element);
+                if (!!~i) {
+                  (
+                    this[
+                      dispatchEvent as Excel.Event.Type
+                    ] as Excel.Event.ObserverTypes[]
+                  ).splice(i, 1);
+                }
+              }
+            });
+          }
+        );
+      }
+    );
   }
 }

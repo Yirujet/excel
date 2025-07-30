@@ -27,16 +27,15 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
   static DEFAULT_CELL_HEIGHT = 25;
   static DEFAULT_INDEX_CELL_WIDTH = 50;
   static DEFAULT_CELL_FONT_FAMILY = "宋体";
-  static DEFAULT_CELL_ROW_COUNT = 50;
-  static DEFAULT_CELL_COL_COUNT = 50;
-  static DEFAULT_CELL_LINE_DASH = [2, 4];
+  static DEFAULT_CELL_ROW_COUNT = 500;
+  static DEFAULT_CELL_COL_COUNT = 500;
+  static DEFAULT_CELL_LINE_DASH = [0, 2, 2];
   static DEVIATION_COMPARE_VALUE = 10e-6;
   static DEFAULT_GRADIENT_OFFSET = 6;
   static DEFAULT_GRADIENT_START_COLOR = "rgba(0, 0, 0, 0.12)";
   static DEFAULT_GRADIENT_STOP_COLOR = "transparent";
   static SCROLL_X = 0;
   static SCROLL_Y = 0;
-  static SCROLLING = false;
   private ctx: CanvasRenderingContext2D | null = null;
   name = "";
   cells: Excel.Cell.CellInstance[][] = [];
@@ -47,8 +46,8 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
   scroll: { x: number; y: number } = { x: 0, y: 0 };
   horizontalScrollBar: HorizontalScrollbar | null = null;
   verticalScrollBar: VerticalScrollbar | null = null;
-  sheetEventsObserver: EventObserver = new EventObserver();
-  globalEventsObserver: EventObserver = new EventObserver();
+  sheetEventsObserver: Excel.Event.ObserverInstance = new EventObserver();
+  globalEventsObserver: Excel.Event.ObserverInstance = new EventObserver();
   realWidth = 0;
   realHeight = 0;
   fixedRowIndex = 1;
@@ -91,7 +90,7 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
     this.initScrollbar();
     this.sheetEventsObserver.observe(this.$el as HTMLCanvasElement);
     this.globalEventsObserver.observe(window as any);
-    this.draw();
+    this.draw(true);
   }
 
   initCells(cells: Excel.Cell.CellInstance[][] | undefined) {
@@ -251,22 +250,13 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
     }
   }
 
-  redraw(percent: number, type: Excel.Scrollbar.Type) {
+  redraw(percent: number, type: Excel.Scrollbar.Type, isEnd: boolean) {
     this.updateScroll(percent, type);
-    this.draw();
+    this.draw(isEnd);
   }
 
-  draw() {
-    this.drawCells(
-      this.cells,
-      false,
-      false,
-      this.fixedColIndex,
-      this.fixedRowIndex
-    );
-    this.drawCells(this.fixedRowCells, false, true, this.fixedColIndex, null);
-    this.drawCells(this.fixedColCells, true, false, null, this.fixedRowIndex);
-    this.drawCells(this.fixedCells, true, true, null, null);
+  draw(isEnd: boolean = false) {
+    this.drawSheetCells(isEnd);
     this.drawFixedShadow();
     this.drawScrollbar();
   }
@@ -305,12 +295,42 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
     return [minXIndex, maxXIndex, minYIndex, maxYIndex];
   }
 
+  drawSheetCells(isEnd: boolean = false) {
+    this.sheetEventsObserver.clearEventsWhenReRender();
+    this.drawCells(
+      this.cells,
+      false,
+      false,
+      this.fixedColIndex,
+      this.fixedRowIndex,
+      isEnd
+    );
+    this.drawCells(
+      this.fixedRowCells,
+      false,
+      true,
+      this.fixedColIndex,
+      null,
+      isEnd
+    );
+    this.drawCells(
+      this.fixedColCells,
+      true,
+      false,
+      null,
+      this.fixedRowIndex,
+      isEnd
+    );
+    this.drawCells(this.fixedCells, true, true, null, null, isEnd);
+  }
+
   drawCells(
     cells: Excel.Cell.CellInstance[][],
     fixedInX: boolean,
     fixedInY: boolean,
     ignoreXIndex: number | null,
-    ignoreYIndex: number | null
+    ignoreYIndex: number | null,
+    isEnd: boolean
   ) {
     this.clearCells(fixedInX, fixedInY);
     const scrollX = fixedInX ? 0 : this.scroll.x;
@@ -337,7 +357,10 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
         if (rightTop.x - scrollX < 0 || rightBottom.y - scrollY < 0) {
           continue;
         }
-        cell.render(this.ctx!, scrollX, scrollY);
+        if (!isEnd) {
+          cell.clearEvents!(this.sheetEventsObserver, cell);
+        }
+        cell.render(this.ctx!, scrollX, scrollY, isEnd);
       }
     }
   }

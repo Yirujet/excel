@@ -1,4 +1,3 @@
-import EventObserver from "../../utils/EventObserver";
 import throttle from "../../utils/throttle";
 import Scrollbar from "./Scrollbar";
 
@@ -7,8 +6,8 @@ export default class HorizontalScrollbar extends Scrollbar {
   static THUMB_HEIGHT = 16;
   constructor(
     layout: Excel.LayoutInfo,
-    eventObserver: EventObserver,
-    globalEventsObserver: EventObserver,
+    eventObserver: Excel.Event.ObserverInstance,
+    globalEventsObserver: Excel.Event.ObserverInstance,
     callback: Excel.Event.FnType
   ) {
     super(layout, eventObserver, globalEventsObserver, callback, "horizontal");
@@ -43,6 +42,7 @@ export default class HorizontalScrollbar extends Scrollbar {
       this.updatePosition();
       const { x } = e;
       this.checkHit(e);
+      this.dragging = true;
       if (!this.mouseEntered) return;
       this.scrollMove(
         x - this.layout!.x,
@@ -53,7 +53,7 @@ export default class HorizontalScrollbar extends Scrollbar {
       const onEndScroll = () => {
         this.lastVal = null;
         this.dragging = false;
-        this.callback(this.percent, this.type);
+        this.callback(this.percent, this.type, true);
         window.removeEventListener("mousemove", this.moveEvent!);
         this.moveEvent = null;
         window.removeEventListener("mouseup", onEndScroll);
@@ -96,7 +96,7 @@ export default class HorizontalScrollbar extends Scrollbar {
           }
         }
         this.percent = this.value / (this.thumb.width - this.track.width);
-        this.callback(this.percent, this.type);
+        this.callback(this.percent, this.type, true);
       }
     }, 50);
     const onKeydown = (e: KeyboardEvent) => {
@@ -109,9 +109,14 @@ export default class HorizontalScrollbar extends Scrollbar {
         this.isHorizontalScrolling = false;
       }
     };
+    const onMouseMove = throttle((e: MouseEvent) => {
+      if (!this.show) return;
+      this.checkHit(e);
+    }, 50);
     const defaultEventListeners = {
       mousedown: onStartScroll,
       wheel: onWheel,
+      mousemove: onMouseMove,
     };
     const globalEventListeners = {
       keydown: onKeydown,

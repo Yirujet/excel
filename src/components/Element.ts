@@ -6,8 +6,8 @@ export default class Element extends ExcelEvent {
   y!: number;
   mouseEntered = false;
   cursor = "default";
-  constructor(tagName: string) {
-    super();
+  constructor(tagName: string, clearEventsWhenReRender = false) {
+    super(clearEventsWhenReRender);
     if (tagName) {
       this.$el = document.createElement(tagName);
     }

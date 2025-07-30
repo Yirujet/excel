@@ -47,10 +47,15 @@ namespace Excel {
     };
 
     export type EventInstance = {
-      addEvent(eventName: Type, callback: FnType): void;
-      removeEvent(eventName: Type, callback: FnType): void;
-      triggerEvent(eventName: Type, ...args: any[]): void;
+      addEvent?: (eventName: Type, callback: FnType) => void;
+      removeEvent?: (eventName: Type, callback: FnType) => void;
+      triggerEvent?: (eventName: Type, ...args: any[]) => void;
+      clearEvents?: (
+        eventObserver: Excel.Event.ObserverInstance,
+        obj: Excel.Event.ObserverTypes
+      ) => void;
       destroy?: Excel.Event.FnType;
+      clearEventsWhenReRender: boolean;
     };
 
     export type ObserverTypes = (
@@ -61,6 +66,11 @@ namespace Excel {
 
     export type ObserverInstance = {
       [key in Type]: ObserverTypes[];
+    } & {
+      observe: (target: HTMLCanvasElement) => void;
+      clear: (observers: ObserverTypes[]) => void;
+      clearAll: () => void;
+      clearEventsWhenReRender: Excel.Event.FnType;
     };
   }
 }

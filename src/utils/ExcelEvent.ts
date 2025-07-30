@@ -1,7 +1,9 @@
-import EventObserver from "./EventObserver";
-
 export default abstract class ExcelEvent implements Excel.Event.EventInstance {
   events: Record<string, Array<Excel.Event.FnType>> = {};
+  clearEventsWhenReRender: boolean;
+  constructor(clearEventsWhenReRender = false) {
+    this.clearEventsWhenReRender = clearEventsWhenReRender;
+  }
   addEvent(eventName: string, callback: Excel.Event.FnType) {
     if (!this.events[eventName]) {
       this.events[eventName] = [callback];
@@ -24,11 +26,18 @@ export default abstract class ExcelEvent implements Excel.Event.EventInstance {
       });
     }
   }
+  clearEvents(
+    eventObserver: Excel.Event.ObserverInstance,
+    obj: Excel.Event.ObserverTypes
+  ) {
+    this.events = {};
+    eventObserver.clear([obj]);
+  }
   registerListenerFromOnProp(
     onObj: {
       [k in Excel.Event.Type]?: Excel.Event.FnType;
     },
-    eventObserver: EventObserver,
+    eventObserver: Excel.Event.ObserverInstance,
     obj: Excel.Event.ObserverTypes
   ) {
     if (onObj) {
