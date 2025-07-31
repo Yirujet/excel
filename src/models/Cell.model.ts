@@ -40,7 +40,6 @@ namespace Excel {
       fixed?: boolean;
       hidden?: boolean;
       mouseEntered?: boolean;
-      cursor?: string;
       scrollX: number;
       scrollY: number;
       events: Record<string, Array<Excel.Event.FnType>>;

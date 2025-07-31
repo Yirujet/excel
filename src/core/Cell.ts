@@ -79,20 +79,22 @@ class Cell extends Element implements Excel.Cell.CellInstance {
 
   checkHit(e: MouseEvent) {
     const { offsetX, offsetY } = e;
+    const scrollX = this.fixed ? this.scrollX : Sheet.SCROLL_X;
+    const scrollY = this.fixed ? this.scrollY : Sheet.SCROLL_Y;
     if (
       !(
-        offsetX < this.position!.leftTop.x - Sheet.SCROLL_X ||
-        offsetX > this.position!.rightTop.x - Sheet.SCROLL_X ||
-        offsetY < this.position!.leftTop.y - Sheet.SCROLL_Y ||
-        offsetY > this.position!.leftBottom.y - Sheet.SCROLL_Y
+        offsetX < this.position!.leftTop.x - scrollX ||
+        offsetX > this.position!.rightTop.x - scrollX ||
+        offsetY < this.position!.leftTop.y - scrollY ||
+        offsetY > this.position!.leftBottom.y - scrollY
       )
     ) {
-      console.log(this.value);
       this.mouseEntered = true;
+      console.log(this.value);
       if (this.fixed) {
-        this.cursor = "s-resize";
+        Sheet.SET_CURSOR("s-resize");
       } else {
-        this.cursor = "cell";
+        Sheet.SET_CURSOR("cell");
       }
     } else {
       this.mouseEntered = false;
@@ -165,6 +167,7 @@ class Cell extends Element implements Excel.Cell.CellInstance {
     }
     this.scrollX = scrollX;
     this.scrollY = scrollY;
+    this.drawCellBg(ctx);
     if (this.fixed) {
       this.drawFixedCell(ctx);
     } else {
@@ -176,6 +179,18 @@ class Cell extends Element implements Excel.Cell.CellInstance {
       if (this.textStyle.underline) {
         this.drawDataCellUnderline(ctx, textAlignOffsetX);
       }
+    }
+  }
+
+  drawCellBg(ctx: CanvasRenderingContext2D) {
+    if (this.textStyle.backgroundColor) {
+      ctx.fillStyle = this.textStyle.backgroundColor;
+      ctx.fillRect(
+        this.x! - this.scrollX,
+        this.y! - this.scrollY,
+        this.width!,
+        this.height!
+      );
     }
   }
 

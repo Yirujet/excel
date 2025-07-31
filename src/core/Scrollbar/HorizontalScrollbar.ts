@@ -42,8 +42,8 @@ export default class HorizontalScrollbar extends Scrollbar {
       this.updatePosition();
       const { x } = e;
       this.checkHit(e);
-      this.dragging = true;
       if (!this.mouseEntered) return;
+      this.dragging = true;
       this.scrollMove(
         x - this.layout!.x,
         "x",
@@ -109,10 +109,7 @@ export default class HorizontalScrollbar extends Scrollbar {
         this.isHorizontalScrolling = false;
       }
     };
-    const onMouseMove = throttle((e: MouseEvent) => {
-      if (!this.show) return;
-      this.checkHit(e);
-    }, 50);
+    const onMouseMove = throttle(this.checkIn.bind(this), 50);
     const defaultEventListeners = {
       mousedown: onStartScroll,
       wheel: onWheel,

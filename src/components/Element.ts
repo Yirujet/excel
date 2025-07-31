@@ -5,7 +5,6 @@ export default class Element extends ExcelEvent {
   x!: number;
   y!: number;
   mouseEntered = false;
-  cursor = "default";
   constructor(tagName: string, clearEventsWhenReRender = false) {
     super(clearEventsWhenReRender);
     if (tagName) {

@@ -1,5 +1,6 @@
 import Element from "../../components/Element";
 import throttle from "../../utils/throttle";
+import Sheet from "../Sheet";
 
 export default class Scrollbar
   extends Element
@@ -61,9 +62,22 @@ export default class Scrollbar
       )
     ) {
       this.mouseEntered = true;
-      this.cursor = "default";
     } else {
       this.mouseEntered = false;
+    }
+  }
+  checkIn(e: MouseEvent) {
+    const { offsetX, offsetY } = e;
+    if (
+      !(
+        offsetX < this.x ||
+        offsetX > this.x + this.track.width ||
+        offsetY < this.y ||
+        offsetY > this.y + this.track.height
+      )
+    ) {
+      console.log("scrollbar in");
+      Sheet.SET_CURSOR("default");
     }
   }
   scrollMove(

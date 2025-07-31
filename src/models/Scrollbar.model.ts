@@ -39,7 +39,6 @@ namespace Excel {
       globalEventsObserver: Excel.Event.ObserverInstance;
       type: Type;
       mouseEntered: boolean;
-      cursor: string;
     }
   }
 }

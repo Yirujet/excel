@@ -27,8 +27,8 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
   static DEFAULT_CELL_HEIGHT = 25;
   static DEFAULT_INDEX_CELL_WIDTH = 50;
   static DEFAULT_CELL_FONT_FAMILY = "宋体";
-  static DEFAULT_CELL_ROW_COUNT = 500;
-  static DEFAULT_CELL_COL_COUNT = 500;
+  static DEFAULT_CELL_ROW_COUNT = 1000;
+  static DEFAULT_CELL_COL_COUNT = 2000;
   static DEFAULT_CELL_LINE_DASH = [0, 2, 2];
   static DEVIATION_COMPARE_VALUE = 10e-6;
   static DEFAULT_GRADIENT_OFFSET = 6;
@@ -67,6 +67,10 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
     this.name = name;
     this.initToolConfig(toolsConfig);
     this.initCells(cells);
+  }
+
+  static SET_CURSOR(cursor: string) {
+    document.body.style.cursor = cursor;
   }
 
   initToolConfig(toolsConfig?: Partial<Excel.Sheet.toolsConfig>) {
@@ -152,6 +156,8 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
               color: "#ccc",
               bold: false,
             };
+            cell.textStyle.color = "rgb(87, 87, 87)";
+            cell.textStyle.backgroundColor = "rgb(238, 238, 238)";
             cell.textStyle.fontSize = 13;
             cell.textStyle.align = "center";
           } else {

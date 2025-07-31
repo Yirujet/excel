@@ -91,12 +91,6 @@ export default class EventObserver implements Excel.Event.ObserverInstance {
                     ...args
                   );
                 });
-                const curActiveElement = this[
-                  dispatchEvent as Excel.Event.Type
-                ].find((element) => element.mouseEntered);
-                if (curActiveElement && target.style) {
-                  document.body.style.cursor = curActiveElement?.cursor || "";
-                }
               }
             );
           };
