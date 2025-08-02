@@ -12,12 +12,13 @@ namespace Excel {
       | "clickoutside"
       | "wheel"
       | "keydown"
-      | "keyup";
+      | "keyup"
+      | "resize";
 
     export type GlobalEvent = {
       [key in Exclude<
         Type,
-        "mouseenter" | "mousemove" | "click" | "clickoutside"
+        "mouseenter" | "mousemove" | "click" | "clickoutside" | "resize"
       >]: {
         dispatchEvents: {
           [p in key]: {
@@ -40,6 +41,14 @@ namespace Excel {
             triggerName: "triggerClickEvent";
           };
           clickoutside: {
+            triggerName: "triggerEvent";
+          };
+        };
+      };
+    } & {
+      resize?: {
+        dispatchEvents: {
+          resize: {
             triggerName: "triggerEvent";
           };
         };

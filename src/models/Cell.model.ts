@@ -22,6 +22,14 @@ namespace Excel {
       y: boolean;
     }
 
+    export interface CellResize {
+      x: boolean;
+      y: boolean;
+      rowIndex: number | null;
+      colIndex: number | null;
+      value?: number | null;
+    }
+
     export type BorderSide = "top" | "bottom" | "left" | "right";
 
     export type Border = Record<BorderSide, BorderStyle>;
@@ -35,6 +43,8 @@ namespace Excel {
       cellName: string;
       x: number | null;
       y: number | null;
+      preX?: number;
+      preY?: number;
       position: Excel.Position;
       textStyle: TextStyle;
       border: Border;
@@ -47,12 +57,14 @@ namespace Excel {
       scrollX: number;
       scrollY: number;
       events: Record<string, Array<Excel.Event.FnType>>;
+      layout: Excel.LayoutInfo | null;
       render(
         ctx: CanvasRenderingContext2D,
         scrollX: number,
         scrollY: number,
         isEnd: boolean
       ): void;
+      updatePosition: Excel.Event.FnType;
     }
   }
 }

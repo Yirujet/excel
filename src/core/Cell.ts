@@ -2,8 +2,11 @@ import getTextMetrics from "../utils/getTextMetrics";
 import Sheet from "./Sheet";
 import Element from "../components/Element";
 import debounce from "../utils/debounce";
+import throttle from "../utils/throttle";
 
 class Cell extends Element implements Excel.Cell.CellInstance {
+  static RESIZE_ROW_SIZE = 5;
+  static RESIZE_COL_SIZE = 10;
   width: number | null = null;
   height: number | null = null;
   rowIndex: number | null = null;
@@ -71,6 +74,19 @@ class Cell extends Element implements Excel.Cell.CellInstance {
   scrollX = 0;
   scrollY = 0;
   eventObserver: Excel.Event.ObserverInstance;
+  resize: Excel.Cell.CellResize = {
+    x: false,
+    y: false,
+    rowIndex: null,
+    colIndex: null,
+    value: null,
+  };
+  layout: Excel.LayoutInfo | null = null;
+  lastVal: number | null = null;
+  moveEvent: Excel.Event.FnType | null = null;
+  isLast = false;
+  resizeOffset = 0;
+  resizing = false;
 
   constructor(eventObserver: Excel.Event.ObserverInstance) {
     super("", true);
@@ -83,17 +99,96 @@ class Cell extends Element implements Excel.Cell.CellInstance {
   initEvents() {
     const onMouseMove = debounce((e: MouseEvent) => {
       this.checkHit(e);
-      if (!this.mouseEntered) return;
+      this.checkResize(e);
+      // if (!this.mouseEntered) return;
     }, 100);
+
+    const onMouseDown = (e: MouseEvent) => {
+      if (!(this.resize.x || this.resize.y)) return;
+      this.updatePosition();
+      this.resizing = true;
+      this.scrollMove(
+        (this.resize.x ? e["x"] : e["y"]) -
+          (this.resize.x ? this.layout!["x"] : this.layout!["y"]),
+        this.resize.x ? "x" : "y"
+      );
+      const onEndScroll = () => {
+        this.lastVal = null;
+        this.resizing = false;
+        this.resize.value = -this.resizeOffset;
+        this.resizeOffset = 0;
+        this.triggerEvent("resize", this.resize, true);
+        window.removeEventListener("mousemove", this.moveEvent!);
+        this.moveEvent = null;
+        window.removeEventListener("mouseup", onEndScroll);
+      };
+      if (this.resizing) {
+        window.addEventListener("mousemove", this.moveEvent!);
+        window.addEventListener("mouseup", onEndScroll);
+      }
+    };
 
     const defaultEventListeners = {
       mousemove: onMouseMove,
+      mousedown: onMouseDown,
     };
     this.registerListenerFromOnProp(
       defaultEventListeners,
       this.eventObserver,
       this
     );
+  }
+
+  scrollMove(
+    offset: number,
+    offsetProp: "x" | "y",
+    maxScrollDistance: number = 2000
+  ) {
+    if (this.resizing) {
+      const curScrollbarVal = -this.resizeOffset;
+      const minMoveVal = offset - curScrollbarVal;
+      const maxMoveVal = minMoveVal + maxScrollDistance;
+      this.isLast = false;
+      this.moveEvent = throttle((e: MouseEvent) => {
+        if (!this.resizing) return;
+        this.isLast = false;
+        let moveVal = e[offsetProp] - this.layout![offsetProp];
+        if (moveVal > maxMoveVal) {
+          moveVal = maxMoveVal;
+        }
+        if (moveVal < minMoveVal) {
+          moveVal = minMoveVal;
+        }
+        let d = moveVal - offset;
+        let direction;
+        if (this.lastVal === null) {
+          direction = d >= 0 ? true : false;
+        } else {
+          direction = moveVal - this.lastVal >= 0 ? true : false;
+        }
+        this.resizeOffset = -d - curScrollbarVal;
+        if (direction) {
+          const deviation = Math.abs(this.resizeOffset + maxScrollDistance);
+          if (
+            deviation < this.layout!.deviationCompareValue ||
+            this.resizeOffset <= -maxScrollDistance
+          ) {
+            this.resizeOffset = -maxScrollDistance;
+            this.isLast = true;
+          }
+        } else {
+          if (
+            this.resizeOffset > 0 ||
+            Math.abs(this.resizeOffset) < this.layout!.deviationCompareValue
+          ) {
+            this.resizeOffset = 0;
+          }
+        }
+        this.lastVal = offset;
+        this.resize.value = -this.resizeOffset;
+        this.triggerEvent("resize", this.resize);
+      }, 100);
+    }
   }
 
   checkHit(e: MouseEvent) {
@@ -111,7 +206,6 @@ class Cell extends Element implements Excel.Cell.CellInstance {
       )
     ) {
       this.mouseEntered = true;
-      // console.log(this.value);
       if (this.fixed.y) {
         Sheet.SET_CURSOR("s-resize");
       } else if (this.fixed.x) {
@@ -121,6 +215,110 @@ class Cell extends Element implements Excel.Cell.CellInstance {
       }
     } else {
       this.mouseEntered = false;
+    }
+  }
+
+  checkResize(e: MouseEvent) {
+    if (
+      !(
+        (this.fixed.x && this.colIndex === 0) ||
+        (this.fixed.y && this.rowIndex === 0)
+      )
+    ) {
+      this.resize = {
+        x: false,
+        y: false,
+        rowIndex: null,
+        colIndex: null,
+      };
+      return;
+    }
+    const { offsetX, offsetY } = e;
+    const scrollX =
+      this.fixed.x || this.fixed.y ? this.scrollX : Sheet.SCROLL_X;
+    const scrollY =
+      this.fixed.x || this.fixed.y ? this.scrollY : Sheet.SCROLL_Y;
+    if (this.fixed.y) {
+      if (
+        !(
+          offsetX <
+            this.position!.rightTop.x - scrollX - Cell.RESIZE_COL_SIZE ||
+          offsetX >
+            this.position!.rightTop.x - scrollX + Cell.RESIZE_COL_SIZE ||
+          offsetY < this.position!.leftTop.y - scrollY ||
+          offsetY > this.position!.leftBottom.y - scrollY
+        )
+      ) {
+        Sheet.SET_CURSOR("col-resize");
+        this.resize = {
+          x: true,
+          y: false,
+          rowIndex: this.rowIndex!,
+          colIndex: this.colIndex!,
+        };
+      } else if (
+        !(
+          offsetX < this.position!.leftTop.x - scrollX - Cell.RESIZE_COL_SIZE ||
+          offsetX > this.position!.leftTop.x - scrollX + Cell.RESIZE_COL_SIZE ||
+          offsetY < this.position!.leftTop.y - scrollY ||
+          offsetY > this.position!.leftBottom.y - scrollY
+        )
+      ) {
+        Sheet.SET_CURSOR("col-resize");
+        this.resize = {
+          x: true,
+          y: false,
+          rowIndex: this.rowIndex!,
+          colIndex: this.colIndex! - 1,
+        };
+      } else {
+        this.resize = {
+          x: false,
+          y: false,
+          rowIndex: null,
+          colIndex: null,
+        };
+      }
+    } else if (this.fixed.x) {
+      if (
+        !(
+          offsetX < this.position!.leftTop.x - scrollX ||
+          offsetX > this.position!.rightTop.x - scrollX ||
+          offsetY < this.position!.leftTop.y - scrollY - Cell.RESIZE_ROW_SIZE ||
+          offsetY > this.position!.leftTop.y - scrollY + Cell.RESIZE_ROW_SIZE
+        )
+      ) {
+        Sheet.SET_CURSOR("row-resize");
+        this.resize = {
+          x: false,
+          y: true,
+          rowIndex: this.rowIndex! - 1,
+          colIndex: this.colIndex!,
+        };
+      } else if (
+        !(
+          offsetX < this.position!.leftTop.x - scrollX ||
+          offsetX > this.position!.rightTop.x - scrollX ||
+          offsetY <
+            this.position!.leftBottom.y - scrollY - Cell.RESIZE_ROW_SIZE ||
+          offsetY > this.position!.leftBottom.y - scrollY + Cell.RESIZE_ROW_SIZE
+        )
+      ) {
+        Sheet.SET_CURSOR("row-resize");
+        this.resize = {
+          x: false,
+          y: true,
+          rowIndex: this.rowIndex!,
+          colIndex: this.colIndex!,
+        };
+      } else {
+        this.resize = {
+          x: false,
+          y: false,
+          rowIndex: null,
+          colIndex: null,
+        };
+      }
     }
   }
 

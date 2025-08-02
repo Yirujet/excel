@@ -1,6 +1,7 @@
 import Element from "../components/Element";
 import $10226 from "../utils/10226";
 import EventObserver from "../utils/EventObserver";
+import throttle from "../utils/throttle";
 import Cell from "./Cell";
 import HorizontalScrollbar from "./Scrollbar/HorizontalScrollbar";
 import VerticalScrollbar from "./Scrollbar/VerticalScrollbar";
@@ -57,6 +58,8 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
   fixedCells: Excel.Cell.CellInstance[][] = [];
   fixedRowHeight = 0;
   fixedColWidth = 0;
+  layout: Excel.LayoutInfo | null = null;
+  resizeOffset: number | null = null;
 
   constructor(
     name: string,
@@ -92,9 +95,37 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
     this.ctx!.translate(0.5, 0.5);
     this.ctx!.scale(window.devicePixelRatio, window.devicePixelRatio);
     this.initScrollbar();
+    this.cells.forEach((row) => {
+      row.forEach((cell) => {
+        cell.layout = this.layout!;
+      });
+    });
     this.sheetEventsObserver.observe(this.$el as HTMLCanvasElement);
     this.globalEventsObserver.observe(window as any);
     this.draw(true);
+  }
+
+  initLayout() {
+    const bodyHeight = this.height - Sheet.DEFAULT_CELL_HEIGHT;
+    const verticalScrollbarShow = bodyHeight < this.realHeight;
+    const horizontalScrollbarShow =
+      this.realWidth > this.width - Sheet.DEFAULT_INDEX_CELL_WIDTH;
+    this.layout = {
+      x: this.x,
+      y: this.y,
+      width:
+        this.width -
+        (verticalScrollbarShow ? VerticalScrollbar.TRACK_WIDTH : 0),
+      height:
+        this.height -
+        (horizontalScrollbarShow ? HorizontalScrollbar.TRACK_HEIGHT : 0),
+      headerHeight: Sheet.DEFAULT_CELL_HEIGHT,
+      fixedLeftWidth: Sheet.DEFAULT_INDEX_CELL_WIDTH,
+      bodyHeight,
+      bodyRealWidth: this.realWidth,
+      bodyRealHeight: this.realHeight,
+      deviationCompareValue: Sheet.DEVIATION_COMPARE_VALUE,
+    };
   }
 
   initCells(cells: Excel.Cell.CellInstance[][] | undefined) {
@@ -225,33 +256,14 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
   }
 
   initScrollbar() {
-    const bodyHeight = this.height - Sheet.DEFAULT_CELL_HEIGHT;
-    const verticalScrollbarShow = bodyHeight < this.realHeight;
-    const horizontalScrollbarShow =
-      this.realWidth > this.width - Sheet.DEFAULT_INDEX_CELL_WIDTH;
-    const layout = {
-      x: this.x,
-      y: this.y,
-      width:
-        this.width -
-        (verticalScrollbarShow ? VerticalScrollbar.TRACK_WIDTH : 0),
-      height:
-        this.height -
-        (horizontalScrollbarShow ? HorizontalScrollbar.TRACK_HEIGHT : 0),
-      headerHeight: Sheet.DEFAULT_CELL_HEIGHT,
-      fixedLeftWidth: Sheet.DEFAULT_INDEX_CELL_WIDTH,
-      bodyHeight,
-      bodyRealWidth: this.realWidth,
-      bodyRealHeight: this.realHeight,
-      deviationCompareValue: Sheet.DEVIATION_COMPARE_VALUE,
-    };
+    this.initLayout();
     this.horizontalScrollBar = new HorizontalScrollbar(
-      layout,
+      this.layout!,
       this.sheetEventsObserver,
       this.globalEventsObserver
     );
     this.verticalScrollBar = new VerticalScrollbar(
-      layout,
+      this.layout!,
       this.sheetEventsObserver,
       this.globalEventsObserver
     );
@@ -292,6 +304,49 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
             ? HorizontalScrollbar.TRACK_HEIGHT
             : 0));
       Sheet.SCROLL_Y = this.scroll.y;
+    }
+  }
+
+  handleCellResize(resize: Excel.Cell.CellResize, isEnd = false) {
+    if (resize.value) {
+      if (resize.x) {
+        if (this.resizeOffset === null) {
+          this.resizeOffset = this.cells[0][resize.colIndex!].width;
+        }
+        this.cells.forEach((e) => {
+          e[resize.colIndex!].width = this.resizeOffset! + resize.value!;
+          e[resize.colIndex!].updatePosition();
+          for (let i = resize.colIndex! + 1; i < e.length; i++) {
+            if (!e[i].preX) {
+              e[i].preX = e[i].x!;
+            }
+            e[i].x = e[i].preX! + resize.value!;
+            e[i].updatePosition();
+          }
+        });
+      }
+      if (resize.y) {
+        if (this.resizeOffset === null) {
+          this.resizeOffset = this.cells[resize.rowIndex!][0].height;
+        }
+        this.cells[resize.rowIndex!].forEach((e) => {
+          e.height = this.resizeOffset! + resize.value!;
+          e.updatePosition();
+        });
+        for (let i = resize.rowIndex! + 1; i < this.cells.length; i++) {
+          this.cells[i].forEach((e) => {
+            if (!e.preY) {
+              e.preY = e.y!;
+            }
+            e.y = e.preY! + resize.value!;
+            e.updatePosition();
+          });
+        }
+      }
+    }
+    this.draw();
+    if (isEnd) {
+      this.resizeOffset = 0;
     }
   }
 
@@ -406,6 +461,19 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
           cell.clearEvents!(this.sheetEventsObserver, cell);
         }
         cell.render(this.ctx!, scrollX, scrollY, isEnd);
+        if (cell.events["resize"]) {
+          cell.events["resize"] = [];
+        }
+        let index = this.sheetEventsObserver.resize.findIndex(
+          (e) => e === cell
+        );
+        if (!!~index) {
+          this.sheetEventsObserver.resize.splice(index, 1);
+        }
+        cell.addEvent!(
+          "resize",
+          throttle(this.handleCellResize.bind(this), 100)
+        );
       }
     }
   }

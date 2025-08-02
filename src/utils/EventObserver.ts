@@ -64,6 +64,13 @@ const GlobalEvents: Excel.Event.GlobalEvent = {
       },
     },
   },
+  resize: {
+    dispatchEvents: {
+      resize: {
+        triggerName: "triggerEvent",
+      },
+    },
+  },
 };
 
 export default class EventObserver implements Excel.Event.ObserverInstance {
@@ -77,6 +84,7 @@ export default class EventObserver implements Excel.Event.ObserverInstance {
   wheel: Excel.Event.ObserverTypes[] = [];
   keydown: Excel.Event.ObserverTypes[] = [];
   keyup: Excel.Event.ObserverTypes[] = [];
+  resize: Excel.Event.ObserverTypes[] = [];
   observe(target: HTMLCanvasElement) {
     if (target && "addEventListener" in target) {
       Object.entries(GlobalEvents).forEach(
