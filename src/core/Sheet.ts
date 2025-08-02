@@ -27,8 +27,8 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
   static DEFAULT_CELL_HEIGHT = 25;
   static DEFAULT_INDEX_CELL_WIDTH = 50;
   static DEFAULT_CELL_FONT_FAMILY = "宋体";
-  static DEFAULT_CELL_ROW_COUNT = 1000;
-  static DEFAULT_CELL_COL_COUNT = 2000;
+  static DEFAULT_CELL_ROW_COUNT = 500;
+  static DEFAULT_CELL_COL_COUNT = 1000;
   static DEFAULT_CELL_LINE_DASH = [0, 2, 2];
   static DEVIATION_COMPARE_VALUE = 10e-6;
   static DEFAULT_GRADIENT_OFFSET = 6;
@@ -209,15 +209,15 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
     this.horizontalScrollBar = new HorizontalScrollbar(
       layout,
       this.sheetEventsObserver,
-      this.globalEventsObserver,
-      this.redraw.bind(this)
+      this.globalEventsObserver
     );
     this.verticalScrollBar = new VerticalScrollbar(
       layout,
       this.sheetEventsObserver,
-      this.globalEventsObserver,
-      this.redraw.bind(this)
+      this.globalEventsObserver
     );
+    this.horizontalScrollBar.addEvent("percent", this.redraw.bind(this));
+    this.verticalScrollBar.addEvent("percent", this.redraw.bind(this));
   }
 
   clear() {

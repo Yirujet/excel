@@ -7,10 +7,9 @@ export default class HorizontalScrollbar extends Scrollbar {
   constructor(
     layout: Excel.LayoutInfo,
     eventObserver: Excel.Event.ObserverInstance,
-    globalEventsObserver: Excel.Event.ObserverInstance,
-    callback: Excel.Event.FnType
+    globalEventsObserver: Excel.Event.ObserverInstance
   ) {
-    super(layout, eventObserver, globalEventsObserver, callback, "horizontal");
+    super(layout, eventObserver, globalEventsObserver, "horizontal");
     this.track.height = HorizontalScrollbar.TRACK_HEIGHT;
     this.thumb.height = HorizontalScrollbar.THUMB_HEIGHT;
     this.init();
@@ -47,13 +46,12 @@ export default class HorizontalScrollbar extends Scrollbar {
       this.scrollMove(
         x - this.layout!.x,
         "x",
-        this.track.width - this.thumb.width,
-        this.callback
+        this.track.width - this.thumb.width
       );
       const onEndScroll = () => {
         this.lastVal = null;
         this.dragging = false;
-        this.callback(this.percent, this.type, true);
+        this.triggerEvent("percent", this.percent, this.type, true);
         window.removeEventListener("mousemove", this.moveEvent!);
         this.moveEvent = null;
         window.removeEventListener("mouseup", onEndScroll);
@@ -96,7 +94,7 @@ export default class HorizontalScrollbar extends Scrollbar {
           }
         }
         this.percent = this.value / (this.thumb.width - this.track.width);
-        this.callback(this.percent, this.type, true);
+        this.triggerEvent("percent", this.percent, this.type, true);
       }
     }, 50);
     const onKeydown = (e: KeyboardEvent) => {

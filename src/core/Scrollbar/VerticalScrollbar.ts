@@ -7,10 +7,9 @@ export default class VerticalScrollbar extends Scrollbar {
   constructor(
     layout: Excel.LayoutInfo,
     eventObserver: Excel.Event.ObserverInstance,
-    globalEventsObserver: Excel.Event.ObserverInstance,
-    callback: Excel.Event.FnType
+    globalEventsObserver: Excel.Event.ObserverInstance
   ) {
-    super(layout, eventObserver, globalEventsObserver, callback, "vertical");
+    super(layout, eventObserver, globalEventsObserver, "vertical");
     this.track.width = VerticalScrollbar.TRACK_WIDTH;
     this.thumb.width = VerticalScrollbar.THUMB_WIDTH;
     this.init();
@@ -44,13 +43,12 @@ export default class VerticalScrollbar extends Scrollbar {
       this.scrollMove(
         y - this.layout!.y,
         "y",
-        this.track.height - this.thumb.height,
-        this.callback
+        this.track.height - this.thumb.height
       );
       const onEndScroll = () => {
         this.lastVal = null;
         this.dragging = false;
-        this.callback(this.percent, this.type, true);
+        this.triggerEvent("percent", this.percent, this.type, true);
         window.removeEventListener("mousemove", this.moveEvent!);
         this.moveEvent = null;
         window.removeEventListener("mouseup", onEndScroll);
@@ -93,7 +91,7 @@ export default class VerticalScrollbar extends Scrollbar {
           }
         }
         this.percent = this.value / (this.thumb.height - this.track.height);
-        this.callback(this.percent, this.type, true);
+        this.triggerEvent("percent", this.percent, this.type, true);
       }
     }, 50);
     const onKeydown = (e: KeyboardEvent) => {

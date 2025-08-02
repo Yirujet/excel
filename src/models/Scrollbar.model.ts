@@ -34,7 +34,6 @@ namespace Excel {
       isLast: boolean;
       layout: Excel.LayoutInfo | null;
       isHorizontalScrolling: boolean;
-      callback: Excel.Event.FnType;
       eventObserver: Excel.Event.ObserverInstance;
       globalEventsObserver: Excel.Event.ObserverInstance;
       type: Type;

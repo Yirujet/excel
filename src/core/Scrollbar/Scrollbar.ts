@@ -33,7 +33,6 @@ export default class Scrollbar
   isLast = false;
   layout: Excel.LayoutInfo | null = null;
   isHorizontalScrolling = false;
-  callback: Excel.Event.FnType = () => {};
   eventObserver: Excel.Event.ObserverInstance;
   globalEventsObserver: Excel.Event.ObserverInstance;
   type: Excel.Scrollbar.Type = "vertical";
@@ -41,14 +40,12 @@ export default class Scrollbar
     layout: Excel.LayoutInfo,
     eventObserver: Excel.Event.ObserverInstance,
     globalEventsObserver: Excel.Event.ObserverInstance,
-    callback: Excel.Event.FnType,
     type: Excel.Scrollbar.Type
   ) {
     super("");
     this.layout = layout;
     this.eventObserver = eventObserver;
     this.globalEventsObserver = globalEventsObserver;
-    this.callback = callback;
     this.type = type;
   }
   checkHit(e: MouseEvent) {
@@ -80,18 +77,13 @@ export default class Scrollbar
       Sheet.SET_CURSOR("default");
     }
   }
-  scrollMove(
-    offset: number,
-    offsetProp: "x" | "y",
-    maxScrollDistance: number,
-    callback: Excel.Event.FnType
-  ) {
+  scrollMove(offset: number, offsetProp: "x" | "y", maxScrollDistance: number) {
     if (this.dragging) {
       const curScrollbarVal = -this.value;
       const minMoveVal = offset - curScrollbarVal;
       const maxMoveVal = minMoveVal + maxScrollDistance;
       this.isLast = false;
-      callback(this.percent, this.type);
+      this.triggerEvent("percent", this.percent, this.type);
       this.moveEvent = throttle((e: MouseEvent) => {
         if (!this.dragging) return;
         this.isLast = false;
@@ -129,7 +121,7 @@ export default class Scrollbar
         }
         this.percent = this.value / -maxScrollDistance;
         this.lastVal = offset;
-        callback(this.percent, this.type);
+        this.triggerEvent("percent", this.percent, this.type);
       }, 50);
     }
   }
