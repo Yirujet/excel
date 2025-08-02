@@ -38,10 +38,27 @@ class Cell extends Element implements Excel.Cell.CellInstance {
     color: "#000",
     align: "left",
   };
-  borderStyle = {
-    solid: false,
-    color: "#ccc",
-    bold: false,
+  border: Excel.Cell.Border = {
+    top: {
+      solid: false,
+      color: "#ccc",
+      bold: false,
+    },
+    bottom: {
+      solid: false,
+      color: "#ccc",
+      bold: false,
+    },
+    left: {
+      solid: false,
+      color: "#ccc",
+      bold: false,
+    },
+    right: {
+      solid: false,
+      color: "#ccc",
+      bold: false,
+    },
   };
   meta = null;
   value = "";
@@ -90,7 +107,7 @@ class Cell extends Element implements Excel.Cell.CellInstance {
       )
     ) {
       this.mouseEntered = true;
-      console.log(this.value);
+      // console.log(this.value);
       if (this.fixed) {
         Sheet.SET_CURSOR("s-resize");
       } else {
@@ -101,14 +118,14 @@ class Cell extends Element implements Excel.Cell.CellInstance {
     }
   }
 
-  setBorderStyle(ctx: CanvasRenderingContext2D) {
-    if (!this.borderStyle.solid) {
+  setBorderStyle(ctx: CanvasRenderingContext2D, side: Excel.Cell.BorderSide) {
+    if (!this.border[side].solid) {
       ctx.setLineDash(Sheet.DEFAULT_CELL_LINE_DASH);
     } else {
       ctx.setLineDash([]);
     }
-    ctx.strokeStyle = this.borderStyle.color;
-    if (this.borderStyle.bold) {
+    ctx.strokeStyle = this.border[side].color;
+    if (this.border[side].bold) {
       ctx.lineWidth = 2;
     } else {
       ctx.lineWidth = 1;
@@ -168,11 +185,7 @@ class Cell extends Element implements Excel.Cell.CellInstance {
     this.scrollX = scrollX;
     this.scrollY = scrollY;
     this.drawCellBg(ctx);
-    if (this.fixed) {
-      this.drawFixedCell(ctx);
-    } else {
-      this.drawDataCell(ctx);
-    }
+    this.drawCellBorder(ctx);
     if (!this.hidden) {
       const textAlignOffsetX = this.getTextAlignOffsetX(this.width!);
       this.drawDataCellText(ctx, textAlignOffsetX);
@@ -194,21 +207,39 @@ class Cell extends Element implements Excel.Cell.CellInstance {
     }
   }
 
-  drawFixedCell(ctx: CanvasRenderingContext2D) {
+  drawCellBorder(ctx: CanvasRenderingContext2D) {
+    if (this.fixed) {
+      ctx.save();
+      this.setBorderStyle(ctx, "top");
+      ctx.beginPath();
+      ctx.moveTo(
+        this.position.leftTop.x - this.scrollX,
+        this.position.leftTop.y - this.scrollY
+      );
+      ctx.lineTo(
+        this.position.rightTop.x - this.scrollX,
+        this.position.rightTop.y - this.scrollY
+      );
+      ctx.closePath();
+      ctx.stroke();
+      ctx.restore();
+      ctx.save();
+      this.setBorderStyle(ctx, "left");
+      ctx.beginPath();
+      ctx.moveTo(
+        this.position.leftBottom.x - this.scrollX,
+        this.position.leftBottom.y - this.scrollY
+      );
+      ctx.lineTo(
+        this.position.leftTop.x - this.scrollX,
+        this.position.leftTop.y - this.scrollY
+      );
+      ctx.closePath();
+      ctx.stroke();
+      ctx.restore();
+    }
     ctx.save();
-    this.setBorderStyle(ctx);
-    ctx.strokeRect(
-      this.x! - this.scrollX,
-      this.y! - this.scrollY,
-      this.width!,
-      this.height!
-    );
-    ctx.restore();
-  }
-
-  drawDataCell(ctx: CanvasRenderingContext2D) {
-    ctx.save();
-    this.setBorderStyle(ctx);
+    this.setBorderStyle(ctx, "right");
     ctx.beginPath();
     ctx.moveTo(
       this.position.rightTop.x - this.scrollX,
@@ -222,15 +253,15 @@ class Cell extends Element implements Excel.Cell.CellInstance {
     ctx.stroke();
     ctx.restore();
     ctx.save();
-    this.setBorderStyle(ctx);
+    this.setBorderStyle(ctx, "bottom");
     ctx.beginPath();
     ctx.moveTo(
-      this.position.leftBottom.x - this.scrollX,
-      this.position.leftBottom.y - this.scrollY
-    );
-    ctx.lineTo(
       this.position.rightBottom.x - this.scrollX,
       this.position.rightBottom.y - this.scrollY
+    );
+    ctx.lineTo(
+      this.position.leftBottom.x - this.scrollX,
+      this.position.leftBottom.y - this.scrollY
     );
     ctx.closePath();
     ctx.stroke();

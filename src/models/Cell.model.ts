@@ -22,6 +22,10 @@ namespace Excel {
       y: boolean;
     }
 
+    export type BorderSide = "top" | "bottom" | "left" | "right";
+
+    export type Border = Record<BorderSide, BorderStyle>;
+
     export interface CellInstance extends Excel.Event.EventInstance {
       width: number | null;
       height: number | null;
@@ -33,7 +37,7 @@ namespace Excel {
       y: number | null;
       position: Excel.Position;
       textStyle: TextStyle;
-      borderStyle: BorderStyle;
+      border: Border;
       meta: any | null;
       value: string;
       fn: string | null;

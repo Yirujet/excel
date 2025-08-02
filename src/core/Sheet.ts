@@ -151,20 +151,54 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
           }
           if (i < this.fixedRowIndex || j < this.fixedColIndex) {
             cell.fixed = true;
-            cell.borderStyle = {
-              solid: true,
-              color: "#ccc",
-              bold: false,
+            cell.border = {
+              top: {
+                solid: true,
+                color: "#ccc",
+                bold: false,
+              },
+              bottom: {
+                solid: true,
+                color: "#ccc",
+                bold: false,
+              },
+              left: {
+                solid: true,
+                color: "#ccc",
+                bold: false,
+              },
+              right: {
+                solid: true,
+                color: "#ccc",
+                bold: false,
+              },
             };
             cell.textStyle.color = "rgb(87, 87, 87)";
             cell.textStyle.backgroundColor = "rgb(238, 238, 238)";
             cell.textStyle.fontSize = 13;
             cell.textStyle.align = "center";
           } else {
-            cell.borderStyle = {
-              solid: false,
-              color: "#ccc",
-              bold: false,
+            cell.border = {
+              top: {
+                solid: false,
+                color: "#ccc",
+                bold: false,
+              },
+              bottom: {
+                solid: false,
+                color: "#ccc",
+                bold: false,
+              },
+              left: {
+                solid: false,
+                color: "#ccc",
+                bold: false,
+              },
+              right: {
+                solid: false,
+                color: "#ccc",
+                bold: false,
+              },
             };
             cell.textStyle.align = "center";
           }
