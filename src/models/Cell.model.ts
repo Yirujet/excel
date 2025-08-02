@@ -41,7 +41,7 @@ namespace Excel {
       meta: any | null;
       value: string;
       fn: string | null;
-      fixed?: boolean;
+      fixed: CellFixed;
       hidden?: boolean;
       mouseEntered?: boolean;
       scrollX: number;

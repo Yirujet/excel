@@ -150,30 +150,35 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
             }
           }
           if (i < this.fixedRowIndex || j < this.fixedColIndex) {
-            cell.fixed = true;
+            if (i < this.fixedRowIndex) {
+              cell.fixed.y = true;
+            }
+            if (j < this.fixedColIndex) {
+              cell.fixed.x = true;
+            }
             cell.border = {
               top: {
                 solid: true,
-                color: "#ccc",
+                color: "rgb(230, 230, 230)",
                 bold: false,
               },
               bottom: {
                 solid: true,
-                color: "#ccc",
+                color: "rgb(230, 230, 230)",
                 bold: false,
               },
               left: {
                 solid: true,
-                color: "#ccc",
+                color: "rgb(230, 230, 230)",
                 bold: false,
               },
               right: {
                 solid: true,
-                color: "#ccc",
+                color: "rgb(230, 230, 230)",
                 bold: false,
               },
             };
-            cell.textStyle.color = "rgb(87, 87, 87)";
+            cell.textStyle.color = "rgb(141, 87, 87)";
             cell.textStyle.backgroundColor = "rgb(238, 238, 238)";
             cell.textStyle.fontSize = 13;
             cell.textStyle.align = "center";
@@ -181,22 +186,22 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
             cell.border = {
               top: {
                 solid: false,
-                color: "#ccc",
+                color: "rgb(230, 230, 230)",
                 bold: false,
               },
               bottom: {
                 solid: false,
-                color: "#ccc",
+                color: "rgb(230, 230, 230)",
                 bold: false,
               },
               left: {
                 solid: false,
-                color: "#ccc",
+                color: "rgb(230, 230, 230)",
                 bold: false,
               },
               right: {
                 solid: false,
-                color: "#ccc",
+                color: "rgb(230, 230, 230)",
                 bold: false,
               },
             };

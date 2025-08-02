@@ -41,29 +41,32 @@ class Cell extends Element implements Excel.Cell.CellInstance {
   border: Excel.Cell.Border = {
     top: {
       solid: false,
-      color: "#ccc",
+      color: "rgb(230, 230, 230)",
       bold: false,
     },
     bottom: {
       solid: false,
-      color: "#ccc",
+      color: "rgb(230, 230, 230)",
       bold: false,
     },
     left: {
       solid: false,
-      color: "#ccc",
+      color: "rgb(230, 230, 230)",
       bold: false,
     },
     right: {
       solid: false,
-      color: "#ccc",
+      color: "rgb(230, 230, 230)",
       bold: false,
     },
   };
   meta = null;
   value = "";
   fn = null;
-  fixed = false;
+  fixed = {
+    x: false,
+    y: false,
+  };
   hidden = false;
   scrollX = 0;
   scrollY = 0;
@@ -80,7 +83,6 @@ class Cell extends Element implements Excel.Cell.CellInstance {
   initEvents() {
     const onMouseMove = debounce((e: MouseEvent) => {
       this.checkHit(e);
-      if (this.fixed) return;
       if (!this.mouseEntered) return;
     }, 100);
 
@@ -96,8 +98,10 @@ class Cell extends Element implements Excel.Cell.CellInstance {
 
   checkHit(e: MouseEvent) {
     const { offsetX, offsetY } = e;
-    const scrollX = this.fixed ? this.scrollX : Sheet.SCROLL_X;
-    const scrollY = this.fixed ? this.scrollY : Sheet.SCROLL_Y;
+    const scrollX =
+      this.fixed.x || this.fixed.y ? this.scrollX : Sheet.SCROLL_X;
+    const scrollY =
+      this.fixed.x || this.fixed.y ? this.scrollY : Sheet.SCROLL_Y;
     if (
       !(
         offsetX < this.position!.leftTop.x - scrollX ||
@@ -108,8 +112,10 @@ class Cell extends Element implements Excel.Cell.CellInstance {
     ) {
       this.mouseEntered = true;
       // console.log(this.value);
-      if (this.fixed) {
+      if (this.fixed.y) {
         Sheet.SET_CURSOR("s-resize");
+      } else if (this.fixed.x) {
+        Sheet.SET_CURSOR("w-resize");
       } else {
         Sheet.SET_CURSOR("cell");
       }
@@ -208,7 +214,7 @@ class Cell extends Element implements Excel.Cell.CellInstance {
   }
 
   drawCellBorder(ctx: CanvasRenderingContext2D) {
-    if (this.fixed) {
+    if (this.fixed.x || this.fixed.y) {
       ctx.save();
       this.setBorderStyle(ctx, "top");
       ctx.beginPath();

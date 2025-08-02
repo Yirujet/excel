@@ -73,7 +73,6 @@ export default class Scrollbar
         offsetY > this.y + this.track.height
       )
     ) {
-      console.log("scrollbar in");
       Sheet.SET_CURSOR("default");
     }
   }
