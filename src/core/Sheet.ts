@@ -1,5 +1,6 @@
 import Element from "../components/Element";
 import $10226 from "../utils/10226";
+import debounce from "../utils/debounce";
 import EventObserver from "../utils/EventObserver";
 import throttle from "../utils/throttle";
 import Cell from "./Cell";
@@ -24,6 +25,8 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
     cellDiagonal: true,
     cellFreeze: true,
   };
+  static DEFAULT_CELL_MIN_WIDTH = 30;
+  static DEFAULT_CELL_MIN_HEIGHT = 20;
   static DEFAULT_CELL_WIDTH = 100;
   static DEFAULT_CELL_HEIGHT = 25;
   static DEFAULT_INDEX_CELL_WIDTH = 50;
@@ -60,6 +63,15 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
   fixedColWidth = 0;
   layout: Excel.LayoutInfo | null = null;
   resizeOffset: number | null = null;
+  maxColCntInView = 0;
+  maxRowCntInView = 0;
+  resizeInfo: Excel.Cell.CellResize = {
+    x: false,
+    y: false,
+    rowIndex: null,
+    colIndex: null,
+    value: null,
+  };
 
   constructor(
     name: string,
@@ -85,6 +97,12 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
   }
 
   render() {
+    this.maxColCntInView = Math.floor(
+      this.width / Sheet.DEFAULT_CELL_MIN_WIDTH
+    );
+    this.maxRowCntInView = Math.floor(
+      this.height / Sheet.DEFAULT_CELL_MIN_HEIGHT
+    );
     this.ctx = (this.$el as HTMLCanvasElement).getContext("2d")!;
     (this.$el as HTMLCanvasElement).style.width = `${this.width}px`;
     (this.$el as HTMLCanvasElement).style.height = `${this.height}px`;
@@ -152,9 +170,13 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
           const cell = new Cell(this.sheetEventsObserver);
           cell.x = x;
           cell.y = y;
+          cell.preX = x;
+          cell.preY = y;
           cell.width =
             j === 0 ? Sheet.DEFAULT_INDEX_CELL_WIDTH : Sheet.DEFAULT_CELL_WIDTH;
           cell.height = Sheet.DEFAULT_CELL_HEIGHT;
+          cell.preWidth = cell.width;
+          cell.preHeight = cell.height;
           cell.rowIndex = i;
           cell.colIndex = j;
           cell.cellName = $10226(j - 1);
@@ -309,40 +331,45 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
 
   handleCellResize(resize: Excel.Cell.CellResize, isEnd = false) {
     if (resize.value) {
-      if (resize.x) {
-        if (this.resizeOffset === null) {
-          this.resizeOffset = this.cells[0][resize.colIndex!].width;
-        }
-        this.cells.forEach((e) => {
-          e[resize.colIndex!].width = this.resizeOffset! + resize.value!;
-          e[resize.colIndex!].updatePosition();
-          for (let i = resize.colIndex! + 1; i < e.length; i++) {
-            if (!e[i].preX) {
-              e[i].preX = e[i].x!;
-            }
-            e[i].x = e[i].preX! + resize.value!;
-            e[i].updatePosition();
-          }
-        });
-      }
-      if (resize.y) {
-        if (this.resizeOffset === null) {
-          this.resizeOffset = this.cells[resize.rowIndex!][0].height;
-        }
-        this.cells[resize.rowIndex!].forEach((e) => {
-          e.height = this.resizeOffset! + resize.value!;
-          e.updatePosition();
-        });
-        for (let i = resize.rowIndex! + 1; i < this.cells.length; i++) {
-          this.cells[i].forEach((e) => {
-            if (!e.preY) {
-              e.preY = e.y!;
-            }
-            e.y = e.preY! + resize.value!;
-            e.updatePosition();
-          });
-        }
-      }
+      console.log(resize);
+      this.resizeInfo = resize;
+      // if (resize.x) {
+      //   if (this.resizeOffset === null) {
+      //     this.resizeOffset = this.cells[0][resize.colIndex!].width;
+      //   }
+      //   // this.cells.slice(0, this.fixedRowIndex).forEach((e) => {
+      //   // })
+      //   this.cells.slice(0, this.maxRowCntInView).forEach((e) => {
+      //     console.log(resize);
+      //     e[resize.colIndex!].width = this.resizeOffset! + resize.value!;
+      //     e[resize.colIndex!].updatePosition();
+      //     // for (let i = resize.colIndex! + 1; i < this.maxColCntInView; i++) {
+      //     //   if (!e[i].preX) {
+      //     //     e[i].preX = e[i].x!;
+      //     //   }
+      //     //   e[i].x = e[i].preX! + resize.value!;
+      //     //   e[i].updatePosition();
+      //     // }
+      //   });
+      // }
+      // if (resize.y) {
+      //   if (this.resizeOffset === null) {
+      //     this.resizeOffset = this.cells[resize.rowIndex!][0].height;
+      //   }
+      //   this.cells[resize.rowIndex!].forEach((e) => {
+      //     e.height = this.resizeOffset! + resize.value!;
+      //     e.updatePosition();
+      //   });
+      //   for (let i = resize.rowIndex! + 1; i < this.maxRowCntInView; i++) {
+      //     this.cells[i].forEach((e) => {
+      //       if (!e.preY) {
+      //         e.preY = e.y!;
+      //       }
+      //       e.y = e.preY! + resize.value!;
+      //       e.updatePosition();
+      //     });
+      //   }
+      // }
     }
     this.draw();
     if (isEnd) {
@@ -457,6 +484,24 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
         if (rightTop.x - scrollX < 0 || rightBottom.y - scrollY < 0) {
           continue;
         }
+        if (this.resizeInfo.x) {
+          if (
+            i === this.resizeInfo.rowIndex &&
+            j === this.resizeInfo.colIndex! + (ignoreXIndex || 0)
+          ) {
+            if (!cell.preWidth) {
+              cell.preWidth = cell.width!;
+            }
+            cell.width = cell.preWidth + this.resizeInfo.value!;
+          }
+          if (j > this.resizeInfo.colIndex! + (ignoreXIndex || 0)) {
+            if (!cell.preX) {
+              cell.preX = cell.x!;
+            }
+            cell.x = cell.preX! + this.resizeInfo.value!;
+            cell.updatePosition();
+          }
+        }
         if (!isEnd) {
           cell.clearEvents!(this.sheetEventsObserver, cell);
         }
@@ -470,10 +515,7 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
         if (!!~index) {
           this.sheetEventsObserver.resize.splice(index, 1);
         }
-        cell.addEvent!(
-          "resize",
-          throttle(this.handleCellResize.bind(this), 100)
-        );
+        cell.addEvent!("resize", this.handleCellResize.bind(this));
       }
     }
   }

@@ -43,6 +43,8 @@ namespace Excel {
       cellName: string;
       x: number | null;
       y: number | null;
+      preWidth?: number;
+      preHeight?: number;
       preX?: number;
       preY?: number;
       position: Excel.Position;

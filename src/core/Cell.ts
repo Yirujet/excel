@@ -87,6 +87,10 @@ class Cell extends Element implements Excel.Cell.CellInstance {
   isLast = false;
   resizeOffset = 0;
   resizing = false;
+  preX?: number | undefined;
+  preY?: number | undefined;
+  preWidth?: number | undefined;
+  preHeight?: number | undefined;
 
   constructor(eventObserver: Excel.Event.ObserverInstance) {
     super("", true);
@@ -243,23 +247,7 @@ class Cell extends Element implements Excel.Cell.CellInstance {
         !(
           offsetX <
             this.position!.rightTop.x - scrollX - Cell.RESIZE_COL_SIZE ||
-          offsetX >
-            this.position!.rightTop.x - scrollX + Cell.RESIZE_COL_SIZE ||
-          offsetY < this.position!.leftTop.y - scrollY ||
-          offsetY > this.position!.leftBottom.y - scrollY
-        )
-      ) {
-        Sheet.SET_CURSOR("col-resize");
-        this.resize = {
-          x: true,
-          y: false,
-          rowIndex: this.rowIndex!,
-          colIndex: this.colIndex!,
-        };
-      } else if (
-        !(
-          offsetX < this.position!.leftTop.x - scrollX - Cell.RESIZE_COL_SIZE ||
-          offsetX > this.position!.leftTop.x - scrollX + Cell.RESIZE_COL_SIZE ||
+          offsetX > this.position!.rightTop.x - scrollX ||
           offsetY < this.position!.leftTop.y - scrollY ||
           offsetY > this.position!.leftBottom.y - scrollY
         )
@@ -284,24 +272,9 @@ class Cell extends Element implements Excel.Cell.CellInstance {
         !(
           offsetX < this.position!.leftTop.x - scrollX ||
           offsetX > this.position!.rightTop.x - scrollX ||
-          offsetY < this.position!.leftTop.y - scrollY - Cell.RESIZE_ROW_SIZE ||
-          offsetY > this.position!.leftTop.y - scrollY + Cell.RESIZE_ROW_SIZE
-        )
-      ) {
-        Sheet.SET_CURSOR("row-resize");
-        this.resize = {
-          x: false,
-          y: true,
-          rowIndex: this.rowIndex! - 1,
-          colIndex: this.colIndex!,
-        };
-      } else if (
-        !(
-          offsetX < this.position!.leftTop.x - scrollX ||
-          offsetX > this.position!.rightTop.x - scrollX ||
           offsetY <
             this.position!.leftBottom.y - scrollY - Cell.RESIZE_ROW_SIZE ||
-          offsetY > this.position!.leftBottom.y - scrollY + Cell.RESIZE_ROW_SIZE
+          offsetY > this.position!.leftBottom.y - scrollY
         )
       ) {
         Sheet.SET_CURSOR("row-resize");
