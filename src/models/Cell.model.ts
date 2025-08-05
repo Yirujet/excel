@@ -30,6 +30,13 @@ namespace Excel {
       value?: number | null;
     }
 
+    export interface VirtualOffset {
+      x: number;
+      y: number;
+      width: number;
+      height: number;
+    }
+
     export type BorderSide = "top" | "bottom" | "left" | "right";
 
     export type Border = Record<BorderSide, BorderStyle>;
@@ -43,10 +50,6 @@ namespace Excel {
       cellName: string;
       x: number | null;
       y: number | null;
-      preWidth?: number;
-      preHeight?: number;
-      preX?: number;
-      preY?: number;
       position: Excel.Position;
       textStyle: TextStyle;
       border: Border;
@@ -58,8 +61,8 @@ namespace Excel {
       mouseEntered?: boolean;
       scrollX: number;
       scrollY: number;
+      virtualOffset: VirtualOffset;
       events: Record<string, Array<Excel.Event.FnType>>;
-      layout: Excel.LayoutInfo | null;
       render(
         ctx: CanvasRenderingContext2D,
         scrollX: number,

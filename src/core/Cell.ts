@@ -5,8 +5,6 @@ import debounce from "../utils/debounce";
 import throttle from "../utils/throttle";
 
 class Cell extends Element implements Excel.Cell.CellInstance {
-  static RESIZE_ROW_SIZE = 5;
-  static RESIZE_COL_SIZE = 10;
   width: number | null = null;
   height: number | null = null;
   rowIndex: number | null = null;
@@ -81,16 +79,15 @@ class Cell extends Element implements Excel.Cell.CellInstance {
     colIndex: null,
     value: null,
   };
-  layout: Excel.LayoutInfo | null = null;
-  lastVal: number | null = null;
   moveEvent: Excel.Event.FnType | null = null;
-  isLast = false;
-  resizeOffset = 0;
   resizing = false;
-  preX?: number | undefined;
-  preY?: number | undefined;
-  preWidth?: number | undefined;
-  preHeight?: number | undefined;
+  moveStartValue = 0;
+  virtualOffset: Excel.Cell.VirtualOffset = {
+    x: 0,
+    y: 0,
+    width: 0,
+    height: 0,
+  };
 
   constructor(eventObserver: Excel.Event.ObserverInstance) {
     super("", true);
@@ -102,25 +99,21 @@ class Cell extends Element implements Excel.Cell.CellInstance {
 
   initEvents() {
     const onMouseMove = debounce((e: MouseEvent) => {
+      if (this.resizing) return;
       this.checkHit(e);
       this.checkResize(e);
-      // if (!this.mouseEntered) return;
     }, 100);
 
     const onMouseDown = (e: MouseEvent) => {
       if (!(this.resize.x || this.resize.y)) return;
-      this.updatePosition();
       this.resizing = true;
-      this.scrollMove(
-        (this.resize.x ? e["x"] : e["y"]) -
-          (this.resize.x ? this.layout!["x"] : this.layout!["y"]),
-        this.resize.x ? "x" : "y"
-      );
+      const offsetProp = this.resize.x ? "x" : "y";
+      this.moveStartValue = e[offsetProp];
+      this.scrollMove(offsetProp);
       const onEndScroll = () => {
-        this.lastVal = null;
         this.resizing = false;
-        this.resize.value = -this.resizeOffset;
-        this.resizeOffset = 0;
+        this.resize.value = 0;
+        this.moveStartValue = 0;
         this.triggerEvent("resize", this.resize, true);
         window.removeEventListener("mousemove", this.moveEvent!);
         this.moveEvent = null;
@@ -143,53 +136,12 @@ class Cell extends Element implements Excel.Cell.CellInstance {
     );
   }
 
-  scrollMove(
-    offset: number,
-    offsetProp: "x" | "y",
-    maxScrollDistance: number = 2000
-  ) {
+  scrollMove(offsetProp: "x" | "y") {
     if (this.resizing) {
-      const curScrollbarVal = -this.resizeOffset;
-      const minMoveVal = offset - curScrollbarVal;
-      const maxMoveVal = minMoveVal + maxScrollDistance;
-      this.isLast = false;
       this.moveEvent = throttle((e: MouseEvent) => {
         if (!this.resizing) return;
-        this.isLast = false;
-        let moveVal = e[offsetProp] - this.layout![offsetProp];
-        if (moveVal > maxMoveVal) {
-          moveVal = maxMoveVal;
-        }
-        if (moveVal < minMoveVal) {
-          moveVal = minMoveVal;
-        }
-        let d = moveVal - offset;
-        let direction;
-        if (this.lastVal === null) {
-          direction = d >= 0 ? true : false;
-        } else {
-          direction = moveVal - this.lastVal >= 0 ? true : false;
-        }
-        this.resizeOffset = -d - curScrollbarVal;
-        if (direction) {
-          const deviation = Math.abs(this.resizeOffset + maxScrollDistance);
-          if (
-            deviation < this.layout!.deviationCompareValue ||
-            this.resizeOffset <= -maxScrollDistance
-          ) {
-            this.resizeOffset = -maxScrollDistance;
-            this.isLast = true;
-          }
-        } else {
-          if (
-            this.resizeOffset > 0 ||
-            Math.abs(this.resizeOffset) < this.layout!.deviationCompareValue
-          ) {
-            this.resizeOffset = 0;
-          }
-        }
-        this.lastVal = offset;
-        this.resize.value = -this.resizeOffset;
+        this.resize.value = e[offsetProp] - this.moveStartValue;
+        // this.moveStartValue = e[offsetProp];
         this.triggerEvent("resize", this.resize);
       }, 100);
     }
@@ -246,7 +198,7 @@ class Cell extends Element implements Excel.Cell.CellInstance {
       if (
         !(
           offsetX <
-            this.position!.rightTop.x - scrollX - Cell.RESIZE_COL_SIZE ||
+            this.position!.rightTop.x - scrollX - Sheet.RESIZE_COL_SIZE ||
           offsetX > this.position!.rightTop.x - scrollX ||
           offsetY < this.position!.leftTop.y - scrollY ||
           offsetY > this.position!.leftBottom.y - scrollY
@@ -273,7 +225,7 @@ class Cell extends Element implements Excel.Cell.CellInstance {
           offsetX < this.position!.leftTop.x - scrollX ||
           offsetX > this.position!.rightTop.x - scrollX ||
           offsetY <
-            this.position!.leftBottom.y - scrollY - Cell.RESIZE_ROW_SIZE ||
+            this.position!.leftBottom.y - scrollY - Sheet.RESIZE_ROW_SIZE ||
           offsetY > this.position!.leftBottom.y - scrollY
         )
       ) {
@@ -281,7 +233,7 @@ class Cell extends Element implements Excel.Cell.CellInstance {
         this.resize = {
           x: false,
           y: true,
-          rowIndex: this.rowIndex!,
+          rowIndex: this.rowIndex! - 1,
           colIndex: this.colIndex!,
         };
       } else {
@@ -364,7 +316,9 @@ class Cell extends Element implements Excel.Cell.CellInstance {
     this.drawCellBg(ctx);
     this.drawCellBorder(ctx);
     if (!this.hidden) {
-      const textAlignOffsetX = this.getTextAlignOffsetX(this.width!);
+      const textAlignOffsetX = this.getTextAlignOffsetX(
+        this.width! + this.virtualOffset.width
+      );
       this.drawDataCellText(ctx, textAlignOffsetX);
       if (this.textStyle.underline) {
         this.drawDataCellUnderline(ctx, textAlignOffsetX);
@@ -376,10 +330,10 @@ class Cell extends Element implements Excel.Cell.CellInstance {
     if (this.textStyle.backgroundColor) {
       ctx.fillStyle = this.textStyle.backgroundColor;
       ctx.fillRect(
-        this.x! - this.scrollX,
-        this.y! - this.scrollY,
-        this.width!,
-        this.height!
+        this.x! - this.scrollX + this.virtualOffset.x,
+        this.y! - this.scrollY + this.virtualOffset.y,
+        this.width! + this.virtualOffset.width,
+        this.height! + this.virtualOffset.height
       );
     }
   }
@@ -390,12 +344,15 @@ class Cell extends Element implements Excel.Cell.CellInstance {
       this.setBorderStyle(ctx, "top");
       ctx.beginPath();
       ctx.moveTo(
-        this.position.leftTop.x - this.scrollX,
-        this.position.leftTop.y - this.scrollY
+        this.position.leftTop.x - this.scrollX + this.virtualOffset.x,
+        this.position.leftTop.y - this.scrollY + this.virtualOffset.y
       );
       ctx.lineTo(
-        this.position.rightTop.x - this.scrollX,
-        this.position.rightTop.y - this.scrollY
+        this.position.rightTop.x -
+          this.scrollX +
+          this.virtualOffset.x +
+          this.virtualOffset.width,
+        this.position.rightTop.y - this.scrollY + this.virtualOffset.y
       );
       ctx.closePath();
       ctx.stroke();
@@ -404,12 +361,15 @@ class Cell extends Element implements Excel.Cell.CellInstance {
       this.setBorderStyle(ctx, "left");
       ctx.beginPath();
       ctx.moveTo(
-        this.position.leftBottom.x - this.scrollX,
-        this.position.leftBottom.y - this.scrollY
+        this.position.leftBottom.x - this.scrollX + this.virtualOffset.x,
+        this.position.leftBottom.y -
+          this.scrollY +
+          this.virtualOffset.y +
+          this.virtualOffset.height
       );
       ctx.lineTo(
-        this.position.leftTop.x - this.scrollX,
-        this.position.leftTop.y - this.scrollY
+        this.position.leftTop.x - this.scrollX + this.virtualOffset.x,
+        this.position.leftTop.y - this.scrollY + this.virtualOffset.y
       );
       ctx.closePath();
       ctx.stroke();
@@ -419,12 +379,21 @@ class Cell extends Element implements Excel.Cell.CellInstance {
     this.setBorderStyle(ctx, "right");
     ctx.beginPath();
     ctx.moveTo(
-      this.position.rightTop.x - this.scrollX,
-      this.position.rightTop.y - this.scrollY
+      this.position.rightTop.x -
+        this.scrollX +
+        this.virtualOffset.x +
+        this.virtualOffset.width,
+      this.position.rightTop.y - this.scrollY + this.virtualOffset.y
     );
     ctx.lineTo(
-      this.position.rightBottom.x - this.scrollX,
-      this.position.rightBottom.y - this.scrollY
+      this.position.rightBottom.x -
+        this.scrollX +
+        this.virtualOffset.x +
+        this.virtualOffset.width,
+      this.position.rightBottom.y -
+        this.scrollY +
+        this.virtualOffset.y +
+        this.virtualOffset.height
     );
     ctx.closePath();
     ctx.stroke();
@@ -433,12 +402,21 @@ class Cell extends Element implements Excel.Cell.CellInstance {
     this.setBorderStyle(ctx, "bottom");
     ctx.beginPath();
     ctx.moveTo(
-      this.position.rightBottom.x - this.scrollX,
-      this.position.rightBottom.y - this.scrollY
+      this.position.rightBottom.x -
+        this.scrollX +
+        this.virtualOffset.x +
+        this.virtualOffset.width,
+      this.position.rightBottom.y -
+        this.scrollY +
+        this.virtualOffset.y +
+        this.virtualOffset.height
     );
     ctx.lineTo(
-      this.position.leftBottom.x - this.scrollX,
-      this.position.leftBottom.y - this.scrollY
+      this.position.leftBottom.x - this.scrollX + this.virtualOffset.x,
+      this.position.leftBottom.y -
+        this.scrollY +
+        this.virtualOffset.y +
+        this.virtualOffset.height
     );
     ctx.closePath();
     ctx.stroke();
@@ -450,8 +428,8 @@ class Cell extends Element implements Excel.Cell.CellInstance {
     this.setTextStyle(ctx);
     ctx.fillText(
       this.value,
-      this.x! + textAlignOffsetX - this.scrollX,
-      this.y! + this.height! / 2 - this.scrollY
+      this.x! + textAlignOffsetX - this.scrollX + this.virtualOffset.x,
+      this.y! + this.height! / 2 - this.scrollY + this.virtualOffset.y
     );
     ctx.restore();
   }
@@ -471,12 +449,29 @@ class Cell extends Element implements Excel.Cell.CellInstance {
     ctx.strokeStyle = this.textStyle.color;
     ctx.beginPath();
     ctx.moveTo(
-      this.x! + textAlignOffsetX - this.scrollX - underlineOffset,
-      this.y! + this.height! / 2 - this.scrollY + wordHeight / 2
+      this.x! +
+        textAlignOffsetX -
+        this.scrollX -
+        underlineOffset +
+        this.virtualOffset.x,
+      this.y! +
+        this.height! / 2 -
+        this.scrollY +
+        wordHeight / 2 +
+        this.virtualOffset.y
     );
     ctx.lineTo(
-      this.x! + textAlignOffsetX - this.scrollX - underlineOffset + wordWidth,
-      this.y! + this.height! / 2 - this.scrollY + wordHeight / 2
+      this.x! +
+        textAlignOffsetX -
+        this.scrollX -
+        underlineOffset +
+        wordWidth +
+        this.virtualOffset.x,
+      this.y! +
+        this.height! / 2 -
+        this.scrollY +
+        wordHeight / 2 +
+        this.virtualOffset.y
     );
     ctx.closePath();
     ctx.stroke();

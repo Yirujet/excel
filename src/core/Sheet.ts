@@ -40,6 +40,8 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
   static DEFAULT_GRADIENT_STOP_COLOR = "transparent";
   static SCROLL_X = 0;
   static SCROLL_Y = 0;
+  static RESIZE_ROW_SIZE = 5;
+  static RESIZE_COL_SIZE = 10;
   private ctx: CanvasRenderingContext2D | null = null;
   name = "";
   cells: Excel.Cell.CellInstance[][] = [];
@@ -62,9 +64,6 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
   fixedRowHeight = 0;
   fixedColWidth = 0;
   layout: Excel.LayoutInfo | null = null;
-  resizeOffset: number | null = null;
-  maxColCntInView = 0;
-  maxRowCntInView = 0;
   resizeInfo: Excel.Cell.CellResize = {
     x: false,
     y: false,
@@ -97,12 +96,6 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
   }
 
   render() {
-    this.maxColCntInView = Math.floor(
-      this.width / Sheet.DEFAULT_CELL_MIN_WIDTH
-    );
-    this.maxRowCntInView = Math.floor(
-      this.height / Sheet.DEFAULT_CELL_MIN_HEIGHT
-    );
     this.ctx = (this.$el as HTMLCanvasElement).getContext("2d")!;
     (this.$el as HTMLCanvasElement).style.width = `${this.width}px`;
     (this.$el as HTMLCanvasElement).style.height = `${this.height}px`;
@@ -113,11 +106,6 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
     this.ctx!.translate(0.5, 0.5);
     this.ctx!.scale(window.devicePixelRatio, window.devicePixelRatio);
     this.initScrollbar();
-    this.cells.forEach((row) => {
-      row.forEach((cell) => {
-        cell.layout = this.layout!;
-      });
-    });
     this.sheetEventsObserver.observe(this.$el as HTMLCanvasElement);
     this.globalEventsObserver.observe(window as any);
     this.draw(true);
@@ -170,13 +158,9 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
           const cell = new Cell(this.sheetEventsObserver);
           cell.x = x;
           cell.y = y;
-          cell.preX = x;
-          cell.preY = y;
           cell.width =
             j === 0 ? Sheet.DEFAULT_INDEX_CELL_WIDTH : Sheet.DEFAULT_CELL_WIDTH;
           cell.height = Sheet.DEFAULT_CELL_HEIGHT;
-          cell.preWidth = cell.width;
-          cell.preHeight = cell.height;
           cell.rowIndex = i;
           cell.colIndex = j;
           cell.cellName = $10226(j - 1);
@@ -331,50 +315,9 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
 
   handleCellResize(resize: Excel.Cell.CellResize, isEnd = false) {
     if (resize.value) {
-      console.log(resize);
       this.resizeInfo = resize;
-      // if (resize.x) {
-      //   if (this.resizeOffset === null) {
-      //     this.resizeOffset = this.cells[0][resize.colIndex!].width;
-      //   }
-      //   // this.cells.slice(0, this.fixedRowIndex).forEach((e) => {
-      //   // })
-      //   this.cells.slice(0, this.maxRowCntInView).forEach((e) => {
-      //     console.log(resize);
-      //     e[resize.colIndex!].width = this.resizeOffset! + resize.value!;
-      //     e[resize.colIndex!].updatePosition();
-      //     // for (let i = resize.colIndex! + 1; i < this.maxColCntInView; i++) {
-      //     //   if (!e[i].preX) {
-      //     //     e[i].preX = e[i].x!;
-      //     //   }
-      //     //   e[i].x = e[i].preX! + resize.value!;
-      //     //   e[i].updatePosition();
-      //     // }
-      //   });
-      // }
-      // if (resize.y) {
-      //   if (this.resizeOffset === null) {
-      //     this.resizeOffset = this.cells[resize.rowIndex!][0].height;
-      //   }
-      //   this.cells[resize.rowIndex!].forEach((e) => {
-      //     e.height = this.resizeOffset! + resize.value!;
-      //     e.updatePosition();
-      //   });
-      //   for (let i = resize.rowIndex! + 1; i < this.maxRowCntInView; i++) {
-      //     this.cells[i].forEach((e) => {
-      //       if (!e.preY) {
-      //         e.preY = e.y!;
-      //       }
-      //       e.y = e.preY! + resize.value!;
-      //       e.updatePosition();
-      //     });
-      //   }
-      // }
     }
-    this.draw();
-    if (isEnd) {
-      this.resizeOffset = 0;
-    }
+    this.draw(isEnd);
   }
 
   redraw(percent: number, type: Excel.Scrollbar.Type, isEnd: boolean) {
@@ -394,11 +337,19 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
     scrollY: number
   ) {
     let minYIndex = cells.findIndex(
-      (e) => e[0].position.leftBottom.y! - scrollY > 0
+      (e) =>
+        e[0].position.leftBottom.y! -
+          scrollY +
+          (this.resizeInfo.y ? this.resizeInfo.value || 0 : 0) >
+        0
     );
     minYIndex = Math.max(minYIndex, 0);
     let maxYIndex = cells.findIndex(
-      (e) => e[0].position.leftTop.y! - scrollY > this.height
+      (e) =>
+        e[0].position.leftTop.y! -
+          scrollY +
+          (this.resizeInfo.y ? this.resizeInfo.value || 0 : 0) >
+        this.height
     );
     maxYIndex =
       this.verticalScrollBar?.percent === 1
@@ -407,11 +358,19 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
         ? cells.length - 1
         : maxYIndex;
     let minXIndex = cells[0].findIndex(
-      (e) => e.position.rightTop.x! - scrollX > 0
+      (e) =>
+        e.position.rightTop.x! -
+          scrollX +
+          (this.resizeInfo.x ? this.resizeInfo.value || 0 : 0) >
+        0
     );
     minXIndex = Math.max(minXIndex, 0);
     let maxXIndex = cells[0].findIndex(
-      (e) => e.position.leftTop.x! - scrollX > this.width
+      (e) =>
+        e.position.leftTop.x! -
+          scrollX +
+          (this.resizeInfo.x ? this.resizeInfo.value || 0 : 0) >
+        this.width
     );
     maxXIndex =
       this.horizontalScrollBar?.percent === 1
@@ -476,30 +435,43 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
           position: { leftTop, rightTop, rightBottom, leftBottom },
         } = cell;
         if (
-          leftTop.x - scrollX > this.width ||
-          leftBottom.y - scrollY > this.height
+          leftTop.x -
+            scrollX +
+            (this.resizeInfo.x ? this.resizeInfo.value || 0 : 0) >
+            this.width ||
+          leftBottom.y -
+            scrollY +
+            (this.resizeInfo.y ? this.resizeInfo.value || 0 : 0) >
+            this.height
         ) {
           break;
         }
-        if (rightTop.x - scrollX < 0 || rightBottom.y - scrollY < 0) {
+        if (
+          leftTop.x -
+            scrollX +
+            (this.resizeInfo.x ? this.resizeInfo.value || 0 : 0) <
+            0 ||
+          rightBottom.y -
+            scrollY +
+            (this.resizeInfo.y ? this.resizeInfo.value || 0 : 0) <
+            0
+        ) {
           continue;
         }
         if (this.resizeInfo.x) {
-          if (
-            i === this.resizeInfo.rowIndex &&
-            j === this.resizeInfo.colIndex! + (ignoreXIndex || 0)
-          ) {
-            if (!cell.preWidth) {
-              cell.preWidth = cell.width!;
-            }
-            cell.width = cell.preWidth + this.resizeInfo.value!;
+          if (j === this.resizeInfo.colIndex! + (ignoreXIndex || 0)) {
+            cell.virtualOffset.width = this.resizeInfo.value!;
           }
           if (j > this.resizeInfo.colIndex! + (ignoreXIndex || 0)) {
-            if (!cell.preX) {
-              cell.preX = cell.x!;
-            }
-            cell.x = cell.preX! + this.resizeInfo.value!;
-            cell.updatePosition();
+            cell.virtualOffset.x = this.resizeInfo.value!;
+          }
+        }
+        if (this.resizeInfo.y) {
+          if (i === this.resizeInfo.rowIndex! + (ignoreYIndex || 0)) {
+            cell.virtualOffset.height = this.resizeInfo.value!;
+          }
+          if (i > this.resizeInfo.rowIndex! + (ignoreYIndex || 0)) {
+            cell.virtualOffset.y = this.resizeInfo.value!;
           }
         }
         if (!isEnd) {
