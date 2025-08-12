@@ -15,6 +15,11 @@ export default class VerticalScrollbar extends Scrollbar {
     this.init();
   }
   init() {
+    this.updateScrollbarInfo();
+    this.updatePosition();
+    this.initEvents();
+  }
+  updateScrollbarInfo() {
     if (this.layout!.bodyHeight < this.layout!.bodyRealHeight) {
       this.show = true;
     }
@@ -29,8 +34,6 @@ export default class VerticalScrollbar extends Scrollbar {
       }
       this.thumb.padding = (this.track.width - this.thumb.width) / 2;
     }
-    this.updatePosition();
-    this.initEvents();
   }
   initEvents() {
     const onStartScroll = (e: MouseEvent) => {

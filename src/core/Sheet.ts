@@ -4,6 +4,7 @@ import debounce from "../utils/debounce";
 import EventObserver from "../utils/EventObserver";
 import throttle from "../utils/throttle";
 import Cell from "./Cell";
+import CellResizer from "./CellResizer";
 import HorizontalScrollbar from "./Scrollbar/HorizontalScrollbar";
 import VerticalScrollbar from "./Scrollbar/VerticalScrollbar";
 
@@ -42,6 +43,9 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
   static SCROLL_Y = 0;
   static RESIZE_ROW_SIZE = 5;
   static RESIZE_COL_SIZE = 10;
+  static DEFAULT_RESIZER_LINE_WIDTH = 2;
+  static DEFAULT_RESIZER_LINE_DASH = [0, 3, 3];
+  static DEFAULT_RESIZER_LINE_COLOR = "#409EFF";
   private ctx: CanvasRenderingContext2D | null = null;
   name = "";
   cells: Excel.Cell.CellInstance[][] = [];
@@ -49,9 +53,10 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
   toolsConfig: Partial<Excel.Sheet.toolsConfig> = {};
   width = 0;
   height = 0;
-  scroll: { x: number; y: number } = { x: 0, y: 0 };
+  scroll: Excel.Sheet.ScrollInfo = { x: 0, y: 0 };
   horizontalScrollBar: HorizontalScrollbar | null = null;
   verticalScrollBar: VerticalScrollbar | null = null;
+  cellResizer: CellResizer | null = null;
   sheetEventsObserver: Excel.Event.ObserverInstance = new EventObserver();
   globalEventsObserver: Excel.Event.ObserverInstance = new EventObserver();
   realWidth = 0;
@@ -106,6 +111,7 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
     this.ctx!.translate(0.5, 0.5);
     this.ctx!.scale(window.devicePixelRatio, window.devicePixelRatio);
     this.initScrollbar();
+    this.initCellResizer();
     this.sheetEventsObserver.observe(this.$el as HTMLCanvasElement);
     this.globalEventsObserver.observe(window as any);
     this.draw(true);
@@ -261,6 +267,10 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
     }
   }
 
+  initCellResizer() {
+    this.cellResizer = new CellResizer(this.layout!);
+  }
+
   initScrollbar() {
     this.initLayout();
     this.horizontalScrollBar = new HorizontalScrollbar(
@@ -317,7 +327,54 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
     if (resize.value) {
       this.resizeInfo = resize;
     }
-    this.draw(isEnd);
+    if (isEnd) {
+      if (this.resizeInfo.x) {
+        this.cells.forEach((row) => {
+          row.forEach((cell, colIndex) => {
+            if (colIndex === this.resizeInfo.colIndex!) {
+              cell.width = cell.width! + this.resizeInfo.value!;
+              cell.updatePosition();
+            }
+            if (colIndex > this.resizeInfo.colIndex!) {
+              cell.x = cell.x! + this.resizeInfo.value!;
+              cell.updatePosition();
+            }
+          });
+        });
+        this.layout!.bodyRealWidth += this.resizeInfo.value!;
+        this.realWidth += this.resizeInfo.value!;
+        this.horizontalScrollBar?.updateScrollbarInfo();
+        this.horizontalScrollBar?.updatePosition();
+      }
+      if (this.resizeInfo.y) {
+        this.cells.forEach((row, rowIndex) => {
+          row.forEach((cell) => {
+            if (rowIndex === this.resizeInfo.rowIndex!) {
+              cell.height = cell.height! + this.resizeInfo.value!;
+              cell.updatePosition();
+            }
+            if (rowIndex > this.resizeInfo.rowIndex!) {
+              cell.y = cell.y! + this.resizeInfo.value!;
+              cell.updatePosition();
+            }
+          });
+        });
+        this.layout!.bodyRealHeight += this.resizeInfo.value!;
+        this.realHeight += this.resizeInfo.value!;
+        this.verticalScrollBar?.updateScrollbarInfo();
+        this.verticalScrollBar?.updatePosition();
+      }
+      this.resizeInfo = {
+        x: false,
+        y: false,
+        rowIndex: null,
+        colIndex: null,
+        value: null,
+      };
+      this.draw(true);
+    } else {
+      this.draw(false);
+    }
   }
 
   redraw(percent: number, type: Excel.Scrollbar.Type, isEnd: boolean) {
@@ -329,6 +386,7 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
     this.drawSheetCells(isEnd);
     this.drawFixedShadow();
     this.drawScrollbar();
+    this.drawCellResizer();
   }
 
   getRangeInView(
@@ -336,42 +394,26 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
     scrollX: number,
     scrollY: number
   ) {
-    let minYIndex = cells.findIndex(
-      (e) =>
-        e[0].position.leftBottom.y! -
-          scrollY +
-          (this.resizeInfo.y ? this.resizeInfo.value || 0 : 0) >
-        0
-    );
+    let minYIndex = cells.findIndex((e, i) => {
+      return e[0].position.leftBottom.y! - scrollY > 0;
+    });
     minYIndex = Math.max(minYIndex, 0);
-    let maxYIndex = cells.findIndex(
-      (e) =>
-        e[0].position.leftTop.y! -
-          scrollY +
-          (this.resizeInfo.y ? this.resizeInfo.value || 0 : 0) >
-        this.height
-    );
+    let maxYIndex = cells.findIndex((e, i) => {
+      return e[0].position.leftTop.y! - scrollY > this.height;
+    });
     maxYIndex =
       this.verticalScrollBar?.percent === 1
         ? cells.length - 1
         : maxYIndex === -1
         ? cells.length - 1
         : maxYIndex;
-    let minXIndex = cells[0].findIndex(
-      (e) =>
-        e.position.rightTop.x! -
-          scrollX +
-          (this.resizeInfo.x ? this.resizeInfo.value || 0 : 0) >
-        0
-    );
+    let minXIndex = cells[0].findIndex((e, i) => {
+      return e.position.rightTop.x! - scrollX > 0;
+    });
     minXIndex = Math.max(minXIndex, 0);
-    let maxXIndex = cells[0].findIndex(
-      (e) =>
-        e.position.leftTop.x! -
-          scrollX +
-          (this.resizeInfo.x ? this.resizeInfo.value || 0 : 0) >
-        this.width
-    );
+    let maxXIndex = cells[0].findIndex((e, i) => {
+      return e.position.leftTop.x! - scrollX > this.width;
+    });
     maxXIndex =
       this.horizontalScrollBar?.percent === 1
         ? cells[0].length - 1
@@ -435,44 +477,13 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
           position: { leftTop, rightTop, rightBottom, leftBottom },
         } = cell;
         if (
-          leftTop.x -
-            scrollX +
-            (this.resizeInfo.x ? this.resizeInfo.value || 0 : 0) >
-            this.width ||
-          leftBottom.y -
-            scrollY +
-            (this.resizeInfo.y ? this.resizeInfo.value || 0 : 0) >
-            this.height
+          leftTop.x - scrollX > this.width ||
+          leftBottom.y - scrollY > this.height
         ) {
           break;
         }
-        if (
-          leftTop.x -
-            scrollX +
-            (this.resizeInfo.x ? this.resizeInfo.value || 0 : 0) <
-            0 ||
-          rightBottom.y -
-            scrollY +
-            (this.resizeInfo.y ? this.resizeInfo.value || 0 : 0) <
-            0
-        ) {
+        if (leftTop.x - scrollX < 0 || rightBottom.y - scrollY < 0) {
           continue;
-        }
-        if (this.resizeInfo.x) {
-          if (j === this.resizeInfo.colIndex! + (ignoreXIndex || 0)) {
-            cell.virtualOffset.width = this.resizeInfo.value!;
-          }
-          if (j > this.resizeInfo.colIndex! + (ignoreXIndex || 0)) {
-            cell.virtualOffset.x = this.resizeInfo.value!;
-          }
-        }
-        if (this.resizeInfo.y) {
-          if (i === this.resizeInfo.rowIndex! + (ignoreYIndex || 0)) {
-            cell.virtualOffset.height = this.resizeInfo.value!;
-          }
-          if (i > this.resizeInfo.rowIndex! + (ignoreYIndex || 0)) {
-            cell.virtualOffset.y = this.resizeInfo.value!;
-          }
         }
         if (!isEnd) {
           cell.clearEvents!(this.sheetEventsObserver, cell);
@@ -501,6 +512,19 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
     }
     if (this.verticalScrollBar!.show && this.horizontalScrollBar!.show) {
       this.drawScrollbarCoincide();
+    }
+  }
+
+  drawCellResizer() {
+    if (this.resizeInfo.x || this.resizeInfo.y) {
+      let cellInfo: Excel.Cell.CellInstance =
+        this.cells[this.resizeInfo.rowIndex!][this.resizeInfo.colIndex!];
+      this.cellResizer!.render(
+        this.ctx!,
+        cellInfo,
+        this.resizeInfo,
+        this.scroll
+      );
     }
   }
 

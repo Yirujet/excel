@@ -5,6 +5,11 @@ namespace Excel {
       [k in toolTypeUnion as `cell${Capitalize<k>}`]: boolean;
     };
 
+    export type ScrollInfo = {
+      x: number;
+      y: number;
+    };
+
     export interface SheetInstance {
       $el: HTMLElement | HTMLCanvasElement | null;
       name: string;

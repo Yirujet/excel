@@ -15,6 +15,11 @@ export default class HorizontalScrollbar extends Scrollbar {
     this.init();
   }
   init() {
+    this.updateScrollbarInfo();
+    this.updatePosition();
+    this.initEvents();
+  }
+  updateScrollbarInfo() {
     if (
       this.layout!.bodyRealWidth >
       this.layout!.width - this.layout!.fixedLeftWidth
@@ -32,9 +37,8 @@ export default class HorizontalScrollbar extends Scrollbar {
       }
       this.thumb.padding = (this.track.height - this.thumb.height) / 2;
     }
-    this.updatePosition();
-    this.initEvents();
   }
+
   initEvents() {
     const onStartScroll = (e: MouseEvent) => {
       if (!this.show) return;
