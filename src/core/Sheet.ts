@@ -34,7 +34,7 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
   static DEFAULT_CELL_FONT_FAMILY = "宋体";
   static DEFAULT_CELL_ROW_COUNT = 500;
   static DEFAULT_CELL_COL_COUNT = 1000;
-  static DEFAULT_CELL_LINE_DASH = [0, 2, 2];
+  static DEFAULT_CELL_LINE_DASH = [3, 5];
   static DEVIATION_COMPARE_VALUE = 10e-6;
   static DEFAULT_GRADIENT_OFFSET = 6;
   static DEFAULT_GRADIENT_START_COLOR = "rgba(0, 0, 0, 0.12)";
@@ -44,7 +44,7 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
   static RESIZE_ROW_SIZE = 5;
   static RESIZE_COL_SIZE = 10;
   static DEFAULT_RESIZER_LINE_WIDTH = 2;
-  static DEFAULT_RESIZER_LINE_DASH = [0, 3, 3];
+  static DEFAULT_RESIZER_LINE_DASH = [3, 5];
   static DEFAULT_RESIZER_LINE_COLOR = "#409EFF";
   private ctx: CanvasRenderingContext2D | null = null;
   name = "";
@@ -100,6 +100,25 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
     }
   }
 
+  initEvents() {
+    const onMousedown = (e: MouseEvent) => {
+      console.log(e.x, e.y);
+    };
+    const onMouseup = (e: MouseEvent) => {
+      console.log(e.x, e.y);
+    };
+    const globalEventListeners = {
+      mousedown: onMousedown,
+      mouseup: onMouseup,
+    };
+
+    this.registerListenerFromOnProp(
+      globalEventListeners,
+      this.globalEventsObserver,
+      this
+    );
+  }
+
   render() {
     this.ctx = (this.$el as HTMLCanvasElement).getContext("2d")!;
     (this.$el as HTMLCanvasElement).style.width = `${this.width}px`;
@@ -112,9 +131,39 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
     this.ctx!.scale(window.devicePixelRatio, window.devicePixelRatio);
     this.initScrollbar();
     this.initCellResizer();
+    this.initEvents();
     this.sheetEventsObserver.observe(this.$el as HTMLCanvasElement);
     this.globalEventsObserver.observe(window as any);
     this.draw(true);
+
+    // setInterval(() => {
+    //   console.log(
+    //     this.horizontalScrollBar!.track.width -
+    //       this.horizontalScrollBar!.thumb.width,
+    //     this.horizontalScrollBar!.value,
+    //     this.horizontalScrollBar!.percent
+    //   );
+    //   this.horizontalScrollBar!.value -= Sheet.DEFAULT_CELL_WIDTH;
+    //   if (
+    //     this.horizontalScrollBar!.value +
+    //       this.horizontalScrollBar!.track.width <=
+    //     this.horizontalScrollBar!.thumb.width
+    //   ) {
+    //     this.horizontalScrollBar!.value =
+    //       this.horizontalScrollBar!.thumb.width -
+    //       this.horizontalScrollBar!.track.width;
+    //     this.horizontalScrollBar!.isLast = true;
+    //   }
+    //   this.horizontalScrollBar!.percent =
+    //     this.horizontalScrollBar!.value /
+    //     (this.horizontalScrollBar!.thumb.width -
+    //       this.horizontalScrollBar!.track.width);
+    //   this.redraw(
+    //     this.horizontalScrollBar!.percent,
+    //     this.horizontalScrollBar!.type,
+    //     false
+    //   );
+    // }, 1000);
   }
 
   initLayout() {

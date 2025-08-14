@@ -68,6 +68,7 @@ namespace Excel {
     };
 
     export type ObserverTypes = (
+      | Excel.Sheet.SheetInstance
       | Excel.Scrollbar.ScrollbarInstance
       | Excel.Cell.CellInstance
     ) &
