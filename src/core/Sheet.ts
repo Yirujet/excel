@@ -76,6 +76,7 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
     colIndex: null,
     value: null,
   };
+  selectCells: Excel.Cell.CellInstance[] = [];
 
   constructor(
     name: string,
@@ -102,14 +103,88 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
 
   initEvents() {
     const onMousedown = (e: MouseEvent) => {
-      console.log(e.x, e.y);
-    };
-    const onMouseup = (e: MouseEvent) => {
-      console.log(e.x, e.y);
+      if (
+        this.verticalScrollBar?.dragging ||
+        this.horizontalScrollBar?.dragging
+      ) {
+        return;
+      }
+      const findEnteredCell = (x: number, y: number) => {
+        let cell = null;
+        for (let i = 0; i < this.cells.length; i++) {
+          if (cell) {
+            break;
+          }
+          for (let j = 0; j < this.cells[i].length; j++) {
+            const {
+              position: { leftTop, leftBottom, rightTop, rightBottom },
+            } = this.cells[i][j];
+            if (
+              leftTop.x <= x &&
+              leftTop.y <= y &&
+              rightTop.x >= x &&
+              leftBottom.y >= y
+            ) {
+              cell = this.cells[i][j];
+              break;
+            }
+          }
+        }
+        return cell;
+      };
+      const x = e.offsetX - this.layout!.x + this.scroll.x;
+      const y = e.offsetY - this.layout!.y + this.scroll.y;
+      const startCell = findEnteredCell(x, y);
+      const onSelectCells = throttle((e: MouseEvent) => {
+        if (startCell) {
+          const x = e.offsetX - this.layout!.x + this.scroll.x;
+          const y = e.offsetY - this.layout!.y + this.scroll.y;
+          const endCell = findEnteredCell(x, y);
+          if (this.selectCells.length > 0) {
+            this.selectCells.forEach((cell) => {
+              cell.selected = false;
+            });
+            this.selectCells = [];
+          }
+          if (endCell) {
+            const minRowIndex = Math.min(
+              startCell.rowIndex!,
+              endCell.rowIndex!
+            );
+            const maxRowIndex = Math.max(
+              startCell.rowIndex!,
+              endCell.rowIndex!
+            );
+            const minColIndex = Math.min(
+              startCell.colIndex!,
+              endCell.colIndex!
+            );
+            const maxColIndex = Math.max(
+              startCell.colIndex!,
+              endCell.colIndex!
+            );
+            for (let i = minRowIndex; i <= maxRowIndex; i++) {
+              for (let j = minColIndex; j <= maxColIndex; j++) {
+                this.cells[i][j].selected = true;
+                this.selectCells.push(this.cells[i][j]);
+              }
+            }
+            this.draw(false);
+          }
+        }
+      }, 50);
+      const onEndSelectCells = () => {
+        if (this.selectCells.length > 0) {
+          this.draw(true);
+        }
+        window.removeEventListener("mousemove", onSelectCells);
+        window.removeEventListener("mouseup", onEndSelectCells);
+      };
+      window.addEventListener("mousemove", onSelectCells);
+      window.addEventListener("mouseup", onEndSelectCells);
     };
     const globalEventListeners = {
       mousedown: onMousedown,
-      mouseup: onMouseup,
     };
 
     this.registerListenerFromOnProp(

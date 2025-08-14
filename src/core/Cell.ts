@@ -314,6 +314,17 @@ class Cell extends Element implements Excel.Cell.CellInstance {
     this.scrollY = scrollY;
     this.drawCellBg(ctx);
     this.drawCellBorder(ctx);
+    if (this.selected) {
+      ctx.save();
+      ctx.strokeStyle = "#409EFF";
+      ctx.strokeRect(
+        this.x! - this.scrollX,
+        this.y! - this.scrollY,
+        this.width!,
+        this.height!
+      );
+      ctx.restore();
+    }
     if (!this.hidden) {
       const textAlignOffsetX = this.getTextAlignOffsetX(this.width!);
       this.drawDataCellText(ctx, textAlignOffsetX);
