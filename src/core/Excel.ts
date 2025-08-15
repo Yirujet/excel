@@ -8,6 +8,7 @@ import Tool from "./Tool";
 
 class Excel extends Element implements Excel.ExcelInstance {
   static CSS_PREFIX = "excel";
+  static TOOL_WRAPPER_HEIGHT = 50;
   private sequence = 0;
   $target: HTMLElement | null = null;
   name = "";

@@ -7,6 +7,7 @@ import Cell from "./Cell";
 import CellResizer from "./CellResizer";
 import HorizontalScrollbar from "./Scrollbar/HorizontalScrollbar";
 import VerticalScrollbar from "./Scrollbar/VerticalScrollbar";
+import Excel from "./Excel";
 
 class Sheet extends Element implements Excel.Sheet.SheetInstance {
   static TOOLS_CONFIG: Excel.Sheet.toolsConfig = {
@@ -35,6 +36,7 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
   static DEFAULT_CELL_ROW_COUNT = 500;
   static DEFAULT_CELL_COL_COUNT = 1000;
   static DEFAULT_CELL_LINE_DASH = [3, 5];
+  static DEFAULT_CELL_LINE_COLOR = "rgb(230, 230, 230)";
   static DEVIATION_COMPARE_VALUE = 10e-6;
   static DEFAULT_GRADIENT_OFFSET = 6;
   static DEFAULT_GRADIENT_START_COLOR = "rgba(0, 0, 0, 0.12)";
@@ -46,6 +48,7 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
   static DEFAULT_RESIZER_LINE_WIDTH = 2;
   static DEFAULT_RESIZER_LINE_DASH = [3, 5];
   static DEFAULT_RESIZER_LINE_COLOR = "#409EFF";
+  static DEFAULT_CELL_SELECTED_COLOR = "#409EFF";
   private ctx: CanvasRenderingContext2D | null = null;
   name = "";
   cells: Excel.Cell.CellInstance[][] = [];
@@ -76,7 +79,7 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
     colIndex: null,
     value: null,
   };
-  selectCells: Excel.Cell.CellInstance[] = [];
+  selectedCells: Excel.Cell.CellInstance[] = [];
 
   constructor(
     name: string,
@@ -101,7 +104,74 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
     }
   }
 
+  private findEnteredCell(x: number, y: number) {
+    let cell = null;
+    for (let i = 0; i < this.cells.length; i++) {
+      if (cell) {
+        break;
+      }
+      for (let j = 0; j < this.cells[i].length; j++) {
+        const {
+          position: { leftTop, leftBottom, rightTop, rightBottom },
+        } = this.cells[i][j];
+        if (
+          leftTop.x <= x &&
+          leftTop.y <= y &&
+          rightTop.x >= x &&
+          leftBottom.y >= y
+        ) {
+          cell = this.cells[i][j];
+          break;
+        }
+      }
+    }
+    return cell;
+  }
+
+  private exceed(x: number, y: number) {
+    const exceedInfo = {
+      x: {
+        exceed: false,
+        value: 0,
+      },
+      y: {
+        exceed: false,
+        value: 0,
+      },
+    };
+    const offsetX = x - this.layout!.x;
+    const offsetY = y - this.layout!.y - Excel.TOOL_WRAPPER_HEIGHT;
+    if (offsetX < this.fixedColWidth) {
+      exceedInfo.x.exceed = true;
+      exceedInfo.x.value = offsetX - this.fixedColWidth;
+    } else if (offsetX > this.layout!.width) {
+      exceedInfo.x.exceed = true;
+      exceedInfo.x.value = offsetX - this.layout!.width;
+    } else {
+      exceedInfo.y.exceed = false;
+      exceedInfo.y.value = 0;
+    }
+    if (offsetY < this.fixedRowHeight) {
+      exceedInfo.y.exceed = true;
+      exceedInfo.y.value = offsetY - this.fixedRowHeight;
+    } else if (offsetY > this.layout!.height) {
+      exceedInfo.y.exceed = true;
+      exceedInfo.y.value = offsetY - this.layout!.height;
+    } else {
+      exceedInfo.y.exceed = false;
+      exceedInfo.y.value = 0;
+    }
+    return exceedInfo;
+  }
+
+  clearSelectCells() {
+    if (this.selectedCells.length > 0) {
+      this.selectedCells = [];
+    }
+  }
+
   initEvents() {
+    let startCell: Excel.Cell.CellInstance | null = null;
     const onMousedown = (e: MouseEvent) => {
       if (
         this.verticalScrollBar?.dragging ||
@@ -109,43 +179,89 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
       ) {
         return;
       }
-      const findEnteredCell = (x: number, y: number) => {
-        let cell = null;
-        for (let i = 0; i < this.cells.length; i++) {
-          if (cell) {
-            break;
-          }
-          for (let j = 0; j < this.cells[i].length; j++) {
-            const {
-              position: { leftTop, leftBottom, rightTop, rightBottom },
-            } = this.cells[i][j];
-            if (
-              leftTop.x <= x &&
-              leftTop.y <= y &&
-              rightTop.x >= x &&
-              leftBottom.y >= y
-            ) {
-              cell = this.cells[i][j];
-              break;
-            }
-          }
+      const exceedInfo = this.exceed(e.x, e.y);
+      if (!exceedInfo.x.exceed && !exceedInfo.y.exceed) {
+        const x = e.x - this.layout!.x + this.scroll.x;
+        const y =
+          e.y - this.layout!.y + this.scroll.y - Excel.TOOL_WRAPPER_HEIGHT;
+        startCell = this.findEnteredCell(x, y);
+        if (startCell) {
+          this.clearSelectCells();
+          this.selectedCells = [startCell];
         }
-        return cell;
-      };
-      const x = e.offsetX - this.layout!.x + this.scroll.x;
-      const y = e.offsetY - this.layout!.y + this.scroll.y;
-      const startCell = findEnteredCell(x, y);
+      }
       const onSelectCells = throttle((e: MouseEvent) => {
         if (startCell) {
-          const x = e.offsetX - this.layout!.x + this.scroll.x;
-          const y = e.offsetY - this.layout!.y + this.scroll.y;
-          const endCell = findEnteredCell(x, y);
-          if (this.selectCells.length > 0) {
-            this.selectCells.forEach((cell) => {
-              cell.selected = false;
-            });
-            this.selectCells = [];
+          const exceedInfo = this.exceed(e.x, e.y);
+          if (exceedInfo.x.exceed) {
+            this.horizontalScrollBar!.value -= exceedInfo.x.value;
+            if (
+              this.horizontalScrollBar!.value +
+                this.horizontalScrollBar!.track.width <=
+              this.horizontalScrollBar!.thumb.width
+            ) {
+              this.horizontalScrollBar!.value =
+                this.horizontalScrollBar!.thumb.width -
+                this.horizontalScrollBar!.track.width;
+              this.horizontalScrollBar!.isLast = true;
+            }
+            if (
+              this.horizontalScrollBar!.value > 0 ||
+              Math.abs(this.horizontalScrollBar!.value) <
+                this.layout!.deviationCompareValue
+            ) {
+              this.horizontalScrollBar!.value = 0;
+            }
+            this.horizontalScrollBar!.percent =
+              this.horizontalScrollBar!.value /
+              (this.horizontalScrollBar!.thumb.width -
+                this.horizontalScrollBar!.track.width);
+            this.updateScroll(
+              this.horizontalScrollBar!.percent,
+              this.horizontalScrollBar!.type
+            );
           }
+          if (exceedInfo.y.exceed) {
+            this.verticalScrollBar!.value -= exceedInfo.y.value;
+            if (
+              this.verticalScrollBar!.value +
+                this.verticalScrollBar!.track.height <=
+              this.verticalScrollBar!.thumb.height
+            ) {
+              this.verticalScrollBar!.value =
+                this.verticalScrollBar!.thumb.height -
+                this.verticalScrollBar!.track.height;
+              this.verticalScrollBar!.isLast = true;
+            }
+            if (
+              this.verticalScrollBar!.value > 0 ||
+              Math.abs(this.verticalScrollBar!.value) <
+                this.layout!.deviationCompareValue
+            ) {
+              this.verticalScrollBar!.value = 0;
+            }
+            this.verticalScrollBar!.percent =
+              this.verticalScrollBar!.value /
+              (this.verticalScrollBar!.thumb.height -
+                this.verticalScrollBar!.track.height);
+            this.updateScroll(
+              this.verticalScrollBar!.percent,
+              this.verticalScrollBar!.type
+            );
+          }
+          const x = Math.max(
+            Math.min(e.x - this.layout!.x + this.scroll.x, this.realWidth),
+            0
+          );
+          const y = Math.max(
+            Math.min(
+              e.y - this.layout!.y + this.scroll.y - Excel.TOOL_WRAPPER_HEIGHT,
+              this.realHeight
+            ),
+            0
+          );
+          const endCell = this.findEnteredCell(x, y);
+          this.clearSelectCells();
           if (endCell) {
             const minRowIndex = Math.min(
               startCell.rowIndex!,
@@ -165,8 +281,9 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
             );
             for (let i = minRowIndex; i <= maxRowIndex; i++) {
               for (let j = minColIndex; j <= maxColIndex; j++) {
-                this.cells[i][j].selected = true;
-                this.selectCells.push(this.cells[i][j]);
+                if (!this.cells[i][j].fixed.x && !this.cells[i][j].fixed.y) {
+                  this.selectedCells.push(this.cells[i][j]);
+                }
               }
             }
             this.draw(false);
@@ -174,7 +291,7 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
         }
       }, 50);
       const onEndSelectCells = () => {
-        if (this.selectCells.length > 0) {
+        if (this.selectedCells.length > 0) {
           this.draw(true);
         }
         window.removeEventListener("mousemove", onSelectCells);
@@ -210,35 +327,6 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
     this.sheetEventsObserver.observe(this.$el as HTMLCanvasElement);
     this.globalEventsObserver.observe(window as any);
     this.draw(true);
-
-    // setInterval(() => {
-    //   console.log(
-    //     this.horizontalScrollBar!.track.width -
-    //       this.horizontalScrollBar!.thumb.width,
-    //     this.horizontalScrollBar!.value,
-    //     this.horizontalScrollBar!.percent
-    //   );
-    //   this.horizontalScrollBar!.value -= Sheet.DEFAULT_CELL_WIDTH;
-    //   if (
-    //     this.horizontalScrollBar!.value +
-    //       this.horizontalScrollBar!.track.width <=
-    //     this.horizontalScrollBar!.thumb.width
-    //   ) {
-    //     this.horizontalScrollBar!.value =
-    //       this.horizontalScrollBar!.thumb.width -
-    //       this.horizontalScrollBar!.track.width;
-    //     this.horizontalScrollBar!.isLast = true;
-    //   }
-    //   this.horizontalScrollBar!.percent =
-    //     this.horizontalScrollBar!.value /
-    //     (this.horizontalScrollBar!.thumb.width -
-    //       this.horizontalScrollBar!.track.width);
-    //   this.redraw(
-    //     this.horizontalScrollBar!.percent,
-    //     this.horizontalScrollBar!.type,
-    //     false
-    //   );
-    // }, 1000);
   }
 
   initLayout() {
@@ -326,22 +414,22 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
             cell.border = {
               top: {
                 solid: true,
-                color: "rgb(230, 230, 230)",
+                color: Sheet.DEFAULT_CELL_LINE_COLOR,
                 bold: false,
               },
               bottom: {
                 solid: true,
-                color: "rgb(230, 230, 230)",
+                color: Sheet.DEFAULT_CELL_LINE_COLOR,
                 bold: false,
               },
               left: {
                 solid: true,
-                color: "rgb(230, 230, 230)",
+                color: Sheet.DEFAULT_CELL_LINE_COLOR,
                 bold: false,
               },
               right: {
                 solid: true,
-                color: "rgb(230, 230, 230)",
+                color: Sheet.DEFAULT_CELL_LINE_COLOR,
                 bold: false,
               },
             };
@@ -353,22 +441,22 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
             cell.border = {
               top: {
                 solid: false,
-                color: "rgb(230, 230, 230)",
+                color: Sheet.DEFAULT_CELL_LINE_COLOR,
                 bold: false,
               },
               bottom: {
                 solid: false,
-                color: "rgb(230, 230, 230)",
+                color: Sheet.DEFAULT_CELL_LINE_COLOR,
                 bold: false,
               },
               left: {
                 solid: false,
-                color: "rgb(230, 230, 230)",
+                color: Sheet.DEFAULT_CELL_LINE_COLOR,
                 bold: false,
               },
               right: {
                 solid: false,
-                color: "rgb(230, 230, 230)",
+                color: Sheet.DEFAULT_CELL_LINE_COLOR,
                 bold: false,
               },
             };
@@ -511,6 +599,7 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
     this.drawFixedShadow();
     this.drawScrollbar();
     this.drawCellResizer();
+    this.drawSelectedCells();
   }
 
   getRangeInView(
@@ -649,6 +738,41 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
         this.resizeInfo,
         this.scroll
       );
+    }
+  }
+
+  drawSelectedCells() {
+    if (this.selectedCells.length > 0) {
+      this.ctx!.save();
+      this.ctx!.strokeStyle = Sheet.DEFAULT_CELL_SELECTED_COLOR;
+      const minX = this.selectedCells.reduce((pre, cur) => {
+        return pre.position.leftTop.x! < cur.position.leftTop.x! ? pre : cur;
+      }).position.leftTop.x!;
+
+      const minY = this.selectedCells.reduce((pre, cur) => {
+        return pre.position.leftTop.y! < cur.position.leftTop.y! ? pre : cur;
+      }).position.leftTop.y!;
+
+      const maxX = this.selectedCells.reduce((pre, cur) => {
+        return pre.position.rightBottom.x! > cur.position.rightBottom.x!
+          ? pre
+          : cur;
+      }).position.rightBottom.x!;
+
+      const maxY = this.selectedCells.reduce((pre, cur) => {
+        return pre.position.rightBottom.y! > cur.position.rightBottom.y!
+          ? pre
+          : cur;
+      }).position.rightBottom.y!;
+
+      this.ctx!.strokeRect(
+        minX - this.scroll.x,
+        minY - this.scroll.y,
+        maxX - minX,
+        maxY - minY
+      );
+
+      this.ctx!.restore();
     }
   }
 
