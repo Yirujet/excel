@@ -24,6 +24,7 @@ namespace Excel {
       fixedRowCells: Cell.CellInstance[][];
       fixedColCells: Cell.CellInstance[][];
       fixedCells: Cell.CellInstance[][];
+      selectedCells: [number, number, number, number] | null;
       render: () => void;
     }
   }
