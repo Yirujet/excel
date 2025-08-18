@@ -8,7 +8,6 @@ import Tool from "./Tool";
 
 class Excel extends Element implements Excel.ExcelInstance {
   static CSS_PREFIX = "excel";
-  static TOOL_WRAPPER_HEIGHT = 50;
   private _sequence = 0;
   $target: HTMLElement | null = null;
   name = "";
@@ -33,8 +32,8 @@ class Excel extends Element implements Excel.ExcelInstance {
     this.initSequence();
     const sheetManageRender = this.createSheetManageRender();
     const sheetRender = this.createSheetRender();
-    const toolsRender = this.createToolsRender();
-    this.add(toolsRender.$el!);
+    // const toolsRender = this.createToolsRender();
+    // this.add(toolsRender.$el!);
     this.add(sheetRender.$el!);
     this.add(sheetManageRender.$el!);
     this.$target.appendChild(this.$el!);

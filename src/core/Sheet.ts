@@ -1,13 +1,11 @@
 import Element from "../components/Element";
 import $10226 from "../utils/10226";
-import debounce from "../utils/debounce";
 import EventObserver from "../utils/EventObserver";
 import throttle from "../utils/throttle";
 import Cell from "./Cell";
 import CellResizer from "./CellResizer";
 import HorizontalScrollbar from "./Scrollbar/HorizontalScrollbar";
 import VerticalScrollbar from "./Scrollbar/VerticalScrollbar";
-import Excel from "./Excel";
 import CellSelector from "./CellSelector";
 
 class Sheet extends Element implements Excel.Sheet.SheetInstance {
@@ -54,6 +52,7 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
   static DEFAULT_CELL_SELECTED_COLOR = "#409EFF";
   static DEFAULT_CELL_SELECTED_BACKGROUND_COLOR = "rgba(64,158,255, 0.1)";
   private _ctx: CanvasRenderingContext2D | null = null;
+  private _startCell: Excel.Cell.CellInstance | null = null;
   name = "";
   cells: Excel.Cell.CellInstance[][] = [];
   _tools: Excel.Tools.ToolInstance[] = [];
@@ -84,8 +83,8 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
     colIndex: null,
     value: null,
   };
-  selectedCells: [number, number, number, number] | null = null;
-  private _startCell: Excel.Cell.CellInstance | null = null;
+  selectedCells: Excel.Sheet.CellRange | null = null;
+  mergedCells: Excel.Sheet.CellRange[] = [];
 
   constructor(
     name: string,
@@ -146,7 +145,7 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
       },
     };
     const offsetX = x - this.layout!.x;
-    const offsetY = y - this.layout!.y - Excel.TOOL_WRAPPER_HEIGHT;
+    const offsetY = y - this.layout!.y;
     if (offsetX < this.fixedColWidth) {
       exceedInfo.x.exceed = true;
       exceedInfo.x.value = offsetX - this.fixedColWidth;
@@ -234,10 +233,7 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
         0
       );
       const y = Math.max(
-        Math.min(
-          e.y - this.layout!.y + this.scroll.y - Excel.TOOL_WRAPPER_HEIGHT,
-          this.realHeight
-        ),
+        Math.min(e.y - this.layout!.y + this.scroll.y, this.realHeight),
         0
       );
       const endCell = this.findEnteredCell(x, y);
@@ -289,8 +285,7 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
         return;
       }
       const x = e.x - this.layout!.x + this.scroll.x;
-      const y =
-        e.y - this.layout!.y + this.scroll.y - Excel.TOOL_WRAPPER_HEIGHT;
+      const y = e.y - this.layout!.y + this.scroll.y;
       this._startCell = this.findEnteredCell(x, y);
       if (this._startCell) {
         this.clearSelectCells();
@@ -495,7 +490,11 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
   }
 
   initCellResizer() {
-    this.cellResizer = new CellResizer(this.layout!);
+    this.cellResizer = new CellResizer(
+      this.layout!,
+      this.fixedColWidth,
+      this.fixedRowHeight
+    );
   }
 
   initCellSelector() {
@@ -621,9 +620,9 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
   draw(isEnd: boolean = false) {
     this.drawSheetCells(isEnd);
     this.drawFixedShadow();
-    this.drawScrollbar();
     this.drawCellResizer();
     this.drawCellSelector();
+    this.drawScrollbar();
   }
 
   getRangeInView(

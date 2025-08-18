@@ -10,6 +10,8 @@ namespace Excel {
       y: number;
     };
 
+    export type CellRange = [number, number, number, number];
+
     export interface SheetInstance {
       $el: HTMLElement | HTMLCanvasElement | null;
       name: string;
@@ -24,7 +26,8 @@ namespace Excel {
       fixedRowCells: Cell.CellInstance[][];
       fixedColCells: Cell.CellInstance[][];
       fixedCells: Cell.CellInstance[][];
-      selectedCells: [number, number, number, number] | null;
+      selectedCells: CellRange | null;
+      mergedCells: CellRange[];
       render: () => void;
     }
   }
