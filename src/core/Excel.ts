@@ -9,7 +9,7 @@ import Tool from "./Tool";
 class Excel extends Element implements Excel.ExcelInstance {
   static CSS_PREFIX = "excel";
   static TOOL_WRAPPER_HEIGHT = 50;
-  private sequence = 0;
+  private _sequence = 0;
   $target: HTMLElement | null = null;
   name = "";
   sheets: Excel.Sheet.SheetInstance[] = [];
@@ -61,13 +61,13 @@ class Excel extends Element implements Excel.ExcelInstance {
             )
           )
         : 0;
-    this.sequence = sheetNum;
+    this._sequence = sheetNum;
   }
 
   private getNextSheetName() {
     const baseName = "Sheet";
-    this.sequence++;
-    return `${baseName}-${this.sequence}`;
+    this._sequence++;
+    return `${baseName}-${this._sequence}`;
   }
 
   addSheet(width: number, height: number, x: number, y: number) {
