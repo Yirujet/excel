@@ -62,6 +62,7 @@ namespace Excel {
         isEnd: boolean
       ): void;
       updatePosition: Excel.Event.FnType;
+      getTextAlignOffsetX(w: number): number;
     }
   }
 }

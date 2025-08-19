@@ -4,9 +4,6 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Document</title>
-    <link rel="stylesheet" href="../lib/css/lu2.css" />
-    <link rel="stylesheet" href="../lib/excel.css" />
-    <script src="../lib/js/lu2.js"></script>
     <style>
       body {
         margin: 0;
@@ -42,5 +39,10 @@
     const app = document.querySelector("#app");
     const excel = new Excel("test");
     excel.mount(app);
+    const btnMerge = document.querySelector("#btnMerge");
+    btnMerge.addEventListener("click", () => {
+      const curSheet = excel.sheets[excel.sheetIndex];
+      curSheet.merge(curSheet.selectedCells);
+    });
   </script>
 </html>

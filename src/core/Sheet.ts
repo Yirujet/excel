@@ -12,14 +12,14 @@ class Sheet
   extends Element<HTMLCanvasElement>
   implements Excel.Sheet.SheetInstance
 {
+  static DEFAULT_CELL_ROW_COUNT = 500;
+  static DEFAULT_CELL_COL_COUNT = 1000;
   static DEFAULT_CELL_MIN_WIDTH = 30;
   static DEFAULT_CELL_MIN_HEIGHT = 20;
   static DEFAULT_CELL_WIDTH = 100;
   static DEFAULT_CELL_HEIGHT = 25;
   static DEFAULT_INDEX_CELL_WIDTH = 50;
   static DEFAULT_CELL_FONT_FAMILY = "宋体";
-  static DEFAULT_CELL_ROW_COUNT = 500;
-  static DEFAULT_CELL_COL_COUNT = 1000;
   static DEFAULT_CELL_LINE_DASH = [3, 5];
   static DEFAULT_CELL_LINE_COLOR = "rgb(230, 230, 230)";
   static DEFAULT_FIXED_CELL_BACKGROUND_COLOR = "rgb(238, 238, 238)";
@@ -241,6 +241,16 @@ class Sheet
     if (this.selectedCells) {
       this.selectedCells = null;
     }
+  }
+
+  merge([
+    minRowIndex,
+    maxRowIndex,
+    minColIndex,
+    maxColIndex,
+  ]: Excel.Sheet.CellRange) {
+    this.mergedCells.push([minRowIndex, maxRowIndex, minColIndex, maxColIndex]);
+    this.draw(false);
   }
 
   initEvents() {
@@ -588,6 +598,7 @@ class Sheet
     this.drawCellSelector();
     this.drawScrollbar();
     this.drawCellResizer();
+    this.drawMergedCells();
   }
 
   getRangeInView(
@@ -736,6 +747,45 @@ class Sheet
       this.scroll.x,
       this.scroll.y
     );
+  }
+
+  drawMergedCells() {
+    this.mergedCells.forEach((e) => {
+      const [minRowIndex, maxRowIndex, minColIndex, maxColIndex] = e;
+      const leftTopCell = this.cells[minRowIndex][minColIndex];
+      const rightBottomCell = this.cells[maxRowIndex][maxColIndex];
+      const w =
+        rightBottomCell.position.rightBottom.x! -
+        leftTopCell.position.leftTop.x!;
+      const h =
+        rightBottomCell.position.rightBottom.y! -
+        leftTopCell.position.leftTop.y!;
+      this._ctx!.save();
+      this._ctx!.fillStyle = "#fff";
+      this._ctx!.fillRect(
+        leftTopCell.position.leftTop.x!,
+        leftTopCell.position.leftTop.y!,
+        w,
+        h
+      );
+      this._ctx!.restore();
+      this._ctx!.save();
+      this._ctx!.font = `${leftTopCell.textStyle.italic ? "italic" : ""} ${
+        leftTopCell.textStyle.bold ? "bold" : "normal"
+      } ${leftTopCell.textStyle.fontSize}px ${
+        leftTopCell.textStyle.fontFamily
+      }`;
+      this._ctx!.textBaseline = "middle";
+      this._ctx!.textAlign = leftTopCell.textStyle.align as CanvasTextAlign;
+      this._ctx!.fillStyle = leftTopCell.textStyle.color;
+      const textAlignOffsetX = leftTopCell.getTextAlignOffsetX(w);
+      this._ctx!.fillText(
+        leftTopCell.value,
+        leftTopCell.x! + textAlignOffsetX - this.scroll.x,
+        leftTopCell.y! + h / 2 - this.scroll.y
+      );
+      this._ctx!.restore();
+    });
   }
 
   drawScrollbarCoincide() {
