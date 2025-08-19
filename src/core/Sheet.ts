@@ -490,11 +490,7 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
   }
 
   initCellResizer() {
-    this.cellResizer = new CellResizer(
-      this.layout!,
-      this.fixedColWidth,
-      this.fixedRowHeight
-    );
+    this.cellResizer = new CellResizer(this.layout!);
   }
 
   initCellSelector() {
@@ -620,9 +616,9 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
   draw(isEnd: boolean = false) {
     this.drawSheetCells(isEnd);
     this.drawFixedShadow();
-    this.drawCellResizer();
     this.drawCellSelector();
     this.drawScrollbar();
+    this.drawCellResizer();
   }
 
   getRangeInView(

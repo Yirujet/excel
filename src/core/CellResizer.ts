@@ -3,17 +3,9 @@ import Sheet from "./Sheet";
 
 class CellResizer extends Element {
   layout: Excel.LayoutInfo;
-  fixedColWidth: number;
-  fixedRowHeight: number;
-  constructor(
-    layout: Excel.LayoutInfo,
-    fixedColWidth: number,
-    fixedRowHeight: number
-  ) {
+  constructor(layout: Excel.LayoutInfo) {
     super("");
     this.layout = layout;
-    this.fixedColWidth = fixedColWidth;
-    this.fixedRowHeight = fixedRowHeight;
   }
 
   render(
@@ -30,22 +22,19 @@ class CellResizer extends Element {
       ctx.beginPath();
       ctx.moveTo(
         cellInfo.position.rightTop.x + resizeInfo.value! - scrollInfo.x,
-        this.fixedRowHeight
+        0
       );
       ctx.lineTo(
         cellInfo.position.rightTop.x + resizeInfo.value! - scrollInfo.x,
-        this.fixedRowHeight + this.layout.height
+        this.layout.height
       );
       ctx.closePath();
       ctx.stroke();
       ctx.beginPath();
-      ctx.moveTo(
-        cellInfo.position.leftTop.x - scrollInfo.x,
-        this.fixedRowHeight
-      );
+      ctx.moveTo(cellInfo.position.leftTop.x - scrollInfo.x, 0);
       ctx.lineTo(
         cellInfo.position.leftTop.x - scrollInfo.x,
-        this.fixedRowHeight + this.layout.height
+        this.layout.height
       );
       ctx.closePath();
       ctx.stroke();
@@ -53,24 +42,18 @@ class CellResizer extends Element {
     if (resizeInfo.y) {
       ctx.beginPath();
       ctx.moveTo(
-        this.fixedColWidth,
+        0,
         cellInfo.position.leftBottom.y + resizeInfo.value! - scrollInfo.y
       );
       ctx.lineTo(
-        this.fixedColWidth + this.layout.width,
+        this.layout.width,
         cellInfo.position.leftBottom.y + resizeInfo.value! - scrollInfo.y
       );
       ctx.closePath();
       ctx.stroke();
       ctx.beginPath();
-      ctx.moveTo(
-        this.fixedColWidth,
-        cellInfo.position.leftTop.y - scrollInfo.y
-      );
-      ctx.lineTo(
-        this.fixedColWidth + this.layout.width,
-        cellInfo.position.leftTop.y - scrollInfo.y
-      );
+      ctx.moveTo(0, cellInfo.position.leftTop.y - scrollInfo.y);
+      ctx.lineTo(this.layout.width, cellInfo.position.leftTop.y - scrollInfo.y);
       ctx.closePath();
       ctx.stroke();
     }
