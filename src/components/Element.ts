@@ -1,14 +1,14 @@
 import ExcelEvent from "../utils/ExcelEvent";
 
-export default class Element extends ExcelEvent {
-  $el: HTMLElement | null = null;
+export default class Element<T extends HTMLElement | null> extends ExcelEvent {
+  $el: T | null = null;
   x!: number;
   y!: number;
   mouseEntered = false;
   constructor(tagName: string, clearEventsWhenReRender = false) {
     super(clearEventsWhenReRender);
     if (tagName) {
-      this.$el = document.createElement(tagName);
+      this.$el = document.createElement(tagName) as T;
     }
   }
 

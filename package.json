@@ -13,7 +13,6 @@
     "@babel/core": "^7.28.0",
     "@babel/preset-env": "^7.28.0",
     "less": "^4.3.0",
-    "lu2": "^2025.7.2",
     "rollup": "4.44.2",
     "rollup-plugin-postcss": "^4.0.2",
     "rollup-plugin-typescript2": "^0.36.0",

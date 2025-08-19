@@ -3,7 +3,7 @@ import throttle from "../../utils/throttle";
 import Sheet from "../Sheet";
 
 export default class Scrollbar
-  extends Element
+  extends Element<null>
   implements Excel.Scrollbar.ScrollbarInstance
 {
   track = {

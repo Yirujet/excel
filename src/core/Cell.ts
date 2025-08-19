@@ -4,7 +4,7 @@ import Element from "../components/Element";
 import debounce from "../utils/debounce";
 import throttle from "../utils/throttle";
 
-class Cell extends Element implements Excel.Cell.CellInstance {
+class Cell extends Element<null> implements Excel.Cell.CellInstance {
   width: number | null = null;
   height: number | null = null;
   rowIndex: number | null = null;

@@ -1,7 +1,7 @@
 import Element from "../components/Element";
 import Sheet from "./Sheet";
 
-class CellSelector extends Element {
+class CellSelector extends Element<null> {
   layout: Excel.LayoutInfo;
   cells: Excel.Cell.CellInstance[][];
   fixedColWidth: number;

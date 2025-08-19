@@ -8,24 +8,10 @@ import HorizontalScrollbar from "./Scrollbar/HorizontalScrollbar";
 import VerticalScrollbar from "./Scrollbar/VerticalScrollbar";
 import CellSelector from "./CellSelector";
 
-class Sheet extends Element implements Excel.Sheet.SheetInstance {
-  static TOOLS_CONFIG: Excel.Sheet.toolsConfig = {
-    cellFontFamily: true,
-    cellFontSize: true,
-    cellBold: true,
-    cellItalic: true,
-    cellUnderline: true,
-    cellBorder: true,
-    cellColor: true,
-    cellBackgroundColor: true,
-    cellAlign: true,
-    cellMerge: true,
-    cellSplit: true,
-    cellFunction: true,
-    cellInsert: true,
-    cellDiagonal: true,
-    cellFreeze: true,
-  };
+class Sheet
+  extends Element<HTMLCanvasElement>
+  implements Excel.Sheet.SheetInstance
+{
   static DEFAULT_CELL_MIN_WIDTH = 30;
   static DEFAULT_CELL_MIN_HEIGHT = 20;
   static DEFAULT_CELL_WIDTH = 100;
@@ -55,8 +41,6 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
   private _startCell: Excel.Cell.CellInstance | null = null;
   name = "";
   cells: Excel.Cell.CellInstance[][] = [];
-  _tools: Excel.Tools.ToolInstance[] = [];
-  toolsConfig: Partial<Excel.Sheet.toolsConfig> = {};
   width = 0;
   height = 0;
   scroll: Excel.Sheet.ScrollInfo = { x: 0, y: 0 };
@@ -86,27 +70,14 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
   selectedCells: Excel.Sheet.CellRange | null = null;
   mergedCells: Excel.Sheet.CellRange[] = [];
 
-  constructor(
-    name: string,
-    toolsConfig?: Partial<Excel.Sheet.toolsConfig>,
-    cells?: Excel.Cell.CellInstance[][]
-  ) {
+  constructor(name: string, cells?: Excel.Cell.CellInstance[][]) {
     super("canvas");
     this.name = name;
-    this.initToolConfig(toolsConfig);
     this.initCells(cells);
   }
 
   static SET_CURSOR(cursor: string) {
     document.body.style.cursor = cursor;
-  }
-
-  initToolConfig(toolsConfig?: Partial<Excel.Sheet.toolsConfig>) {
-    if (toolsConfig) {
-      this.toolsConfig = toolsConfig;
-    } else {
-      this.toolsConfig = Sheet.TOOLS_CONFIG;
-    }
   }
 
   private findEnteredCell(x: number, y: number) {
@@ -320,20 +291,18 @@ class Sheet extends Element implements Excel.Sheet.SheetInstance {
   }
 
   render() {
-    this._ctx = (this.$el as HTMLCanvasElement).getContext("2d")!;
-    (this.$el as HTMLCanvasElement).style.width = `${this.width}px`;
-    (this.$el as HTMLCanvasElement).style.height = `${this.height}px`;
-    (this.$el as HTMLCanvasElement).width =
-      this.width * window.devicePixelRatio;
-    (this.$el as HTMLCanvasElement).height =
-      this.height * window.devicePixelRatio;
+    this._ctx = this.$el!.getContext("2d")!;
+    this.$el!.style.width = `${this.width}px`;
+    this.$el!.style.height = `${this.height}px`;
+    this.$el!.width = this.width * window.devicePixelRatio;
+    this.$el!.height = this.height * window.devicePixelRatio;
     this._ctx!.translate(0.5, 0.5);
     this._ctx!.scale(window.devicePixelRatio, window.devicePixelRatio);
     this.initScrollbar();
     this.initCellResizer();
     this.initCellSelector();
     this.initEvents();
-    this.sheetEventsObserver.observe(this.$el as HTMLCanvasElement);
+    this.sheetEventsObserver.observe(this.$el!);
     this.globalEventsObserver.observe(window as any);
     this.draw(true);
   }

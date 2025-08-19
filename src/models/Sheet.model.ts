@@ -1,10 +1,5 @@
 namespace Excel {
   export namespace Sheet {
-    type toolTypeUnion = `${Tools.ToolType}`;
-    export type toolsConfig = {
-      [k in toolTypeUnion as `cell${Capitalize<k>}`]: boolean;
-    };
-
     export type ScrollInfo = {
       x: number;
       y: number;
@@ -13,12 +8,10 @@ namespace Excel {
     export type CellRange = [number, number, number, number];
 
     export interface SheetInstance {
-      $el: HTMLElement | HTMLCanvasElement | null;
+      $el: HTMLCanvasElement | null;
       name: string;
       width: number;
       height: number;
-      toolsConfig: Partial<toolsConfig>;
-      _tools: Tools.ToolInstance[];
       cells: Cell.CellInstance[][];
       scroll: Excel.PositionPoint;
       fixedRowIndex: number;

@@ -1847,11 +1847,6 @@ lru-cache@^5.1.1:
   dependencies:
     yallist "^3.0.2"
 
-lu2@^2025.7.2:
-  version "2025.7.2"
-  resolved "https://registry.npmjs.org/lu2/-/lu2-2025.7.2.tgz#92e95d0add767f68d569b3542dc9236b08f9e4f2"
-  integrity sha512-MpTwYcOhNLNgchQFt8CgjIlFd9WtTFewGLTK0pyD/dTlZ9A/ztlZcI5aN3XbZ3BsFwbhsGueSlYRc7jtZTmFZg==
-
 make-dir@^2.1.0:
   version "2.1.0"
   resolved "https://registry.npmjs.org/make-dir/-/make-dir-2.1.0.tgz#5f0310e18b8be898cc07009295a30ae41e91e6f5"

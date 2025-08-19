@@ -1,7 +1,7 @@
 import Element from "../components/Element";
 import Sheet from "./Sheet";
 
-class CellResizer extends Element {
+class CellResizer extends Element<null> {
   layout: Excel.LayoutInfo;
   constructor(layout: Excel.LayoutInfo) {
     super("");
