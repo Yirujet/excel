@@ -7,62 +7,7 @@
   flex-direction: column;
   height: 100%;
 
-  & > .@{prefix}-sheet-manage {
-    height: 40px;
-    display: flex;
-    justify-content: flex-start;
-    align-items: center;
-  }
-
   & > .@{prefix}-sheet-render {
     flex: 1;
-  }
-}
-
-.@{prefix}-cell-border-drop-panel {
-  padding: 12px 16px;
-  color: #000000d9;
-  font-size: 14px;
-  background-color: #fff;
-  background-clip: padding-box;
-  border-radius: 2px;
-  box-shadow: 0 3px 6px -4px #0000001f, 0 6px 16px #00000014,
-    0 9px 28px 8px #0000000d;
-
-  .@{prefix}-cell-border-drop-group-title {
-    color: #333;
-    font-weight: 700;
-    font-size: 13px;
-  }
-
-  .@{prefix}-cell-border-drop-item {
-    height: 32px;
-    display: flex;
-    justify-content: flex-start;
-    align-items: center;
-    cursor: pointer;
-
-    &:hover {
-      background-color: rgba(0, 0, 0, 0.018);
-    }
-
-    & > .iconfont {
-      margin-right: 4px;
-      margin-left: 2px;
-    }
-  }
-}
-
-.@{prefix}-cell-border-color-drop-panel {
-  position: relative;
-
-  & > .ui-color-track,
-  & > .ui-color-input {
-    display: none;
-  }
-
-  & > .ui-color-container {
-    left: 0 !important;
-    top: 0 !important;
   }
 }

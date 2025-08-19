@@ -28,10 +28,8 @@ class Excel extends Element<HTMLDivElement> implements Excel.ExcelInstance {
     this.sheets = this.configuration.sheets || [];
     this.initSheets();
     this.initSequence();
-    const sheetManageRender = this.createSheetManageRender();
     const sheetRender = this.createSheetRender();
     this.add(sheetRender.$el!);
-    this.add(sheetManageRender.$el!);
     this.$target.appendChild(this.$el!);
   }
 
@@ -77,22 +75,6 @@ class Excel extends Element<HTMLDivElement> implements Excel.ExcelInstance {
 
   selectSheet(index: number) {
     this.sheetIndex = index;
-  }
-
-  createSheetManageRender() {
-    const sheetManageRender = new Element("div");
-    sheetManageRender.addClass(`${Excel.CSS_PREFIX}-sheet-manage`);
-    this.sheets.forEach((e) => {
-      const sheet = new Element("div");
-      sheet.addClass(`${Excel.CSS_PREFIX}-sheet`);
-      sheet.$el!.innerHTML = e.name;
-      sheetManageRender.add(sheet.$el!);
-    });
-    const addBtn = new Element("div");
-    addBtn.addClass(`${Excel.CSS_PREFIX}-add-btn`);
-    addBtn.$el!.innerHTML = "+";
-    sheetManageRender.add(addBtn.$el!);
-    return sheetManageRender;
   }
 
   createSheetRender() {
