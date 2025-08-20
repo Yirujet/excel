@@ -7,6 +7,7 @@ import CellResizer from "./CellResizer";
 import HorizontalScrollbar from "./Scrollbar/HorizontalScrollbar";
 import VerticalScrollbar from "./Scrollbar/VerticalScrollbar";
 import CellSelector from "./CellSelector";
+import CellMergence from "./CellMergence";
 
 class Sheet
   extends Element<HTMLCanvasElement>
@@ -48,6 +49,7 @@ class Sheet
   verticalScrollBar: VerticalScrollbar | null = null;
   cellResizer: CellResizer | null = null;
   cellSelector: CellSelector | null = null;
+  cellMergence: CellMergence | null = null;
   sheetEventsObserver: Excel.Event.ObserverInstance = new EventObserver();
   globalEventsObserver: Excel.Event.ObserverInstance = new EventObserver();
   realWidth = 0;
@@ -311,6 +313,7 @@ class Sheet
     this.initScrollbar();
     this.initCellResizer();
     this.initCellSelector();
+    this.initCellMergence();
     this.initEvents();
     this.sheetEventsObserver.observe(this.$el!);
     this.globalEventsObserver.observe(window as any);
@@ -474,6 +477,15 @@ class Sheet
 
   initCellSelector() {
     this.cellSelector = new CellSelector(
+      this.layout!,
+      this.cells,
+      this.fixedColWidth,
+      this.fixedRowHeight
+    );
+  }
+
+  initCellMergence() {
+    this.cellMergence = new CellMergence(
       this.layout!,
       this.cells,
       this.fixedColWidth,
@@ -750,42 +762,12 @@ class Sheet
   }
 
   drawMergedCells() {
-    this.mergedCells.forEach((e) => {
-      const [minRowIndex, maxRowIndex, minColIndex, maxColIndex] = e;
-      const leftTopCell = this.cells[minRowIndex][minColIndex];
-      const rightBottomCell = this.cells[maxRowIndex][maxColIndex];
-      const w =
-        rightBottomCell.position.rightBottom.x! -
-        leftTopCell.position.leftTop.x!;
-      const h =
-        rightBottomCell.position.rightBottom.y! -
-        leftTopCell.position.leftTop.y!;
-      this._ctx!.save();
-      this._ctx!.fillStyle = "#fff";
-      this._ctx!.fillRect(
-        leftTopCell.position.leftTop.x!,
-        leftTopCell.position.leftTop.y!,
-        w,
-        h
-      );
-      this._ctx!.restore();
-      this._ctx!.save();
-      this._ctx!.font = `${leftTopCell.textStyle.italic ? "italic" : ""} ${
-        leftTopCell.textStyle.bold ? "bold" : "normal"
-      } ${leftTopCell.textStyle.fontSize}px ${
-        leftTopCell.textStyle.fontFamily
-      }`;
-      this._ctx!.textBaseline = "middle";
-      this._ctx!.textAlign = leftTopCell.textStyle.align as CanvasTextAlign;
-      this._ctx!.fillStyle = leftTopCell.textStyle.color;
-      const textAlignOffsetX = leftTopCell.getTextAlignOffsetX(w);
-      this._ctx!.fillText(
-        leftTopCell.value,
-        leftTopCell.x! + textAlignOffsetX - this.scroll.x,
-        leftTopCell.y! + h / 2 - this.scroll.y
-      );
-      this._ctx!.restore();
-    });
+    this.cellMergence!.render(
+      this._ctx!,
+      this.mergedCells,
+      this.scroll.x,
+      this.scroll.y
+    );
   }
 
   drawScrollbarCoincide() {

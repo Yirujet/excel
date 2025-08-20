@@ -35,7 +35,7 @@ class Cell extends Element<null> implements Excel.Cell.CellInstance {
     bold: false,
     italic: false,
     underline: false,
-    backgroundColor: "",
+    backgroundColor: "#fff",
     color: "#000",
     align: "left",
   };
