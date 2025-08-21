@@ -142,6 +142,54 @@ class Sheet
     return exceedInfo;
   }
 
+  private mergeIntersectMergedCells(
+    mergedCells: Excel.Sheet.CellRange[],
+    selectedCells: Excel.Sheet.CellRange
+  ) {
+    mergedCells.forEach((e, i) => {
+      const [
+        minRowIndexMerged,
+        maxRowIndexMerged,
+        minColIndexMerged,
+        maxColIndexMerged,
+      ] = e;
+      const [minRowIndex, maxRowIndex, minColIndex, maxColIndex] =
+        selectedCells;
+      if (
+        (minRowIndex >= minRowIndexMerged &&
+          minRowIndex <= maxRowIndexMerged &&
+          !(
+            minColIndex > maxColIndexMerged || maxColIndex < maxColIndexMerged
+          )) ||
+        (maxColIndex >= minColIndexMerged &&
+          maxColIndex <= maxColIndexMerged &&
+          !(
+            minRowIndex > maxRowIndexMerged || maxRowIndex < minRowIndexMerged
+          )) ||
+        (maxRowIndex >= minRowIndexMerged &&
+          maxRowIndex <= maxRowIndexMerged &&
+          !(
+            minColIndex > maxColIndexMerged || maxColIndex < maxColIndexMerged
+          )) ||
+        (minColIndex >= minColIndexMerged &&
+          minColIndex <= maxColIndexMerged &&
+          !(minRowIndex > maxRowIndexMerged || maxRowIndex < minRowIndexMerged))
+      ) {
+        selectedCells = [
+          Math.min(minRowIndex, minRowIndexMerged),
+          Math.max(maxRowIndex, maxRowIndexMerged),
+          Math.min(minColIndex, minColIndexMerged),
+          Math.max(maxColIndex, maxColIndexMerged),
+        ];
+        selectedCells = this.mergeIntersectMergedCells(
+          [...mergedCells.slice(0, i), ...mergedCells.slice(i + 1)],
+          selectedCells
+        );
+      }
+    });
+    return selectedCells;
+  }
+
   private selectCells(e: MouseEvent) {
     if (this._startCell) {
       const exceedInfo = this.exceed(e.x, e.y);
@@ -234,62 +282,7 @@ class Sheet
           minColIndex,
           maxColIndex,
         ];
-
-        const mergeIntersectMergedCells = (
-          mergedCells: Excel.Sheet.CellRange[],
-          selectedCells: Excel.Sheet.CellRange
-        ) => {
-          mergedCells.forEach((e, i) => {
-            const [
-              minRowIndexMerged,
-              maxRowIndexMerged,
-              minColIndexMerged,
-              maxColIndexMerged,
-            ] = e;
-            const [minRowIndex, maxRowIndex, minColIndex, maxColIndex] =
-              selectedCells;
-            if (
-              (minRowIndex >= minRowIndexMerged &&
-                minRowIndex <= maxRowIndexMerged &&
-                !(
-                  minColIndex > maxColIndexMerged ||
-                  maxColIndex < maxColIndexMerged
-                )) ||
-              (maxColIndex >= minColIndexMerged &&
-                maxColIndex <= maxColIndexMerged &&
-                !(
-                  minRowIndex > maxRowIndexMerged ||
-                  maxRowIndex < minRowIndexMerged
-                )) ||
-              (maxRowIndex >= minRowIndexMerged &&
-                maxRowIndex <= maxRowIndexMerged &&
-                !(
-                  minColIndex > maxColIndexMerged ||
-                  maxColIndex < maxColIndexMerged
-                )) ||
-              (minColIndex >= minColIndexMerged &&
-                minColIndex <= maxColIndexMerged &&
-                !(
-                  minRowIndex > maxRowIndexMerged ||
-                  maxRowIndex < minRowIndexMerged
-                ))
-            ) {
-              selectedCells = [
-                Math.min(minRowIndex, minRowIndexMerged),
-                Math.max(maxRowIndex, maxRowIndexMerged),
-                Math.min(minColIndex, minColIndexMerged),
-                Math.max(maxColIndex, maxColIndexMerged),
-              ];
-              selectedCells = mergeIntersectMergedCells(
-                [...mergedCells.slice(0, i), ...mergedCells.slice(i + 1)],
-                selectedCells
-              );
-            }
-          });
-          return selectedCells;
-        };
-
-        this.selectedCells = mergeIntersectMergedCells(
+        this.selectedCells = this.mergeIntersectMergedCells(
           this.mergedCells,
           this.selectedCells!
         );
