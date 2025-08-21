@@ -234,6 +234,65 @@ class Sheet
           minColIndex,
           maxColIndex,
         ];
+
+        const mergeIntersectMergedCells = (
+          mergedCells: Excel.Sheet.CellRange[],
+          selectedCells: Excel.Sheet.CellRange
+        ) => {
+          mergedCells.forEach((e, i) => {
+            const [
+              minRowIndexMerged,
+              maxRowIndexMerged,
+              minColIndexMerged,
+              maxColIndexMerged,
+            ] = e;
+            const [minRowIndex, maxRowIndex, minColIndex, maxColIndex] =
+              selectedCells;
+            if (
+              (minRowIndex >= minRowIndexMerged &&
+                minRowIndex <= maxRowIndexMerged &&
+                !(
+                  minColIndex > maxColIndexMerged ||
+                  maxColIndex < maxColIndexMerged
+                )) ||
+              (maxColIndex >= minColIndexMerged &&
+                maxColIndex <= maxColIndexMerged &&
+                !(
+                  minRowIndex > maxRowIndexMerged ||
+                  maxRowIndex < minRowIndexMerged
+                )) ||
+              (maxRowIndex >= minRowIndexMerged &&
+                maxRowIndex <= maxRowIndexMerged &&
+                !(
+                  minColIndex > maxColIndexMerged ||
+                  maxColIndex < maxColIndexMerged
+                )) ||
+              (minColIndex >= minColIndexMerged &&
+                minColIndex <= maxColIndexMerged &&
+                !(
+                  minRowIndex > maxRowIndexMerged ||
+                  maxRowIndex < minRowIndexMerged
+                ))
+            ) {
+              selectedCells = [
+                Math.min(minRowIndex, minRowIndexMerged),
+                Math.max(maxRowIndex, maxRowIndexMerged),
+                Math.min(minColIndex, minColIndexMerged),
+                Math.max(maxColIndex, maxColIndexMerged),
+              ];
+              selectedCells = mergeIntersectMergedCells(
+                [...mergedCells.slice(0, i), ...mergedCells.slice(i + 1)],
+                selectedCells
+              );
+            }
+          });
+          return selectedCells;
+        };
+
+        this.selectedCells = mergeIntersectMergedCells(
+          this.mergedCells,
+          this.selectedCells!
+        );
         this.draw(false);
       }
     }
@@ -278,6 +337,17 @@ class Sheet
           this._startCell.colIndex!,
           this._startCell.colIndex!,
         ];
+        const containedMergedCell = this.mergedCells.find((e) => {
+          return (
+            e[0] <= this._startCell!.rowIndex! &&
+            e[1] >= this._startCell!.rowIndex! &&
+            e[2] <= this._startCell!.colIndex! &&
+            e[3] >= this._startCell!.colIndex!
+          );
+        });
+        if (containedMergedCell) {
+          this.selectedCells = [...containedMergedCell];
+        }
       }
       const onSelectCells = throttle(this.selectCells.bind(this), 50);
       const onEndSelectCells = () => {
