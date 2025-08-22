@@ -307,6 +307,10 @@ class Sheet
     this.draw(false);
   }
 
+  getCell(rowIndex: number, colIndex: number) {
+    return this.cells[rowIndex]?.[colIndex] || null;
+  }
+
   initEvents() {
     const onMousedown = (e: MouseEvent) => {
       if (
@@ -669,11 +673,11 @@ class Sheet
 
   draw(isEnd: boolean = false) {
     this.drawSheetCells(isEnd);
+    this.drawMergedCells();
     this.drawFixedShadow();
     this.drawCellSelector();
     this.drawScrollbar();
     this.drawCellResizer();
-    this.drawMergedCells();
   }
 
   getRangeInView(

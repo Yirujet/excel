@@ -25,12 +25,60 @@
         justify-content: flex-start;
         border-bottom: 1px solid #e5e5e5;
         padding: 0 12px;
+        gap: 8px;
       }
     </style>
   </head>
   <body>
     <div class="header">
       <button id="btnMerge">合并</button>
+      <div>
+        字体:
+        <select id="fontFamilySelect">
+          <option value="sans-serif">sans-serif</option>
+          <option value="SimSun">宋体</option>
+          <option value="SimHei">黑体</option>
+          <option value="FangSong">仿宋</option>
+        </select>
+      </div>
+      <div>
+        字体大小:
+        <select id="fontSizeSelect">
+          <option value="6">6</option>
+          <option value="8">8</option>
+          <option value="10">10</option>
+          <option value="12">12</option>
+          <option value="14">14</option>
+          <option value="16">16</option>
+          <option value="18">18</option>
+          <option value="20">20</option>
+          <option value="22">22</option>
+          <option value="24">24</option>
+          <option value="26">26</option>
+          <option value="28">28</option>
+          <option value="30">30</option>
+          <option value="32">32</option>
+        </select>
+      </div>
+      <button id="btnBold">加粗</button>
+      <button id="btnItalic">斜体</button>
+      <button id="btnUnderline">下划线</button>
+      <div>
+        文字颜色:
+        <input type="color" id="colorPicker" />
+      </div>
+      <div>
+        背景颜色:
+        <input type="color" id="bgColorPicker" />
+      </div>
+      <div>
+        对齐方式:
+        <select id="alignSelect">
+          <option value="left">左对齐</option>
+          <option value="center">居中对齐</option>
+          <option value="right">右对齐</option>
+        </select>
+      </div>
     </div>
     <div id="app"></div>
   </body>
@@ -43,6 +91,110 @@
     btnMerge.addEventListener("click", () => {
       const curSheet = excel.sheets[excel.sheetIndex];
       curSheet.merge(curSheet.selectedCells);
+    });
+    const fontFamilySelect = document.querySelector("#fontFamilySelect");
+    fontFamilySelect.addEventListener("change", (e) => {
+      const curSheet = excel.sheets[excel.sheetIndex];
+      const [minRowIndex, maxRowIndex, minColIndex, maxColIndex] =
+        curSheet.selectedCells;
+      for (let rowIndex = minRowIndex; rowIndex <= maxRowIndex; rowIndex++) {
+        for (let colIndex = minColIndex; colIndex <= maxColIndex; colIndex++) {
+          const cell = curSheet.getCell(rowIndex, colIndex);
+          cell.textStyle.fontFamily = e.target.value;
+        }
+      }
+      curSheet.draw(true);
+    });
+    const fontSizeSelect = document.querySelector("#fontSizeSelect");
+    fontSizeSelect.addEventListener("change", (e) => {
+      const curSheet = excel.sheets[excel.sheetIndex];
+      const [minRowIndex, maxRowIndex, minColIndex, maxColIndex] =
+        curSheet.selectedCells;
+      for (let rowIndex = minRowIndex; rowIndex <= maxRowIndex; rowIndex++) {
+        for (let colIndex = minColIndex; colIndex <= maxColIndex; colIndex++) {
+          const cell = curSheet.getCell(rowIndex, colIndex);
+          cell.textStyle.fontSize = e.target.value;
+        }
+      }
+      curSheet.draw(true);
+    });
+    const btnBold = document.querySelector("#btnBold");
+    btnBold.addEventListener("click", () => {
+      const curSheet = excel.sheets[excel.sheetIndex];
+      const [minRowIndex, maxRowIndex, minColIndex, maxColIndex] =
+        curSheet.selectedCells;
+      for (let rowIndex = minRowIndex; rowIndex <= maxRowIndex; rowIndex++) {
+        for (let colIndex = minColIndex; colIndex <= maxColIndex; colIndex++) {
+          const cell = curSheet.getCell(rowIndex, colIndex);
+          cell.textStyle.bold = !cell.textStyle.bold;
+        }
+      }
+      curSheet.draw(true);
+    });
+    const btnItalic = document.querySelector("#btnItalic");
+    btnItalic.addEventListener("click", () => {
+      const curSheet = excel.sheets[excel.sheetIndex];
+      const [minRowIndex, maxRowIndex, minColIndex, maxColIndex] =
+        curSheet.selectedCells;
+      for (let rowIndex = minRowIndex; rowIndex <= maxRowIndex; rowIndex++) {
+        for (let colIndex = minColIndex; colIndex <= maxColIndex; colIndex++) {
+          const cell = curSheet.getCell(rowIndex, colIndex);
+          cell.textStyle.italic = !cell.textStyle.italic;
+        }
+      }
+      curSheet.draw(true);
+    });
+    const btnUnderline = document.querySelector("#btnUnderline");
+    btnUnderline.addEventListener("click", () => {
+      const curSheet = excel.sheets[excel.sheetIndex];
+      const [minRowIndex, maxRowIndex, minColIndex, maxColIndex] =
+        curSheet.selectedCells;
+      for (let rowIndex = minRowIndex; rowIndex <= maxRowIndex; rowIndex++) {
+        for (let colIndex = minColIndex; colIndex <= maxColIndex; colIndex++) {
+          const cell = curSheet.getCell(rowIndex, colIndex);
+          cell.textStyle.underline = !cell.textStyle.underline;
+        }
+      }
+      curSheet.draw(true);
+    });
+    const colorPicker = document.querySelector("#colorPicker");
+    colorPicker.addEventListener("change", (e) => {
+      const curSheet = excel.sheets[excel.sheetIndex];
+      const [minRowIndex, maxRowIndex, minColIndex, maxColIndex] =
+        curSheet.selectedCells;
+      for (let rowIndex = minRowIndex; rowIndex <= maxRowIndex; rowIndex++) {
+        for (let colIndex = minColIndex; colIndex <= maxColIndex; colIndex++) {
+          const cell = curSheet.getCell(rowIndex, colIndex);
+          cell.textStyle.color = e.target.value;
+        }
+      }
+      curSheet.draw(true);
+    });
+    const bgColorPicker = document.querySelector("#bgColorPicker");
+    bgColorPicker.addEventListener("change", (e) => {
+      const curSheet = excel.sheets[excel.sheetIndex];
+      const [minRowIndex, maxRowIndex, minColIndex, maxColIndex] =
+        curSheet.selectedCells;
+      for (let rowIndex = minRowIndex; rowIndex <= maxRowIndex; rowIndex++) {
+        for (let colIndex = minColIndex; colIndex <= maxColIndex; colIndex++) {
+          const cell = curSheet.getCell(rowIndex, colIndex);
+          cell.textStyle.backgroundColor = e.target.value;
+        }
+      }
+      curSheet.draw(true);
+    });
+    const alignSelect = document.querySelector("#alignSelect");
+    alignSelect.addEventListener("change", (e) => {
+      const curSheet = excel.sheets[excel.sheetIndex];
+      const [minRowIndex, maxRowIndex, minColIndex, maxColIndex] =
+        curSheet.selectedCells;
+      for (let rowIndex = minRowIndex; rowIndex <= maxRowIndex; rowIndex++) {
+        for (let colIndex = minColIndex; colIndex <= maxColIndex; colIndex++) {
+          const cell = curSheet.getCell(rowIndex, colIndex);
+          cell.textStyle.align = e.target.value;
+        }
+      }
+      curSheet.draw(true);
     });
   </script>
 </html>

@@ -1,4 +1,5 @@
 import Element from "../components/Element";
+import Sheet from "./Sheet";
 
 class CellMergence extends Element<null> {
   layout: Excel.LayoutInfo;
@@ -54,6 +55,84 @@ class CellMergence extends Element<null> {
           ctx.lineTo(leftX, bottomY);
           ctx.closePath();
           ctx.fill();
+          ctx.restore();
+
+          ctx.save();
+          if (!leftTopCell.border.top.solid) {
+            ctx.setLineDash(Sheet.DEFAULT_CELL_LINE_DASH);
+          } else {
+            ctx.setLineDash([]);
+          }
+          ctx.strokeStyle = leftTopCell.border.top.color;
+          if (leftTopCell.border.top.bold) {
+            ctx.lineWidth = 2;
+          } else {
+            ctx.lineWidth = 1;
+          }
+          ctx.beginPath();
+          ctx.moveTo(leftX, topY);
+          ctx.lineTo(rightX, topY);
+          ctx.closePath();
+          ctx.stroke();
+          ctx.restore();
+
+          ctx.save();
+          if (!leftTopCell.border.right.solid) {
+            ctx.setLineDash(Sheet.DEFAULT_CELL_LINE_DASH);
+          } else {
+            ctx.setLineDash([]);
+          }
+          ctx.strokeStyle = leftTopCell.border.right.color;
+          if (leftTopCell.border.right.bold) {
+            ctx.lineWidth = 2;
+          } else {
+            ctx.lineWidth = 1;
+          }
+          ctx.beginPath();
+          ctx.moveTo(rightX, topY);
+          ctx.lineTo(rightX, bottomY);
+          ctx.closePath();
+          ctx.stroke();
+          ctx.restore();
+
+          ctx.save();
+          if (!leftTopCell.border.bottom.solid) {
+            ctx.setLineDash(Sheet.DEFAULT_CELL_LINE_DASH);
+          } else {
+            ctx.setLineDash([]);
+          }
+          ctx.strokeStyle = leftTopCell.border.bottom.color;
+          if (leftTopCell.border.bottom.bold) {
+            ctx.lineWidth = 2;
+          } else {
+            ctx.lineWidth = 1;
+          }
+          ctx.beginPath();
+          ctx.moveTo(rightX, bottomY);
+          ctx.lineTo(leftX, bottomY);
+          ctx.closePath();
+          ctx.stroke();
+          ctx.restore();
+
+          ctx.save();
+          if (!leftTopCell.border.left.solid) {
+            ctx.setLineDash(Sheet.DEFAULT_CELL_LINE_DASH);
+          } else {
+            ctx.setLineDash([]);
+          }
+          ctx.strokeStyle = leftTopCell.border.left.color;
+          if (leftTopCell.border.left.bold) {
+            ctx.lineWidth = 2;
+          } else {
+            ctx.lineWidth = 1;
+          }
+          ctx.beginPath();
+          ctx.moveTo(leftX, topY);
+          ctx.lineTo(leftX, bottomY);
+          ctx.closePath();
+          ctx.stroke();
+          ctx.restore();
+
           ctx.save();
           ctx.font = `${leftTopCell.textStyle.italic ? "italic" : ""} ${
             leftTopCell.textStyle.bold ? "bold" : "normal"
