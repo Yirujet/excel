@@ -22,7 +22,7 @@ class Sheet
   static DEFAULT_INDEX_CELL_WIDTH = 50;
   static DEFAULT_CELL_FONT_FAMILY = "宋体";
   static DEFAULT_CELL_LINE_DASH = [3, 5];
-  static DEFAULT_CELL_LINE_COLOR = "rgb(230, 230, 230)";
+  static DEFAULT_CELL_LINE_COLOR = "#ccc";
   static DEFAULT_FIXED_CELL_BACKGROUND_COLOR = "rgb(238, 238, 238)";
   static DEFAULT_FIXED_CELL_COLOR = "rgb(141, 87, 87)";
   static DEVIATION_COMPARE_VALUE = 10e-6;
@@ -309,6 +309,73 @@ class Sheet
 
   getCell(rowIndex: number, colIndex: number) {
     return this.cells[rowIndex]?.[colIndex] || null;
+  }
+
+  setSelectionCellsStyle(
+    selectedCells: Excel.Sheet.CellRange,
+    cellStyle: Excel.Cell.Style
+  ) {
+    const [minRowIndex, maxRowIndex, minColIndex, maxColIndex] = selectedCells;
+    for (let i = minRowIndex; i <= maxRowIndex; i++) {
+      for (let j = minColIndex; j <= maxColIndex; j++) {
+        const cell = this.getCell(i, j);
+        if (cell) {
+          if (cellStyle.text) {
+            cell.textStyle = {
+              ...cell.textStyle,
+              ...cellStyle.text,
+            };
+          }
+          if (cellStyle.border) {
+            cell.border.top = {
+              ...cell.border.top,
+              ...cellStyle.border,
+            };
+            cell.border.left = {
+              ...cell.border.left,
+              ...cellStyle.border,
+            };
+            cell.border.right = {
+              ...cell.border.right,
+              ...cellStyle.border,
+            };
+            cell.border.bottom = {
+              ...cell.border.bottom,
+              ...cellStyle.border,
+            };
+            const leftSiblingCell = this.getCell(i, j - 1);
+            if (leftSiblingCell) {
+              leftSiblingCell.border.right = {
+                ...leftSiblingCell.border.right,
+                ...cellStyle.border,
+              };
+            }
+            const topSiblingCell = this.getCell(i - 1, j);
+            if (topSiblingCell) {
+              topSiblingCell.border.bottom = {
+                ...topSiblingCell.border.bottom,
+                ...cellStyle.border,
+              };
+            }
+            const rightSiblingCell = this.getCell(i, j + 1);
+            if (rightSiblingCell) {
+              rightSiblingCell.border.left = {
+                ...rightSiblingCell.border.left,
+                ...cellStyle.border,
+              };
+            }
+            const bottomSiblingCell = this.getCell(i + 1, j);
+            if (bottomSiblingCell) {
+              bottomSiblingCell.border.top = {
+                ...bottomSiblingCell.border.top,
+                ...cellStyle.border,
+              };
+            }
+          }
+        }
+      }
+    }
+    this.draw(true);
   }
 
   initEvents() {

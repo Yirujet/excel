@@ -336,35 +336,44 @@ class Cell extends Element<null> implements Excel.Cell.CellInstance {
   }
 
   drawCellBorder(ctx: CanvasRenderingContext2D) {
-    if (this.fixed.x || this.fixed.y) {
-      ctx.save();
-      this.setBorderStyle(ctx, "top");
-      ctx.beginPath();
-      ctx.moveTo(
-        this.position.leftTop.x - this.scrollX,
-        this.position.leftTop.y - this.scrollY
-      );
-      ctx.lineTo(
-        this.position.rightTop.x - this.scrollX,
-        this.position.rightTop.y - this.scrollY
-      );
-      ctx.closePath();
-      ctx.stroke();
-      ctx.restore();
-      ctx.save();
-      this.setBorderStyle(ctx, "left");
-      ctx.beginPath();
-      ctx.moveTo(
-        this.position.leftBottom.x - this.scrollX,
-        this.position.leftBottom.y - this.scrollY
-      );
-      ctx.lineTo(
-        this.position.leftTop.x - this.scrollX,
-        this.position.leftTop.y - this.scrollY
-      );
-      ctx.closePath();
-      ctx.stroke();
-      ctx.restore();
+    if (
+      this.fixed.x ||
+      this.fixed.y ||
+      this.border.top.solid ||
+      this.border.left.solid
+    ) {
+      if (this.fixed.x || this.fixed.y || this.border.top.solid) {
+        ctx.save();
+        this.setBorderStyle(ctx, "top");
+        ctx.beginPath();
+        ctx.moveTo(
+          this.position.leftTop.x - this.scrollX,
+          this.position.leftTop.y - this.scrollY
+        );
+        ctx.lineTo(
+          this.position.rightTop.x - this.scrollX,
+          this.position.rightTop.y - this.scrollY
+        );
+        ctx.closePath();
+        ctx.stroke();
+        ctx.restore();
+      }
+      if (this.fixed.x || this.fixed.y || this.border.left.solid) {
+        ctx.save();
+        this.setBorderStyle(ctx, "left");
+        ctx.beginPath();
+        ctx.moveTo(
+          this.position.leftBottom.x - this.scrollX,
+          this.position.leftBottom.y - this.scrollY
+        );
+        ctx.lineTo(
+          this.position.leftTop.x - this.scrollX,
+          this.position.leftTop.y - this.scrollY
+        );
+        ctx.closePath();
+        ctx.stroke();
+        ctx.restore();
+      }
     }
     ctx.save();
     this.setBorderStyle(ctx, "right");
