@@ -82,30 +82,6 @@ class Sheet
     document.body.style.cursor = cursor;
   }
 
-  private findEnteredCell(x: number, y: number) {
-    let cell = null;
-    for (let i = 0; i < this.cells.length; i++) {
-      if (cell) {
-        break;
-      }
-      for (let j = 0; j < this.cells[i].length; j++) {
-        const {
-          position: { leftTop, leftBottom, rightTop, rightBottom },
-        } = this.cells[i][j];
-        if (
-          leftTop.x <= x &&
-          leftTop.y <= y &&
-          rightTop.x >= x &&
-          leftBottom.y >= y
-        ) {
-          cell = this.cells[i][j];
-          break;
-        }
-      }
-    }
-    return cell;
-  }
-
   private exceed(x: number, y: number) {
     const exceedInfo = {
       x: {
@@ -257,7 +233,7 @@ class Sheet
         Math.min(e.y - this.layout!.y + this.scroll.y, this.realHeight),
         0
       );
-      const endCell = this.findEnteredCell(x, y);
+      const endCell = this.findCellByPoint(x, y);
       this.clearSelectCells();
       if (endCell) {
         const minRowIndex = Math.min(
@@ -289,6 +265,44 @@ class Sheet
         this.draw(false);
       }
     }
+  }
+
+  findCellByPoint(x: number, y: number) {
+    let cell = null;
+    let binaryStartIndexY = 0;
+    let binaryEndIndexY = this.cells.length - 1;
+    let binaryStartIndexX = 0;
+    let binaryEndIndexX = this.cells[0].length - 1;
+    let binaryIndexY = Math.floor((binaryStartIndexY + binaryEndIndexY) / 2);
+    let binaryIndexX = Math.floor((binaryStartIndexX + binaryEndIndexX) / 2);
+    let binaryCell = this.cells[binaryIndexY][binaryIndexX];
+    while (cell === null) {
+      if (
+        !(
+          binaryCell.position.leftTop.x <= x &&
+          binaryCell.position.leftTop.y <= y &&
+          binaryCell.position.rightTop.x >= x &&
+          binaryCell.position.leftBottom.y >= y
+        )
+      ) {
+        if (binaryCell.position.leftTop.x > x) {
+          binaryEndIndexX = binaryIndexX;
+        } else {
+          binaryStartIndexX = binaryIndexX;
+        }
+        if (binaryCell.position.leftTop.y > y) {
+          binaryEndIndexY = binaryIndexY;
+        } else {
+          binaryStartIndexY = binaryIndexY;
+        }
+        binaryIndexY = Math.floor((binaryStartIndexY + binaryEndIndexY) / 2);
+        binaryIndexX = Math.floor((binaryStartIndexX + binaryEndIndexX) / 2);
+        binaryCell = this.cells[binaryIndexY][binaryIndexX];
+      } else {
+        cell = binaryCell;
+      }
+    }
+    return cell;
   }
 
   clearSelectCells() {
@@ -392,7 +406,7 @@ class Sheet
       }
       const x = e.x - this.layout!.x + this.scroll.x;
       const y = e.y - this.layout!.y + this.scroll.y;
-      this._startCell = this.findEnteredCell(x, y);
+      this._startCell = this.findCellByPoint(x, y);
       if (this._startCell) {
         this.clearSelectCells();
         this.selectedCells = [
