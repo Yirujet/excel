@@ -17,6 +17,11 @@ namespace Excel {
       bold: boolean;
     }
 
+    export interface Style {
+      text?: Partial<TextStyle>;
+      border?: Partial<BorderStyle>;
+    }
+
     export interface CellFixed {
       x: boolean;
       y: boolean;

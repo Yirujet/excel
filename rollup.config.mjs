@@ -13,7 +13,9 @@ export default [
       file: "./lib/excel.js",
       format: "umd",
       name: 'Excel',
+      compact: true,
     },
+    // mode: 'production',
     plugins: [
       postcss({
         extract: true,
