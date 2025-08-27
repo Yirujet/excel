@@ -225,11 +225,11 @@ class Sheet
         );
       }
       const x = Math.max(
-        Math.min(e.x - this.layout!.x + this.scroll.x, this.realWidth),
+        Math.min(e.x - this.layout!.x + (this.scroll.x || 0), this.realWidth),
         0
       );
       const y = Math.max(
-        Math.min(e.y - this.layout!.y + this.scroll.y, this.realHeight),
+        Math.min(e.y - this.layout!.y + (this.scroll.y || 0), this.realHeight),
         0
       );
       const endCell = this.findCellByPoint(x, y);
@@ -266,39 +266,65 @@ class Sheet
     }
   }
 
-  findCellByPoint(x: number, y: number) {
-    let cell = null;
-    let binaryStartIndexY = 0;
-    let binaryEndIndexY = this.cells.length - 1;
-    let binaryStartIndexX = 0;
-    let binaryEndIndexX = this.cells[0].length - 1;
-    let binaryIndexY = Math.floor((binaryStartIndexY + binaryEndIndexY) / 2);
-    let binaryIndexX = Math.floor((binaryStartIndexX + binaryEndIndexX) / 2);
-    let binaryCell = this.cells[binaryIndexY][binaryIndexX];
-    while (cell === null) {
-      if (
-        !(
-          binaryCell.position.leftTop.x <= x &&
-          binaryCell.position.leftTop.y <= y &&
-          binaryCell.position.rightTop.x >= x &&
-          binaryCell.position.leftBottom.y >= y
-        )
-      ) {
-        if (binaryCell.position.leftTop.x > x) {
-          binaryEndIndexX = binaryIndexX;
-        } else {
-          binaryStartIndexX = binaryIndexX;
-        }
-        if (binaryCell.position.leftTop.y > y) {
-          binaryEndIndexY = binaryIndexY;
-        } else {
-          binaryStartIndexY = binaryIndexY;
-        }
-        binaryIndexY = Math.floor((binaryStartIndexY + binaryEndIndexY) / 2);
-        binaryIndexX = Math.floor((binaryStartIndexX + binaryEndIndexX) / 2);
-        binaryCell = this.cells[binaryIndexY][binaryIndexX];
+  private binaryQuery<T>(
+    arr: T[],
+    value: number,
+    compare: (_binaryIndex: number, value: number, arr: T[]) => boolean,
+    complete: (_binaryIndex: number, arr: T[]) => boolean,
+    judge?: (_binaryIndex: number, value: number, arr: T[]) => boolean
+  ) {
+    let index = null;
+    let binaryIndexStart = 0;
+    let binaryIndexEnd = arr.length;
+    let binaryIndex = Math.floor((binaryIndexStart + binaryIndexEnd) / 2);
+    while (index === null) {
+      if (complete(binaryIndex, arr)) {
+        index = binaryIndex;
       } else {
-        cell = binaryCell;
+        if (compare(binaryIndex, value, arr)) {
+          if (!compare(binaryIndex - 1, value, arr)) {
+            index = binaryIndex;
+          } else {
+            binaryIndexEnd = binaryIndex;
+          }
+        } else {
+          if (judge) {
+            if (judge(binaryIndex, value, arr)) {
+              binaryIndexStart = binaryIndex;
+            } else {
+              binaryIndexEnd = binaryIndex;
+            }
+          } else {
+            binaryIndexStart = binaryIndex;
+          }
+        }
+        binaryIndex = Math.floor((binaryIndexStart + binaryIndexEnd) / 2);
+      }
+    }
+    return index!;
+  }
+
+  private findCellByPoint(x: number, y: number) {
+    let cell = null;
+    y = Math.max(y, this.fixedRowHeight);
+    x = Math.max(x, this.fixedColWidth);
+    for (let i = this.fixedRowIndex; i < this.cells.length; i++) {
+      if (cell) {
+        break;
+      }
+      for (let j = this.fixedColIndex; j < this.cells[i].length; j++) {
+        const {
+          position: { leftTop, leftBottom, rightTop, rightBottom },
+        } = this.cells[i][j];
+        if (
+          leftTop.x <= x &&
+          leftTop.y <= y &&
+          rightTop.x >= x &&
+          leftBottom.y >= y
+        ) {
+          cell = this.cells[i][j];
+          break;
+        }
       }
     }
     return cell;
@@ -403,8 +429,8 @@ class Sheet
       if (exceedInfo.x.exceed || exceedInfo.y.exceed) {
         return;
       }
-      const x = e.x - this.layout!.x + this.scroll.x;
-      const y = e.y - this.layout!.y + this.scroll.y;
+      const x = e.x - this.layout!.x + (this.scroll.x || 0);
+      const y = e.y - this.layout!.y + (this.scroll.y || 0);
       this._startCell = this.findCellByPoint(x, y);
       if (this._startCell) {
         this.clearSelectCells();
@@ -760,35 +786,6 @@ class Sheet
     this.drawCellResizer();
   }
 
-  private binaryQuery<T>(
-    arr: T[],
-    value: number,
-    compare: (_binaryIndex: number, value: number, arr: T[]) => boolean,
-    complete: (_binaryIndex: number, arr: T[]) => boolean
-  ) {
-    let index = null;
-    let binaryIndexStart = 0;
-    let binaryIndexEnd = arr.length;
-    let binaryIndex = Math.floor((binaryIndexStart + binaryIndexEnd) / 2);
-    while (index === null) {
-      if (complete(binaryIndex, arr)) {
-        index = binaryIndex;
-      } else {
-        if (compare(binaryIndex, value, arr)) {
-          if (!compare(binaryIndex - 1, value, arr)) {
-            index = binaryIndex;
-          } else {
-            binaryIndexEnd = binaryIndex;
-          }
-        } else {
-          binaryIndexStart = binaryIndex;
-        }
-        binaryIndex = Math.floor((binaryIndexStart + binaryIndexEnd) / 2);
-      }
-    }
-    return index!;
-  }
-
   getRangeInView(
     cells: Excel.Cell.CellInstance[][],
     scrollX: number,
@@ -807,6 +804,7 @@ class Sheet
       }
     );
     minYIndex = Math.max(minYIndex, 0);
+
     let maxYIndex = null;
     if (!fixedInY) {
       maxYIndex = this.binaryQuery(
@@ -828,6 +826,7 @@ class Sheet
     } else {
       maxYIndex = cells.length - 1;
     }
+
     let minXIndex = this.binaryQuery(
       cells[0],
       0,
@@ -839,6 +838,7 @@ class Sheet
       }
     );
     minXIndex = Math.max(minXIndex, 0);
+
     let maxXIndex = null;
     if (!fixedInX) {
       maxXIndex = this.binaryQuery(
@@ -901,8 +901,8 @@ class Sheet
     isEnd: boolean
   ) {
     this.clearCells(fixedInX, fixedInY);
-    const scrollX = fixedInX ? 0 : this.scroll.x;
-    const scrollY = fixedInY ? 0 : this.scroll.y;
+    const scrollX = fixedInX ? 0 : this.scroll.x || 0;
+    const scrollY = fixedInY ? 0 : this.scroll.y || 0;
     const [minXIndex, maxXIndex, minYIndex, maxYIndex] = this.getRangeInView(
       cells,
       scrollX,
@@ -974,8 +974,8 @@ class Sheet
     this.cellSelector!.render(
       this._ctx!,
       this.selectedCells,
-      this.scroll.x,
-      this.scroll.y
+      this.scroll.x || 0,
+      this.scroll.y || 0
     );
   }
 
@@ -983,8 +983,8 @@ class Sheet
     this.cellMergence!.render(
       this._ctx!,
       this.mergedCells,
-      this.scroll.x,
-      this.scroll.y
+      this.scroll.x || 0,
+      this.scroll.y || 0
     );
   }
 

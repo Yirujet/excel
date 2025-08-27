@@ -4,6 +4,8 @@ import { terser } from 'rollup-plugin-terser'
 import postcss from 'rollup-plugin-postcss';
 import autoprefixer from "autoprefixer";
 import cssnano from "cssnano";
+import { nodeResolve } from '@rollup/plugin-node-resolve';
+import commonjs from '@rollup/plugin-commonjs';
 
 export default [
   {
@@ -17,6 +19,11 @@ export default [
     },
     // mode: 'production',
     plugins: [
+      // commonjs(
+      //   {
+      //     include: 'node_modules/**',
+      //   }
+      // ),
       postcss({
         extract: true,
         extract: 'excel.css',
@@ -32,6 +39,7 @@ export default [
       }),
       typescript({ tsconfig: 'tsconfig.json', declaration: true }),
       // terser(),
+      // nodeResolve(),
     ]
   },
 ];
