@@ -151,15 +151,14 @@ class Sheet
           minColIndex <= maxColIndexMerged &&
           !(minRowIndex > maxRowIndexMerged || maxRowIndex < minRowIndexMerged))
       ) {
-        selectedCells = [
-          Math.min(minRowIndex, minRowIndexMerged),
-          Math.max(maxRowIndex, maxRowIndexMerged),
-          Math.min(minColIndex, minColIndexMerged),
-          Math.max(maxColIndex, maxColIndexMerged),
-        ];
         selectedCells = this.mergeIntersectMergedCells(
           [...mergedCells.slice(0, i), ...mergedCells.slice(i + 1)],
-          selectedCells
+          [
+            Math.min(minRowIndex, minRowIndexMerged),
+            Math.max(maxRowIndex, maxRowIndexMerged),
+            Math.min(minColIndex, minColIndexMerged),
+            Math.max(maxColIndex, maxColIndexMerged),
+          ]
         );
       }
     });
@@ -761,37 +760,106 @@ class Sheet
     this.drawCellResizer();
   }
 
+  private binaryQuery<T>(
+    arr: T[],
+    value: number,
+    compare: (_binaryIndex: number, value: number, arr: T[]) => boolean,
+    complete: (_binaryIndex: number, arr: T[]) => boolean
+  ) {
+    let index = null;
+    let binaryIndexStart = 0;
+    let binaryIndexEnd = arr.length;
+    let binaryIndex = Math.floor((binaryIndexStart + binaryIndexEnd) / 2);
+    while (index === null) {
+      if (complete(binaryIndex, arr)) {
+        index = binaryIndex;
+      } else {
+        if (compare(binaryIndex, value, arr)) {
+          if (!compare(binaryIndex - 1, value, arr)) {
+            index = binaryIndex;
+          } else {
+            binaryIndexEnd = binaryIndex;
+          }
+        } else {
+          binaryIndexStart = binaryIndex;
+        }
+        binaryIndex = Math.floor((binaryIndexStart + binaryIndexEnd) / 2);
+      }
+    }
+    return index!;
+  }
+
   getRangeInView(
     cells: Excel.Cell.CellInstance[][],
     scrollX: number,
-    scrollY: number
+    scrollY: number,
+    fixedInX: boolean,
+    fixedInY: boolean
   ) {
-    let minYIndex = cells.findIndex((e, i) => {
-      return e[0].position.leftBottom.y! - scrollY > 0;
-    });
+    let minYIndex = this.binaryQuery(
+      cells,
+      0,
+      (binaryIndex, value, arr) => {
+        return arr[binaryIndex][0].position.leftBottom.y! - scrollY > value;
+      },
+      (binaryIndex, arr) => {
+        return binaryIndex === 0;
+      }
+    );
     minYIndex = Math.max(minYIndex, 0);
-    let maxYIndex = cells.findIndex((e, i) => {
-      return e[0].position.leftTop.y! - scrollY > this.height;
-    });
-    maxYIndex =
-      this.verticalScrollBar?.percent === 1
-        ? cells.length - 1
-        : maxYIndex === -1
-        ? cells.length - 1
-        : maxYIndex;
-    let minXIndex = cells[0].findIndex((e, i) => {
-      return e.position.rightTop.x! - scrollX > 0;
-    });
+    let maxYIndex = null;
+    if (!fixedInY) {
+      maxYIndex = this.binaryQuery(
+        cells,
+        this.height,
+        (binaryIndex, value, arr) => {
+          return arr[binaryIndex][0].position.leftTop.y! - scrollY > value;
+        },
+        (binaryIndex, arr) => {
+          return binaryIndex === arr.length - 1;
+        }
+      );
+      maxYIndex =
+        this.verticalScrollBar?.percent === 1
+          ? cells.length - 1
+          : maxYIndex === -1
+          ? cells.length - 1
+          : maxYIndex;
+    } else {
+      maxYIndex = cells.length - 1;
+    }
+    let minXIndex = this.binaryQuery(
+      cells[0],
+      0,
+      (binaryIndex, value, arr) => {
+        return arr[binaryIndex].position.rightTop.x! - scrollX > value;
+      },
+      (binaryIndex, arr) => {
+        return binaryIndex === 0;
+      }
+    );
     minXIndex = Math.max(minXIndex, 0);
-    let maxXIndex = cells[0].findIndex((e, i) => {
-      return e.position.leftTop.x! - scrollX > this.width;
-    });
-    maxXIndex =
-      this.horizontalScrollBar?.percent === 1
-        ? cells[0].length - 1
-        : maxXIndex === -1
-        ? cells[0].length - 1
-        : maxXIndex;
+    let maxXIndex = null;
+    if (!fixedInX) {
+      maxXIndex = this.binaryQuery(
+        cells[0],
+        this.width,
+        (binaryIndex, value, arr) => {
+          return arr[binaryIndex].position.leftTop.x! - scrollX > value;
+        },
+        (binaryIndex, arr) => {
+          return binaryIndex === arr.length - 1;
+        }
+      );
+      maxXIndex =
+        this.horizontalScrollBar?.percent === 1
+          ? cells[0].length - 1
+          : maxXIndex === -1
+          ? cells[0].length - 1
+          : maxXIndex;
+    } else {
+      maxXIndex = cells[0].length - 1;
+    }
     return [minXIndex, maxXIndex, minYIndex, maxYIndex];
   }
 
@@ -838,7 +906,9 @@ class Sheet
     const [minXIndex, maxXIndex, minYIndex, maxYIndex] = this.getRangeInView(
       cells,
       scrollX,
-      scrollY
+      scrollY,
+      fixedInX,
+      fixedInY
     );
     for (let i = minYIndex; i <= maxYIndex; i++) {
       if (ignoreYIndex !== null && i < ignoreYIndex) continue;
