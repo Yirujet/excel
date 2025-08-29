@@ -30,35 +30,35 @@ class Cell extends Element<null> implements Excel.Cell.CellInstance {
     },
   };
   textStyle = {
-    fontFamily: "sans-serif",
-    fontSize: 12,
-    bold: false,
-    italic: false,
-    underline: false,
-    backgroundColor: "#fff",
-    color: "#000",
-    align: "left",
+    fontFamily: Sheet.DEFAULT_CELL_TEXT_FONT_FAMILY,
+    fontSize: Sheet.DEFAULT_CELL_TEXT_FONT_SIZE,
+    bold: Sheet.DEFAULT_CELL_TEXT_BOLD,
+    italic: Sheet.DEFAULT_CELL_TEXT_ITALIC,
+    underline: Sheet.DEFAULT_CELL_TEXT_UNDERLINE,
+    backgroundColor: Sheet.DEFAULT_CELL_TEXT_BACKGROUND_COLOR,
+    color: Sheet.DEFAULT_CELL_TEXT_COLOR,
+    align: Sheet.DEFAULT_CELL_TEXT_ALIGN,
   };
   border: Excel.Cell.Border = {
     top: {
-      solid: false,
+      solid: Sheet.DEFAULT_CELL_LINE_SOLID,
       color: Sheet.DEFAULT_CELL_LINE_COLOR,
-      bold: false,
+      bold: Sheet.DEFAULT_CELL_LINE_BOLD,
     },
     bottom: {
-      solid: false,
+      solid: Sheet.DEFAULT_CELL_LINE_SOLID,
       color: Sheet.DEFAULT_CELL_LINE_COLOR,
-      bold: false,
+      bold: Sheet.DEFAULT_CELL_LINE_BOLD,
     },
     left: {
-      solid: false,
+      solid: Sheet.DEFAULT_CELL_LINE_SOLID,
       color: Sheet.DEFAULT_CELL_LINE_COLOR,
-      bold: false,
+      bold: Sheet.DEFAULT_CELL_LINE_BOLD,
     },
     right: {
-      solid: false,
+      solid: Sheet.DEFAULT_CELL_LINE_SOLID,
       color: Sheet.DEFAULT_CELL_LINE_COLOR,
-      bold: false,
+      bold: Sheet.DEFAULT_CELL_LINE_BOLD,
     },
   };
   meta = null;

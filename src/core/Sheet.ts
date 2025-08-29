@@ -21,7 +21,16 @@ class Sheet
   static DEFAULT_CELL_WIDTH = 100;
   static DEFAULT_CELL_HEIGHT = 25;
   static DEFAULT_INDEX_CELL_WIDTH = 50;
-  static DEFAULT_CELL_FONT_FAMILY = "宋体";
+  static DEFAULT_CELL_TEXT_FONT_FAMILY = "sans-serif";
+  static DEFAULT_CELL_TEXT_FONT_SIZE = 12;
+  static DEFAULT_CELL_TEXT_BOLD = false;
+  static DEFAULT_CELL_TEXT_ITALIC = false;
+  static DEFAULT_CELL_TEXT_UNDERLINE = false;
+  static DEFAULT_CELL_TEXT_BACKGROUND_COLOR = "#fff";
+  static DEFAULT_CELL_TEXT_COLOR = "#000";
+  static DEFAULT_CELL_TEXT_ALIGN = "center";
+  static DEFAULT_CELL_LINE_SOLID = false;
+  static DEFAULT_CELL_LINE_BOLD = false;
   static DEFAULT_CELL_LINE_DASH = [3, 5];
   static DEFAULT_CELL_LINE_COLOR = "#ccc";
   static DEFAULT_FIXED_CELL_BACKGROUND_COLOR = "rgb(238, 238, 238)";
