@@ -52,7 +52,7 @@ class Sheet
   cells: Excel.Cell.CellInstance[][] = [];
   width = 0;
   height = 0;
-  scroll: Excel.Sheet.ScrollInfo = { x: 0, y: 0 };
+  scroll: Excel.PositionPoint = { x: 0, y: 0 };
   horizontalScrollBar: HorizontalScrollbar | null = null;
   verticalScrollBar: VerticalScrollbar | null = null;
   cellResizer: CellResizer | null = null;
@@ -350,6 +350,64 @@ class Sheet
     return this.cells[rowIndex]?.[colIndex] || null;
   }
 
+  setCellStyle(cell: Excel.Cell.CellInstance, cellStyle: Excel.Cell.Style) {
+    if (cellStyle.text) {
+      cell.textStyle = {
+        ...cell.textStyle,
+        ...cellStyle.text,
+      };
+    }
+    if (cellStyle.border) {
+      cell.border.top = {
+        ...cell.border.top,
+        ...cellStyle.border,
+      };
+      cell.border.left = {
+        ...cell.border.left,
+        ...cellStyle.border,
+      };
+      cell.border.right = {
+        ...cell.border.right,
+        ...cellStyle.border,
+      };
+      cell.border.bottom = {
+        ...cell.border.bottom,
+        ...cellStyle.border,
+      };
+      const leftSiblingCell = this.getCell(cell.rowIndex!, cell.colIndex! - 1);
+      if (leftSiblingCell) {
+        leftSiblingCell.border.right = {
+          ...leftSiblingCell.border.right,
+          ...cellStyle.border,
+        };
+      }
+      const topSiblingCell = this.getCell(cell.rowIndex! - 1, cell.colIndex!);
+      if (topSiblingCell) {
+        topSiblingCell.border.bottom = {
+          ...topSiblingCell.border.bottom,
+          ...cellStyle.border,
+        };
+      }
+      const rightSiblingCell = this.getCell(cell.rowIndex!, cell.colIndex! + 1);
+      if (rightSiblingCell) {
+        rightSiblingCell.border.left = {
+          ...rightSiblingCell.border.left,
+          ...cellStyle.border,
+        };
+      }
+      const bottomSiblingCell = this.getCell(
+        cell.rowIndex! + 1,
+        cell.colIndex!
+      );
+      if (bottomSiblingCell) {
+        bottomSiblingCell.border.top = {
+          ...bottomSiblingCell.border.top,
+          ...cellStyle.border,
+        };
+      }
+    }
+  }
+
   setSelectionCellsStyle(
     selectedCells: Excel.Sheet.CellRange,
     cellStyle: Excel.Cell.Style
@@ -359,58 +417,7 @@ class Sheet
       for (let j = minColIndex; j <= maxColIndex; j++) {
         const cell = this.getCell(i, j);
         if (cell) {
-          if (cellStyle.text) {
-            cell.textStyle = {
-              ...cell.textStyle,
-              ...cellStyle.text,
-            };
-          }
-          if (cellStyle.border) {
-            cell.border.top = {
-              ...cell.border.top,
-              ...cellStyle.border,
-            };
-            cell.border.left = {
-              ...cell.border.left,
-              ...cellStyle.border,
-            };
-            cell.border.right = {
-              ...cell.border.right,
-              ...cellStyle.border,
-            };
-            cell.border.bottom = {
-              ...cell.border.bottom,
-              ...cellStyle.border,
-            };
-            const leftSiblingCell = this.getCell(i, j - 1);
-            if (leftSiblingCell) {
-              leftSiblingCell.border.right = {
-                ...leftSiblingCell.border.right,
-                ...cellStyle.border,
-              };
-            }
-            const topSiblingCell = this.getCell(i - 1, j);
-            if (topSiblingCell) {
-              topSiblingCell.border.bottom = {
-                ...topSiblingCell.border.bottom,
-                ...cellStyle.border,
-              };
-            }
-            const rightSiblingCell = this.getCell(i, j + 1);
-            if (rightSiblingCell) {
-              rightSiblingCell.border.left = {
-                ...rightSiblingCell.border.left,
-                ...cellStyle.border,
-              };
-            }
-            const bottomSiblingCell = this.getCell(i + 1, j);
-            if (bottomSiblingCell) {
-              bottomSiblingCell.border.top = {
-                ...bottomSiblingCell.border.top,
-                ...cellStyle.border,
-              };
-            }
-          }
+          this.setCellStyle(cell, cellStyle);
         }
       }
     }
@@ -580,57 +587,30 @@ class Sheet
             if (j < this.fixedColIndex) {
               cell.fixed.x = true;
             }
-            cell.border = {
-              top: {
+            this.setCellStyle(cell, {
+              border: {
                 solid: true,
                 color: Sheet.DEFAULT_CELL_LINE_COLOR,
                 bold: false,
               },
-              bottom: {
-                solid: true,
-                color: Sheet.DEFAULT_CELL_LINE_COLOR,
-                bold: false,
+              text: {
+                color: Sheet.DEFAULT_FIXED_CELL_COLOR,
+                backgroundColor: Sheet.DEFAULT_FIXED_CELL_BACKGROUND_COLOR,
+                fontSize: 13,
+                align: "center",
               },
-              left: {
-                solid: true,
-                color: Sheet.DEFAULT_CELL_LINE_COLOR,
-                bold: false,
-              },
-              right: {
-                solid: true,
-                color: Sheet.DEFAULT_CELL_LINE_COLOR,
-                bold: false,
-              },
-            };
-            cell.textStyle.color = Sheet.DEFAULT_FIXED_CELL_COLOR;
-            cell.textStyle.backgroundColor =
-              Sheet.DEFAULT_FIXED_CELL_BACKGROUND_COLOR;
-            cell.textStyle.fontSize = 13;
-            cell.textStyle.align = "center";
+            });
           } else {
-            cell.border = {
-              top: {
+            this.setCellStyle(cell, {
+              border: {
                 solid: false,
                 color: Sheet.DEFAULT_CELL_LINE_COLOR,
                 bold: false,
               },
-              bottom: {
-                solid: false,
-                color: Sheet.DEFAULT_CELL_LINE_COLOR,
-                bold: false,
+              text: {
+                align: "center",
               },
-              left: {
-                solid: false,
-                color: Sheet.DEFAULT_CELL_LINE_COLOR,
-                bold: false,
-              },
-              right: {
-                solid: false,
-                color: Sheet.DEFAULT_CELL_LINE_COLOR,
-                bold: false,
-              },
-            };
-            cell.textStyle.align = "center";
+            });
           }
           row.push(cell);
         }

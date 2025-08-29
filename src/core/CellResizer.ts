@@ -12,7 +12,7 @@ class CellResizer extends Element<null> {
     ctx: CanvasRenderingContext2D,
     cellInfo: Excel.Cell.CellInstance,
     resizeInfo: Excel.Cell.CellResize,
-    scrollInfo: Excel.Sheet.ScrollInfo
+    scrollInfo: Excel.PositionPoint
   ) {
     ctx.save();
     ctx.setLineDash(Sheet.DEFAULT_RESIZER_LINE_DASH);
