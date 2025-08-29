@@ -308,25 +308,15 @@ class Sheet
     let cell = null;
     y = Math.max(y, this.fixedRowHeight);
     x = Math.max(x, this.fixedColWidth);
-    for (let i = this.fixedRowIndex; i < this.cells.length; i++) {
-      if (cell) {
-        break;
-      }
-      for (let j = this.fixedColIndex; j < this.cells[i].length; j++) {
-        const {
-          position: { leftTop, leftBottom, rightTop, rightBottom },
-        } = this.cells[i][j];
-        if (
-          leftTop.x <= x &&
-          leftTop.y <= y &&
-          rightTop.x >= x &&
-          leftBottom.y >= y
-        ) {
-          cell = this.cells[i][j];
-          break;
-        }
-      }
-    }
+    let rowIndex = this.cells.findIndex(
+      (e) => e[0].position.leftTop.y <= y && e[0].position.leftBottom.y >= y
+    );
+    let colIndex = this.cells[0].findIndex(
+      (e) => e.position.leftTop.x <= x && e.position.rightTop.x >= x
+    );
+    rowIndex = Math.max(rowIndex, this.fixedRowIndex);
+    colIndex = Math.max(colIndex, this.fixedColIndex);
+    cell = this.cells[rowIndex][colIndex];
     return cell;
   }
 
@@ -781,8 +771,8 @@ class Sheet
     this.drawSheetCells(isEnd);
     this.drawMergedCells();
     this.drawFixedShadow();
-    this.drawCellSelector();
     this.drawScrollbar();
+    this.drawCellSelector();
     this.drawCellResizer();
   }
 
