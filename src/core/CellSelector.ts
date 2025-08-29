@@ -39,11 +39,12 @@ class CellSelector extends Element<null> {
         startX: number,
         startY: number,
         endX: number,
-        endY: number
+        endY: number,
+        lineWidth: number = 1
       ) => {
         ctx.save();
         ctx.strokeStyle = Sheet.DEFAULT_CELL_SELECTED_COLOR;
-        ctx.lineWidth = 1;
+        ctx.lineWidth = lineWidth;
         ctx.beginPath();
         ctx.moveTo(startX, startY);
         ctx.lineTo(endX, endY);
@@ -93,6 +94,46 @@ class CellSelector extends Element<null> {
         ctx.save();
         ctx.fillStyle = Sheet.DEFAULT_CELL_SELECTED_BACKGROUND_COLOR;
         ctx.fillRect(leftX, topY, rightX - leftX, bottomY - topY);
+        ctx.restore();
+      }
+
+      if (w > 0) {
+        ctx.save();
+        ctx.translate(
+          0,
+          -Sheet.DEFAULT_CELL_SELECTED_FIXED_CELL_LINE_WIDTH / 2
+        );
+        drawBorder(
+          leftX,
+          this.fixedRowHeight,
+          rightX,
+          this.fixedRowHeight,
+          Sheet.DEFAULT_CELL_SELECTED_FIXED_CELL_LINE_WIDTH
+        );
+        ctx.restore();
+        ctx.save();
+        ctx.fillStyle = Sheet.DEFAULT_CELL_SELECTED_BACKGROUND_COLOR;
+        ctx.fillRect(leftX, 0, rightX - leftX, this.fixedRowHeight);
+        ctx.restore();
+      }
+
+      if (h > 0) {
+        ctx.save();
+        ctx.translate(
+          -Sheet.DEFAULT_CELL_SELECTED_FIXED_CELL_LINE_WIDTH / 2,
+          0
+        );
+        drawBorder(
+          this.fixedColWidth,
+          topY,
+          this.fixedColWidth,
+          bottomY,
+          Sheet.DEFAULT_CELL_SELECTED_FIXED_CELL_LINE_WIDTH
+        );
+        ctx.restore();
+        ctx.save();
+        ctx.fillStyle = Sheet.DEFAULT_CELL_SELECTED_BACKGROUND_COLOR;
+        ctx.fillRect(0, topY, this.fixedColWidth, bottomY - topY);
         ctx.restore();
       }
     }
