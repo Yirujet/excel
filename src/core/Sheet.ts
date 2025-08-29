@@ -376,21 +376,21 @@ class Sheet
         ...cellStyle.border,
       };
       const leftSiblingCell = this.getCell(cell.rowIndex!, cell.colIndex! - 1);
-      if (leftSiblingCell) {
+      if (leftSiblingCell && !leftSiblingCell.fixed.x) {
         leftSiblingCell.border.right = {
           ...leftSiblingCell.border.right,
           ...cellStyle.border,
         };
       }
       const topSiblingCell = this.getCell(cell.rowIndex! - 1, cell.colIndex!);
-      if (topSiblingCell) {
+      if (topSiblingCell && !topSiblingCell.fixed.y) {
         topSiblingCell.border.bottom = {
           ...topSiblingCell.border.bottom,
           ...cellStyle.border,
         };
       }
       const rightSiblingCell = this.getCell(cell.rowIndex!, cell.colIndex! + 1);
-      if (rightSiblingCell) {
+      if (rightSiblingCell && !rightSiblingCell.fixed.x) {
         rightSiblingCell.border.left = {
           ...rightSiblingCell.border.left,
           ...cellStyle.border,
@@ -400,7 +400,7 @@ class Sheet
         cell.rowIndex! + 1,
         cell.colIndex!
       );
-      if (bottomSiblingCell) {
+      if (bottomSiblingCell && !bottomSiblingCell.fixed.y) {
         bottomSiblingCell.border.top = {
           ...bottomSiblingCell.border.top,
           ...cellStyle.border,
