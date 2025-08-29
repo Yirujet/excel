@@ -8,6 +8,7 @@ import HorizontalScrollbar from "./Scrollbar/HorizontalScrollbar";
 import VerticalScrollbar from "./Scrollbar/VerticalScrollbar";
 import CellSelector from "./CellSelector";
 import CellMergence from "./CellMergence";
+import Shadow from "./Shadow";
 
 class Sheet
   extends Element<HTMLCanvasElement>
@@ -38,6 +39,13 @@ class Sheet
   static DEFAULT_RESIZER_LINE_COLOR = "#409EFF";
   static DEFAULT_CELL_SELECTED_COLOR = "#409EFF";
   static DEFAULT_CELL_SELECTED_BACKGROUND_COLOR = "rgba(64,158,255, 0.1)";
+  static DEFAULT_SCROLLBAR_TRACK_SIZE = 16;
+  static DEFAULT_SCROLLBAR_THUMB_SIZE = 16;
+  static DEFAULT_SCROLLBAR_TRACK_BORDER_COLOR = "#ebeef5";
+  static DEFAULT_SCROLLBAR_TRACK_BACKGROUND_COLOR = "#f1f1f1";
+  static DEFAULT_SCROLLBAR_THUMB_DRAGGING_COLOR = "#787878";
+  static DEFAULT_SCROLLBAR_THUMB_BACKGROUND_COLOR = "#c1c1c1";
+  static DEFAULT_SCROLLBAR_THUMB_MIN_SIZE = 20;
   private _ctx: CanvasRenderingContext2D | null = null;
   private _startCell: Excel.Cell.CellInstance | null = null;
   name = "";
@@ -50,6 +58,8 @@ class Sheet
   cellResizer: CellResizer | null = null;
   cellSelector: CellSelector | null = null;
   cellMergence: CellMergence | null = null;
+  horizontalScrollBarShadow: Shadow | null = null;
+  verticalScrollBarShadow: Shadow | null = null;
   sheetEventsObserver: Excel.Event.ObserverInstance = new EventObserver();
   globalEventsObserver: Excel.Event.ObserverInstance = new EventObserver();
   realWidth = 0;
@@ -466,14 +476,9 @@ class Sheet
   }
 
   render() {
-    this._ctx = this.$el!.getContext("2d")!;
-    this.$el!.style.width = `${this.width}px`;
-    this.$el!.style.height = `${this.height}px`;
-    this.$el!.width = this.width * window.devicePixelRatio;
-    this.$el!.height = this.height * window.devicePixelRatio;
-    this._ctx!.translate(0.5, 0.5);
-    this._ctx!.scale(window.devicePixelRatio, window.devicePixelRatio);
+    this.initSheet();
     this.initScrollbar();
+    this.initShadow();
     this.initCellResizer();
     this.initCellSelector();
     this.initCellMergence();
@@ -481,6 +486,16 @@ class Sheet
     this.sheetEventsObserver.observe(this.$el!);
     this.globalEventsObserver.observe(window as any);
     this.draw(true);
+  }
+
+  initSheet() {
+    this._ctx = this.$el!.getContext("2d")!;
+    this.$el!.style.width = `${this.width}px`;
+    this.$el!.style.height = `${this.height}px`;
+    this.$el!.width = this.width * window.devicePixelRatio;
+    this.$el!.height = this.height * window.devicePixelRatio;
+    this._ctx!.translate(0.5, 0.5);
+    this._ctx!.scale(window.devicePixelRatio, window.devicePixelRatio);
   }
 
   initLayout() {
@@ -493,10 +508,10 @@ class Sheet
       y: this.y,
       width:
         this.width -
-        (verticalScrollbarShow ? VerticalScrollbar.TRACK_WIDTH : 0),
+        (verticalScrollbarShow ? Sheet.DEFAULT_SCROLLBAR_TRACK_SIZE : 0),
       height:
         this.height -
-        (horizontalScrollbarShow ? HorizontalScrollbar.TRACK_HEIGHT : 0),
+        (horizontalScrollbarShow ? Sheet.DEFAULT_SCROLLBAR_TRACK_SIZE : 0),
       headerHeight: Sheet.DEFAULT_CELL_HEIGHT,
       fixedLeftWidth: Sheet.DEFAULT_INDEX_CELL_WIDTH,
       bodyHeight,
@@ -672,6 +687,25 @@ class Sheet
     this.verticalScrollBar.addEvent("percent", this.redraw.bind(this));
   }
 
+  initShadow() {
+    this.horizontalScrollBarShadow = new Shadow(
+      this.fixedColWidth,
+      this.fixedRowHeight,
+      this.width,
+      Sheet.DEFAULT_GRADIENT_OFFSET,
+      [Sheet.DEFAULT_GRADIENT_START_COLOR, Sheet.DEFAULT_GRADIENT_STOP_COLOR],
+      "vertical"
+    );
+    this.verticalScrollBarShadow = new Shadow(
+      this.fixedColWidth,
+      this.fixedRowHeight,
+      Sheet.DEFAULT_GRADIENT_OFFSET,
+      this.height,
+      [Sheet.DEFAULT_GRADIENT_START_COLOR, Sheet.DEFAULT_GRADIENT_STOP_COLOR],
+      "horizontal"
+    );
+  }
+
   clear() {
     this._ctx!.clearRect(0, 0, this.width, this.height);
   }
@@ -694,7 +728,9 @@ class Sheet
         Math.abs(percent) *
         (this.realWidth -
           this.width +
-          (this.verticalScrollBar?.show ? VerticalScrollbar.TRACK_WIDTH : 0));
+          (this.verticalScrollBar?.show
+            ? Sheet.DEFAULT_SCROLLBAR_TRACK_SIZE
+            : 0));
       Sheet.SCROLL_X = this.scroll.x;
     } else {
       this.scroll.y =
@@ -702,7 +738,7 @@ class Sheet
         (this.realHeight -
           this.height +
           (this.horizontalScrollBar?.show
-            ? HorizontalScrollbar.TRACK_HEIGHT
+            ? Sheet.DEFAULT_SCROLLBAR_TRACK_SIZE
             : 0));
       Sheet.SCROLL_Y = this.scroll.y;
     }
@@ -770,7 +806,7 @@ class Sheet
   draw(isEnd: boolean = false) {
     this.drawSheetCells(isEnd);
     this.drawMergedCells();
-    this.drawFixedShadow();
+    this.drawShadow();
     this.drawScrollbar();
     this.drawCellSelector();
     this.drawCellResizer();
@@ -943,7 +979,8 @@ class Sheet
       this.horizontalScrollBar!.render(this._ctx!);
     }
     if (this.verticalScrollBar!.show && this.horizontalScrollBar!.show) {
-      this.drawScrollbarCoincide();
+      this.verticalScrollBar!.fillCoincide(this._ctx!);
+      this.horizontalScrollBar!.fillCoincide(this._ctx!);
     }
   }
 
@@ -978,79 +1015,20 @@ class Sheet
     );
   }
 
-  drawScrollbarCoincide() {
-    this._ctx!.save();
-    this._ctx!.strokeStyle = this.verticalScrollBar!.track.borderColor;
-    this._ctx!.strokeRect(
-      this.verticalScrollBar!.x,
-      this.horizontalScrollBar!.y,
-      this.verticalScrollBar!.track.width,
-      this.horizontalScrollBar!.track.height
-    );
-    this._ctx!.fillStyle = this.verticalScrollBar!.track.backgroundColor;
-    this._ctx!.fillRect(
-      this.verticalScrollBar!.x,
-      this.horizontalScrollBar!.y,
-      this.verticalScrollBar!.track.width,
-      this.horizontalScrollBar!.track.height
-    );
-    this._ctx!.restore();
-  }
-
-  drawFixedRowCellsShadow() {
-    const gradient = this._ctx!.createLinearGradient(
-      this.width / 2,
-      this.fixedRowHeight,
-      this.width / 2,
-      this.fixedRowHeight + Sheet.DEFAULT_GRADIENT_OFFSET
-    );
-    gradient.addColorStop(0, Sheet.DEFAULT_GRADIENT_START_COLOR);
-    gradient.addColorStop(1, Sheet.DEFAULT_GRADIENT_STOP_COLOR);
-    this._ctx!.save();
-    this._ctx!.fillStyle = gradient;
-    this._ctx!.fillRect(
-      this.fixedColWidth,
-      this.fixedRowHeight,
-      this.width,
-      Sheet.DEFAULT_GRADIENT_OFFSET
-    );
-    this._ctx!.restore();
-  }
-
-  drawFixedColCellsShadow() {
-    const gradient = this._ctx!.createLinearGradient(
-      this.fixedColWidth,
-      this.height / 2,
-      this.fixedColWidth + Sheet.DEFAULT_GRADIENT_OFFSET,
-      this.height / 2
-    );
-    gradient.addColorStop(0, Sheet.DEFAULT_GRADIENT_START_COLOR);
-    gradient.addColorStop(1, Sheet.DEFAULT_GRADIENT_STOP_COLOR);
-    this._ctx!.save();
-    this._ctx!.fillStyle = gradient;
-    this._ctx!.fillRect(
-      this.fixedColWidth,
-      this.fixedRowHeight,
-      Sheet.DEFAULT_GRADIENT_OFFSET,
-      this.height
-    );
-    this._ctx!.restore();
-  }
-
-  drawFixedShadow() {
+  drawShadow() {
     if (
       this.fixedRowCells.length > 0 &&
       this.verticalScrollBar!.show &&
       this.verticalScrollBar!.percent > 0
     ) {
-      this.drawFixedRowCellsShadow();
+      this.horizontalScrollBarShadow!.render(this._ctx!);
     }
     if (
       this.fixedColCells.length > 0 &&
       this.horizontalScrollBar!.show &&
       this.horizontalScrollBar!.percent > 0
     ) {
-      this.drawFixedColCellsShadow();
+      this.verticalScrollBarShadow!.render(this._ctx!);
     }
   }
 }

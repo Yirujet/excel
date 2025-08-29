@@ -9,16 +9,16 @@ export default class Scrollbar
   track = {
     width: 0,
     height: 0,
-    borderColor: "#ebeef5",
-    backgroundColor: "#f1f1f1",
+    borderColor: Sheet.DEFAULT_SCROLLBAR_TRACK_BORDER_COLOR,
+    backgroundColor: Sheet.DEFAULT_SCROLLBAR_TRACK_BACKGROUND_COLOR,
   };
   thumb = {
     width: 0,
     height: 0,
     padding: 0,
-    min: 20,
-    backgroundColor: "#c1c1c1",
-    draggingColor: "#787878",
+    min: Sheet.DEFAULT_SCROLLBAR_THUMB_MIN_SIZE,
+    backgroundColor: Sheet.DEFAULT_SCROLLBAR_THUMB_BACKGROUND_COLOR,
+    draggingColor: Sheet.DEFAULT_SCROLLBAR_THUMB_DRAGGING_COLOR,
   };
   value = 0;
   percent = 0;
@@ -148,6 +148,31 @@ export default class Scrollbar
         this.thumb.height
       );
     }
+    ctx.restore();
+  }
+  fillCoincide(ctx: CanvasRenderingContext2D) {
+    ctx.save();
+    ctx.strokeStyle = this.track.borderColor;
+    ctx.beginPath();
+    if (this.type === "horizontal") {
+      ctx.moveTo(this.track.width, this.y);
+      ctx.lineTo(this.track.width, this.y + this.track.height);
+      ctx.lineTo(
+        this.track.width + Sheet.DEFAULT_SCROLLBAR_TRACK_SIZE,
+        this.y + this.track.height
+      );
+    } else {
+      ctx.moveTo(this.x, this.track.height);
+      ctx.lineTo(this.x + this.track.width, this.track.height);
+      ctx.lineTo(
+        this.x + this.track.width,
+        this.track.height + Sheet.DEFAULT_SCROLLBAR_TRACK_SIZE
+      );
+    }
+    ctx.closePath();
+    ctx.stroke();
+    ctx.fillStyle = this!.track.backgroundColor;
+    ctx.fill();
     ctx.restore();
   }
 }

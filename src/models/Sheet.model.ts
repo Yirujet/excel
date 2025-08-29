@@ -1,9 +1,11 @@
 namespace Excel {
   export namespace Sheet {
-    export type ScrollInfo = {
+    export type PointLike = {
       x: number;
       y: number;
     };
+
+    export type ScrollInfo = PointLike;
 
     export type CellRange = [number, number, number, number];
 

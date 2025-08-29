@@ -1,17 +1,16 @@
 import throttle from "../../utils/throttle";
+import Sheet from "../Sheet";
 import Scrollbar from "./Scrollbar";
 
 export default class VerticalScrollbar extends Scrollbar {
-  static TRACK_WIDTH = 16;
-  static THUMB_WIDTH = 16;
   constructor(
     layout: Excel.LayoutInfo,
     eventObserver: Excel.Event.ObserverInstance,
     globalEventsObserver: Excel.Event.ObserverInstance
   ) {
     super(layout, eventObserver, globalEventsObserver, "vertical");
-    this.track.width = VerticalScrollbar.TRACK_WIDTH;
-    this.thumb.width = VerticalScrollbar.THUMB_WIDTH;
+    this.track.width = Sheet.DEFAULT_SCROLLBAR_TRACK_SIZE;
+    this.thumb.width = Sheet.DEFAULT_SCROLLBAR_THUMB_SIZE;
     this.init();
   }
   init() {

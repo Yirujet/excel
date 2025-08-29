@@ -38,6 +38,7 @@ namespace Excel {
       globalEventsObserver: Excel.Event.ObserverInstance;
       type: Type;
       mouseEntered: boolean;
+      fillCoincide(ctx: CanvasRenderingContext2D): void;
     }
   }
 }
