@@ -4,14 +4,14 @@ class Shadow {
   width: number;
   height: number;
   color: [string, string];
-  direction: "vertical" | "horizontal";
+  direction: Excel.Scrollbar.Type;
   constructor(
     x: number,
     y: number,
     width: number,
     height: number,
     color: [string, string],
-    direction: "vertical" | "horizontal"
+    direction: Excel.Scrollbar.Type
   ) {
     this.x = x;
     this.y = y;

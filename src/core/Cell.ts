@@ -95,9 +95,18 @@ class Cell extends Element<null> implements Excel.Cell.CellInstance {
     colIndex: null,
     value: null,
   };
-  moveEvent: Excel.Event.FnType | null = null;
+  select: Excel.Cell.CellSelect = {
+    x: false,
+    y: false,
+    rowIndex: null,
+    colIndex: null,
+    value: null,
+  };
+  resizingEvent: Excel.Event.FnType | null = null;
   resizing = false;
   moveStartValue = 0;
+  selecting = false;
+  selectingEvent: Excel.Event.FnType | null = null;
 
   constructor(eventObserver: Excel.Event.ObserverInstance) {
     super("", true);
@@ -111,16 +120,15 @@ class Cell extends Element<null> implements Excel.Cell.CellInstance {
     const onMouseMove = debounce((e: MouseEvent) => {
       if (this.resizing) return;
       this.checkHit(e);
-      this.checkResize(e);
+      this.checkResizeOrSelect(e);
     }, 100);
 
-    const onMouseDown = (e: MouseEvent) => {
-      if (!(this.resize.x || this.resize.y)) return;
+    const handleStartResize = (e: MouseEvent) => {
       this.resizing = true;
       const offsetProp = this.resize.x ? "x" : "y";
       this.moveStartValue = e[offsetProp];
-      this.scrollMove(offsetProp);
-      const onEndScroll = () => {
+      this.initResizingEvent(offsetProp);
+      const onEndResize = () => {
         this.triggerEvent("resize", this.resize, true);
         this.resizing = false;
         this.resize.x = false;
@@ -129,13 +137,49 @@ class Cell extends Element<null> implements Excel.Cell.CellInstance {
         this.resize.colIndex = null;
         this.resize.value = 0;
         this.moveStartValue = 0;
-        window.removeEventListener("mousemove", this.moveEvent!);
-        this.moveEvent = null;
-        window.removeEventListener("mouseup", onEndScroll);
+        window.removeEventListener("mousemove", this.resizingEvent!);
+        this.resizingEvent = null;
+        window.removeEventListener("mouseup", onEndResize);
       };
       if (this.resizing) {
-        window.addEventListener("mousemove", this.moveEvent!);
-        window.addEventListener("mouseup", onEndScroll);
+        window.addEventListener("mousemove", this.resizingEvent!);
+        window.addEventListener("mouseup", onEndResize);
+      }
+    };
+
+    const handleStartSelect = (e: MouseEvent) => {
+      this.selecting = true;
+      const offsetProp = this.select.x ? "x" : "y";
+      this.moveStartValue = e[offsetProp];
+      this.initSelectingEvent(offsetProp);
+      const onEndSelect = () => {
+        this.triggerEvent("select", this.select, true);
+        this.selecting = false;
+        this.select.x = false;
+        this.select.y = false;
+        this.select.rowIndex = null;
+        this.select.colIndex = null;
+        this.select.value = 0;
+        this.moveStartValue = 0;
+        window.removeEventListener("mousemove", this.selectingEvent!);
+        this.selectingEvent = null;
+        window.removeEventListener("mouseup", onEndSelect);
+      };
+      if (this.selecting) {
+        window.addEventListener("mousemove", this.selectingEvent!);
+        window.addEventListener("mouseup", onEndSelect);
+      }
+    };
+
+    const onMouseDown = (e: MouseEvent) => {
+      if (!(this.resize.x || this.resize.y)) {
+        if (!(this.select.x || this.select.y)) {
+          return;
+        } else {
+          handleStartSelect(e);
+        }
+      } else {
+        handleStartResize(e);
       }
     };
 
@@ -150,13 +194,22 @@ class Cell extends Element<null> implements Excel.Cell.CellInstance {
     );
   }
 
-  scrollMove(offsetProp: "x" | "y") {
+  initResizingEvent(offsetProp: "x" | "y") {
     if (this.resizing) {
-      this.moveEvent = throttle((e: MouseEvent) => {
+      this.resizingEvent = throttle((e: MouseEvent) => {
         if (!this.resizing) return;
         this.resize.value = e[offsetProp] - this.moveStartValue;
-        // this.moveStartValue = e[offsetProp];
         this.triggerEvent("resize", this.resize);
+      }, 100);
+    }
+  }
+
+  initSelectingEvent(offsetProp: "x" | "y") {
+    if (this.selecting) {
+      this.selectingEvent = throttle((e: MouseEvent) => {
+        if (!this.selecting) return;
+        this.select.value = e[offsetProp] - this.moveStartValue;
+        this.triggerEvent("select", this.select);
       }, 100);
     }
   }
@@ -188,20 +241,35 @@ class Cell extends Element<null> implements Excel.Cell.CellInstance {
     }
   }
 
-  checkResize(e: MouseEvent) {
+  resetResize() {
+    this.resize = {
+      x: false,
+      y: false,
+      rowIndex: null,
+      colIndex: null,
+      value: null,
+    };
+  }
+
+  resetSelect() {
+    this.select = {
+      x: false,
+      y: false,
+      rowIndex: null,
+      colIndex: null,
+      value: null,
+    };
+  }
+
+  checkResizeOrSelect(e: MouseEvent) {
     if (
       !(
         (this.fixed.x && this.colIndex === 0) ||
         (this.fixed.y && this.rowIndex === 0)
       )
     ) {
-      this.resize = {
-        x: false,
-        y: false,
-        rowIndex: null,
-        colIndex: null,
-        value: null,
-      };
+      this.resetResize();
+      this.resetSelect();
       return;
     }
     const { offsetX, offsetY } = e;
@@ -225,13 +293,24 @@ class Cell extends Element<null> implements Excel.Cell.CellInstance {
           rowIndex: this.rowIndex!,
           colIndex: this.colIndex!,
         };
+        this.resetSelect();
       } else {
-        this.resize = {
-          x: false,
-          y: false,
-          rowIndex: null,
-          colIndex: null,
-        };
+        this.resetResize();
+        if (
+          !(
+            offsetX < this.position!.leftTop.x - scrollX ||
+            offsetX > this.position!.rightTop.x - scrollX - RESIZE_COL_SIZE ||
+            offsetY < this.position!.leftTop.y - scrollY ||
+            offsetY > this.position!.leftBottom.y - scrollY
+          )
+        ) {
+          this.select = {
+            x: true,
+            y: false,
+            rowIndex: this.rowIndex!,
+            colIndex: this.colIndex!,
+          };
+        }
       }
     } else if (this.fixed.x) {
       if (
@@ -249,13 +328,24 @@ class Cell extends Element<null> implements Excel.Cell.CellInstance {
           rowIndex: this.rowIndex!,
           colIndex: this.colIndex!,
         };
+        this.resetSelect();
       } else {
-        this.resize = {
-          x: false,
-          y: false,
-          rowIndex: null,
-          colIndex: null,
-        };
+        this.resetResize();
+        if (
+          !(
+            offsetX < this.position!.leftTop.x - scrollX ||
+            offsetX > this.position!.rightTop.x - scrollX ||
+            offsetY < this.position!.leftTop.y - scrollY ||
+            offsetY > this.position!.leftBottom.y - scrollY - RESIZE_ROW_SIZE
+          )
+        ) {
+          this.select = {
+            x: false,
+            y: true,
+            rowIndex: this.rowIndex!,
+            colIndex: this.colIndex!,
+          };
+        }
       }
     }
   }

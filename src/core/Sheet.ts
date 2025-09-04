@@ -63,6 +63,13 @@ class Sheet
     colIndex: null,
     value: null,
   };
+  selectInfo: Excel.Cell.CellSelect = {
+    x: false,
+    y: false,
+    rowIndex: null,
+    colIndex: null,
+    value: null,
+  };
   selectedCells: Excel.Sheet.CellRange | null = null;
   mergedCells: Excel.Sheet.CellRange[] = [];
 
@@ -750,6 +757,22 @@ class Sheet
     }
   }
 
+  handleCellSelect(select: Excel.Cell.CellSelect, isEnd = false) {
+    if (select.value) {
+      this.selectInfo = select;
+    }
+    if (isEnd) {
+      this.selectInfo = {
+        x: false,
+        y: false,
+        rowIndex: null,
+        colIndex: null,
+        value: null,
+      };
+    }
+    console.log("***", this.selectInfo);
+  }
+
   redraw(percent: number, type: Excel.Scrollbar.Type, isEnd: boolean) {
     this.updateScroll(percent, type);
     this.draw(isEnd);
@@ -919,6 +942,7 @@ class Sheet
           this.sheetEventsObserver.resize.splice(index, 1);
         }
         cell.addEvent!("resize", this.handleCellResize.bind(this));
+        cell.addEvent!("select", this.handleCellSelect.bind(this));
       }
     }
   }

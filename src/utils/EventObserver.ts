@@ -85,6 +85,7 @@ export default class EventObserver implements Excel.Event.ObserverInstance {
   keydown: Excel.Event.ObserverTypes[] = [];
   keyup: Excel.Event.ObserverTypes[] = [];
   resize: Excel.Event.ObserverTypes[] = [];
+  select: Excel.Event.ObserverTypes[] = [];
   observe(target: HTMLCanvasElement) {
     if (target && "addEventListener" in target) {
       Object.entries(GlobalEvents).forEach(

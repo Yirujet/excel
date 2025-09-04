@@ -27,13 +27,15 @@ namespace Excel {
       y: boolean;
     }
 
-    export interface CellResize {
+    export interface CellSelect {
       x: boolean;
       y: boolean;
       rowIndex: number | null;
       colIndex: number | null;
       value?: number | null;
     }
+
+    export interface CellResize extends CellSelect {}
 
     export type BorderSide = "top" | "bottom" | "left" | "right";
 
