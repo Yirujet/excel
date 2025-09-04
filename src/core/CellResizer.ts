@@ -1,5 +1,9 @@
 import Element from "../components/Element";
-import Sheet from "./Sheet";
+import {
+  DEFAULT_RESIZER_LINE_COLOR,
+  DEFAULT_RESIZER_LINE_DASH,
+  DEFAULT_RESIZER_LINE_WIDTH,
+} from "../config/index";
 
 class CellResizer extends Element<null> {
   layout: Excel.LayoutInfo;
@@ -15,9 +19,9 @@ class CellResizer extends Element<null> {
     scrollInfo: Excel.PositionPoint
   ) {
     ctx.save();
-    ctx.setLineDash(Sheet.DEFAULT_RESIZER_LINE_DASH);
-    ctx.lineWidth = Sheet.DEFAULT_RESIZER_LINE_WIDTH;
-    ctx.strokeStyle = Sheet.DEFAULT_RESIZER_LINE_COLOR;
+    ctx.setLineDash(DEFAULT_RESIZER_LINE_DASH);
+    ctx.lineWidth = DEFAULT_RESIZER_LINE_WIDTH;
+    ctx.strokeStyle = DEFAULT_RESIZER_LINE_COLOR;
     if (resizeInfo.x) {
       ctx.beginPath();
       ctx.moveTo(

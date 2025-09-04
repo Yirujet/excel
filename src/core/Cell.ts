@@ -1,8 +1,24 @@
 import getTextMetrics from "../utils/getTextMetrics";
-import Sheet from "./Sheet";
 import Element from "../components/Element";
 import debounce from "../utils/debounce";
 import throttle from "../utils/throttle";
+import {
+  DEFAULT_CELL_LINE_BOLD,
+  DEFAULT_CELL_LINE_COLOR,
+  DEFAULT_CELL_LINE_DASH,
+  DEFAULT_CELL_LINE_SOLID,
+  DEFAULT_CELL_TEXT_ALIGN,
+  DEFAULT_CELL_TEXT_BACKGROUND_COLOR,
+  DEFAULT_CELL_TEXT_BOLD,
+  DEFAULT_CELL_TEXT_COLOR,
+  DEFAULT_CELL_TEXT_FONT_FAMILY,
+  DEFAULT_CELL_TEXT_FONT_SIZE,
+  DEFAULT_CELL_TEXT_ITALIC,
+  DEFAULT_CELL_TEXT_UNDERLINE,
+  RESIZE_COL_SIZE,
+  RESIZE_ROW_SIZE,
+} from "../config/index";
+import globalObj from "./globalObj";
 
 class Cell extends Element<null> implements Excel.Cell.CellInstance {
   width: number | null = null;
@@ -30,35 +46,35 @@ class Cell extends Element<null> implements Excel.Cell.CellInstance {
     },
   };
   textStyle = {
-    fontFamily: Sheet.DEFAULT_CELL_TEXT_FONT_FAMILY,
-    fontSize: Sheet.DEFAULT_CELL_TEXT_FONT_SIZE,
-    bold: Sheet.DEFAULT_CELL_TEXT_BOLD,
-    italic: Sheet.DEFAULT_CELL_TEXT_ITALIC,
-    underline: Sheet.DEFAULT_CELL_TEXT_UNDERLINE,
-    backgroundColor: Sheet.DEFAULT_CELL_TEXT_BACKGROUND_COLOR,
-    color: Sheet.DEFAULT_CELL_TEXT_COLOR,
-    align: Sheet.DEFAULT_CELL_TEXT_ALIGN,
+    fontFamily: DEFAULT_CELL_TEXT_FONT_FAMILY,
+    fontSize: DEFAULT_CELL_TEXT_FONT_SIZE,
+    bold: DEFAULT_CELL_TEXT_BOLD,
+    italic: DEFAULT_CELL_TEXT_ITALIC,
+    underline: DEFAULT_CELL_TEXT_UNDERLINE,
+    backgroundColor: DEFAULT_CELL_TEXT_BACKGROUND_COLOR,
+    color: DEFAULT_CELL_TEXT_COLOR,
+    align: DEFAULT_CELL_TEXT_ALIGN,
   };
   border: Excel.Cell.Border = {
     top: {
-      solid: Sheet.DEFAULT_CELL_LINE_SOLID,
-      color: Sheet.DEFAULT_CELL_LINE_COLOR,
-      bold: Sheet.DEFAULT_CELL_LINE_BOLD,
+      solid: DEFAULT_CELL_LINE_SOLID,
+      color: DEFAULT_CELL_LINE_COLOR,
+      bold: DEFAULT_CELL_LINE_BOLD,
     },
     bottom: {
-      solid: Sheet.DEFAULT_CELL_LINE_SOLID,
-      color: Sheet.DEFAULT_CELL_LINE_COLOR,
-      bold: Sheet.DEFAULT_CELL_LINE_BOLD,
+      solid: DEFAULT_CELL_LINE_SOLID,
+      color: DEFAULT_CELL_LINE_COLOR,
+      bold: DEFAULT_CELL_LINE_BOLD,
     },
     left: {
-      solid: Sheet.DEFAULT_CELL_LINE_SOLID,
-      color: Sheet.DEFAULT_CELL_LINE_COLOR,
-      bold: Sheet.DEFAULT_CELL_LINE_BOLD,
+      solid: DEFAULT_CELL_LINE_SOLID,
+      color: DEFAULT_CELL_LINE_COLOR,
+      bold: DEFAULT_CELL_LINE_BOLD,
     },
     right: {
-      solid: Sheet.DEFAULT_CELL_LINE_SOLID,
-      color: Sheet.DEFAULT_CELL_LINE_COLOR,
-      bold: Sheet.DEFAULT_CELL_LINE_BOLD,
+      solid: DEFAULT_CELL_LINE_SOLID,
+      color: DEFAULT_CELL_LINE_COLOR,
+      bold: DEFAULT_CELL_LINE_BOLD,
     },
   };
   meta = null;
@@ -148,9 +164,9 @@ class Cell extends Element<null> implements Excel.Cell.CellInstance {
   checkHit(e: MouseEvent) {
     const { offsetX, offsetY } = e;
     const scrollX =
-      this.fixed.x || this.fixed.y ? this.scrollX : Sheet.SCROLL_X;
+      this.fixed.x || this.fixed.y ? this.scrollX : globalObj.SCROLL_X;
     const scrollY =
-      this.fixed.x || this.fixed.y ? this.scrollY : Sheet.SCROLL_Y;
+      this.fixed.x || this.fixed.y ? this.scrollY : globalObj.SCROLL_Y;
     if (
       !(
         offsetX < this.position!.leftTop.x - scrollX ||
@@ -161,11 +177,11 @@ class Cell extends Element<null> implements Excel.Cell.CellInstance {
     ) {
       this.mouseEntered = true;
       if (this.fixed.y) {
-        Sheet.SET_CURSOR("s-resize");
+        globalObj.SET_CURSOR("s-resize");
       } else if (this.fixed.x) {
-        Sheet.SET_CURSOR("w-resize");
+        globalObj.SET_CURSOR("w-resize");
       } else {
-        Sheet.SET_CURSOR("cell");
+        globalObj.SET_CURSOR("cell");
       }
     } else {
       this.mouseEntered = false;
@@ -190,20 +206,19 @@ class Cell extends Element<null> implements Excel.Cell.CellInstance {
     }
     const { offsetX, offsetY } = e;
     const scrollX =
-      this.fixed.x || this.fixed.y ? this.scrollX : Sheet.SCROLL_X;
+      this.fixed.x || this.fixed.y ? this.scrollX : globalObj.SCROLL_X;
     const scrollY =
-      this.fixed.x || this.fixed.y ? this.scrollY : Sheet.SCROLL_Y;
+      this.fixed.x || this.fixed.y ? this.scrollY : globalObj.SCROLL_Y;
     if (this.fixed.y) {
       if (
         !(
-          offsetX <
-            this.position!.rightTop.x - scrollX - Sheet.RESIZE_COL_SIZE ||
+          offsetX < this.position!.rightTop.x - scrollX - RESIZE_COL_SIZE ||
           offsetX > this.position!.rightTop.x - scrollX ||
           offsetY < this.position!.leftTop.y - scrollY ||
           offsetY > this.position!.leftBottom.y - scrollY
         )
       ) {
-        Sheet.SET_CURSOR("col-resize");
+        globalObj.SET_CURSOR("col-resize");
         this.resize = {
           x: true,
           y: false,
@@ -223,12 +238,11 @@ class Cell extends Element<null> implements Excel.Cell.CellInstance {
         !(
           offsetX < this.position!.leftTop.x - scrollX ||
           offsetX > this.position!.rightTop.x - scrollX ||
-          offsetY <
-            this.position!.leftBottom.y - scrollY - Sheet.RESIZE_ROW_SIZE ||
+          offsetY < this.position!.leftBottom.y - scrollY - RESIZE_ROW_SIZE ||
           offsetY > this.position!.leftBottom.y - scrollY
         )
       ) {
-        Sheet.SET_CURSOR("row-resize");
+        globalObj.SET_CURSOR("row-resize");
         this.resize = {
           x: false,
           y: true,
@@ -248,7 +262,7 @@ class Cell extends Element<null> implements Excel.Cell.CellInstance {
 
   setBorderStyle(ctx: CanvasRenderingContext2D, side: Excel.Cell.BorderSide) {
     if (!this.border[side].solid) {
-      ctx.setLineDash(Sheet.DEFAULT_CELL_LINE_DASH);
+      ctx.setLineDash(DEFAULT_CELL_LINE_DASH);
     } else {
       ctx.setLineDash([]);
     }

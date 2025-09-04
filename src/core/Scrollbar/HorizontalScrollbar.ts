@@ -1,5 +1,8 @@
+import {
+  DEFAULT_SCROLLBAR_THUMB_SIZE,
+  DEFAULT_SCROLLBAR_TRACK_SIZE,
+} from "../../config/index";
 import throttle from "../../utils/throttle";
-import Sheet from "../Sheet";
 import Scrollbar from "./Scrollbar";
 
 export default class HorizontalScrollbar extends Scrollbar {
@@ -9,8 +12,8 @@ export default class HorizontalScrollbar extends Scrollbar {
     globalEventsObserver: Excel.Event.ObserverInstance
   ) {
     super(layout, eventObserver, globalEventsObserver, "horizontal");
-    this.track.height = Sheet.DEFAULT_SCROLLBAR_TRACK_SIZE;
-    this.thumb.height = Sheet.DEFAULT_SCROLLBAR_THUMB_SIZE;
+    this.track.height = DEFAULT_SCROLLBAR_TRACK_SIZE;
+    this.thumb.height = DEFAULT_SCROLLBAR_THUMB_SIZE;
     this.init();
   }
   init() {

@@ -9,53 +9,27 @@ import VerticalScrollbar from "./Scrollbar/VerticalScrollbar";
 import CellSelector from "./CellSelector";
 import CellMergence from "./CellMergence";
 import Shadow from "./Shadow";
+import {
+  DEFAULT_CELL_COL_COUNT,
+  DEFAULT_CELL_HEIGHT,
+  DEFAULT_CELL_LINE_COLOR,
+  DEFAULT_CELL_ROW_COUNT,
+  DEFAULT_CELL_WIDTH,
+  DEFAULT_FIXED_CELL_BACKGROUND_COLOR,
+  DEFAULT_FIXED_CELL_COLOR,
+  DEFAULT_GRADIENT_OFFSET,
+  DEFAULT_GRADIENT_START_COLOR,
+  DEFAULT_GRADIENT_STOP_COLOR,
+  DEFAULT_INDEX_CELL_WIDTH,
+  DEFAULT_SCROLLBAR_TRACK_SIZE,
+  DEVIATION_COMPARE_VALUE,
+} from "../config/index";
+import globalObj from "./globalObj";
 
 class Sheet
   extends Element<HTMLCanvasElement>
   implements Excel.Sheet.SheetInstance
 {
-  static DEFAULT_CELL_ROW_COUNT = 500;
-  static DEFAULT_CELL_COL_COUNT = 1000;
-  static DEFAULT_CELL_MIN_WIDTH = 30;
-  static DEFAULT_CELL_MIN_HEIGHT = 20;
-  static DEFAULT_CELL_WIDTH = 100;
-  static DEFAULT_CELL_HEIGHT = 25;
-  static DEFAULT_INDEX_CELL_WIDTH = 50;
-  static DEFAULT_CELL_TEXT_FONT_FAMILY = "sans-serif";
-  static DEFAULT_CELL_TEXT_FONT_SIZE = 12;
-  static DEFAULT_CELL_TEXT_BOLD = false;
-  static DEFAULT_CELL_TEXT_ITALIC = false;
-  static DEFAULT_CELL_TEXT_UNDERLINE = false;
-  static DEFAULT_CELL_TEXT_BACKGROUND_COLOR = "#fff";
-  static DEFAULT_CELL_TEXT_COLOR = "#000";
-  static DEFAULT_CELL_TEXT_ALIGN = "center";
-  static DEFAULT_CELL_LINE_SOLID = false;
-  static DEFAULT_CELL_LINE_BOLD = false;
-  static DEFAULT_CELL_LINE_DASH = [3, 5];
-  static DEFAULT_CELL_LINE_COLOR = "#ccc";
-  static DEFAULT_FIXED_CELL_BACKGROUND_COLOR = "rgb(238, 238, 238)";
-  static DEFAULT_FIXED_CELL_COLOR = "rgb(141, 87, 87)";
-  static DEVIATION_COMPARE_VALUE = 10e-6;
-  static DEFAULT_GRADIENT_OFFSET = 6;
-  static DEFAULT_GRADIENT_START_COLOR = "rgba(0, 0, 0, 0.12)";
-  static DEFAULT_GRADIENT_STOP_COLOR = "transparent";
-  static SCROLL_X = 0;
-  static SCROLL_Y = 0;
-  static RESIZE_ROW_SIZE = 5;
-  static RESIZE_COL_SIZE = 10;
-  static DEFAULT_RESIZER_LINE_WIDTH = 2;
-  static DEFAULT_RESIZER_LINE_DASH = [3, 5];
-  static DEFAULT_RESIZER_LINE_COLOR = "#409EFF";
-  static DEFAULT_CELL_SELECTED_COLOR = "#409EFF";
-  static DEFAULT_CELL_SELECTED_BACKGROUND_COLOR = "rgba(64,158,255, 0.1)";
-  static DEFAULT_CELL_SELECTED_FIXED_CELL_LINE_WIDTH = 2;
-  static DEFAULT_SCROLLBAR_TRACK_SIZE = 16;
-  static DEFAULT_SCROLLBAR_THUMB_SIZE = 16;
-  static DEFAULT_SCROLLBAR_TRACK_BORDER_COLOR = "#ebeef5";
-  static DEFAULT_SCROLLBAR_TRACK_BACKGROUND_COLOR = "#f1f1f1";
-  static DEFAULT_SCROLLBAR_THUMB_DRAGGING_COLOR = "#787878";
-  static DEFAULT_SCROLLBAR_THUMB_BACKGROUND_COLOR = "#c1c1c1";
-  static DEFAULT_SCROLLBAR_THUMB_MIN_SIZE = 20;
   private _ctx: CanvasRenderingContext2D | null = null;
   private _startCell: Excel.Cell.CellInstance | null = null;
   name = "";
@@ -96,10 +70,6 @@ class Sheet
     super("canvas");
     this.name = name;
     this.initCells(cells);
-  }
-
-  static SET_CURSOR(cursor: string) {
-    document.body.style.cursor = cursor;
   }
 
   private exceed(x: number, y: number) {
@@ -474,7 +444,6 @@ class Sheet
         if (this.selectedCells) {
           this.draw(true);
         }
-        this._startCell = null;
         window.removeEventListener("mousemove", onSelectCells);
         window.removeEventListener("mouseup", onEndSelectCells);
       };
@@ -516,25 +485,24 @@ class Sheet
   }
 
   initLayout() {
-    const bodyHeight = this.height - Sheet.DEFAULT_CELL_HEIGHT;
+    const bodyHeight = this.height - DEFAULT_CELL_HEIGHT;
     const verticalScrollbarShow = bodyHeight < this.realHeight;
     const horizontalScrollbarShow =
-      this.realWidth > this.width - Sheet.DEFAULT_INDEX_CELL_WIDTH;
+      this.realWidth > this.width - DEFAULT_INDEX_CELL_WIDTH;
     this.layout = {
       x: this.x,
       y: this.y,
       width:
-        this.width -
-        (verticalScrollbarShow ? Sheet.DEFAULT_SCROLLBAR_TRACK_SIZE : 0),
+        this.width - (verticalScrollbarShow ? DEFAULT_SCROLLBAR_TRACK_SIZE : 0),
       height:
         this.height -
-        (horizontalScrollbarShow ? Sheet.DEFAULT_SCROLLBAR_TRACK_SIZE : 0),
-      headerHeight: Sheet.DEFAULT_CELL_HEIGHT,
-      fixedLeftWidth: Sheet.DEFAULT_INDEX_CELL_WIDTH,
+        (horizontalScrollbarShow ? DEFAULT_SCROLLBAR_TRACK_SIZE : 0),
+      headerHeight: DEFAULT_CELL_HEIGHT,
+      fixedLeftWidth: DEFAULT_INDEX_CELL_WIDTH,
       bodyHeight,
       bodyRealWidth: this.realWidth,
       bodyRealHeight: this.realHeight,
-      deviationCompareValue: Sheet.DEVIATION_COMPARE_VALUE,
+      deviationCompareValue: DEVIATION_COMPARE_VALUE,
     };
   }
 
@@ -547,24 +515,22 @@ class Sheet
       this.fixedRowHeight = 0;
       let x = 0;
       let y = 0;
-      for (let i = 0; i < Sheet.DEFAULT_CELL_ROW_COUNT + 1; i++) {
+      for (let i = 0; i < DEFAULT_CELL_ROW_COUNT + 1; i++) {
         let row: Excel.Cell.CellInstance[] = [];
-        y = i * Sheet.DEFAULT_CELL_HEIGHT;
+        y = i * DEFAULT_CELL_HEIGHT;
         x = 0;
         let fixedColRows: Excel.Cell.CellInstance[] = [];
         let fixedRows: Excel.Cell.CellInstance[] = [];
-        for (let j = 0; j < Sheet.DEFAULT_CELL_COL_COUNT + 1; j++) {
+        for (let j = 0; j < DEFAULT_CELL_COL_COUNT + 1; j++) {
           x =
             j === 0
               ? 0
-              : (j - 1) * Sheet.DEFAULT_CELL_WIDTH +
-                Sheet.DEFAULT_INDEX_CELL_WIDTH;
+              : (j - 1) * DEFAULT_CELL_WIDTH + DEFAULT_INDEX_CELL_WIDTH;
           const cell = new Cell(this.sheetEventsObserver);
           cell.x = x;
           cell.y = y;
-          cell.width =
-            j === 0 ? Sheet.DEFAULT_INDEX_CELL_WIDTH : Sheet.DEFAULT_CELL_WIDTH;
-          cell.height = Sheet.DEFAULT_CELL_HEIGHT;
+          cell.width = j === 0 ? DEFAULT_INDEX_CELL_WIDTH : DEFAULT_CELL_WIDTH;
+          cell.height = DEFAULT_CELL_HEIGHT;
           cell.rowIndex = i;
           cell.colIndex = j;
           cell.cellName = $10226(j - 1);
@@ -600,12 +566,12 @@ class Sheet
             this.setCellStyle(cell, {
               border: {
                 solid: true,
-                color: Sheet.DEFAULT_CELL_LINE_COLOR,
+                color: DEFAULT_CELL_LINE_COLOR,
                 bold: false,
               },
               text: {
-                color: Sheet.DEFAULT_FIXED_CELL_COLOR,
-                backgroundColor: Sheet.DEFAULT_FIXED_CELL_BACKGROUND_COLOR,
+                color: DEFAULT_FIXED_CELL_COLOR,
+                backgroundColor: DEFAULT_FIXED_CELL_BACKGROUND_COLOR,
                 fontSize: 13,
                 align: "center",
               },
@@ -614,7 +580,7 @@ class Sheet
             this.setCellStyle(cell, {
               border: {
                 solid: false,
-                color: Sheet.DEFAULT_CELL_LINE_COLOR,
+                color: DEFAULT_CELL_LINE_COLOR,
                 bold: false,
               },
               text: {
@@ -682,16 +648,16 @@ class Sheet
       this.fixedColWidth,
       this.fixedRowHeight,
       this.width,
-      Sheet.DEFAULT_GRADIENT_OFFSET,
-      [Sheet.DEFAULT_GRADIENT_START_COLOR, Sheet.DEFAULT_GRADIENT_STOP_COLOR],
+      DEFAULT_GRADIENT_OFFSET,
+      [DEFAULT_GRADIENT_START_COLOR, DEFAULT_GRADIENT_STOP_COLOR],
       "vertical"
     );
     this.verticalScrollBarShadow = new Shadow(
       this.fixedColWidth,
       this.fixedRowHeight,
-      Sheet.DEFAULT_GRADIENT_OFFSET,
+      DEFAULT_GRADIENT_OFFSET,
       this.height,
-      [Sheet.DEFAULT_GRADIENT_START_COLOR, Sheet.DEFAULT_GRADIENT_STOP_COLOR],
+      [DEFAULT_GRADIENT_START_COLOR, DEFAULT_GRADIENT_STOP_COLOR],
       "horizontal"
     );
   }
@@ -718,19 +684,15 @@ class Sheet
         Math.abs(percent) *
         (this.realWidth -
           this.width +
-          (this.verticalScrollBar?.show
-            ? Sheet.DEFAULT_SCROLLBAR_TRACK_SIZE
-            : 0));
-      Sheet.SCROLL_X = this.scroll.x;
+          (this.verticalScrollBar?.show ? DEFAULT_SCROLLBAR_TRACK_SIZE : 0));
+      globalObj.SCROLL_X = this.scroll.x;
     } else {
       this.scroll.y =
         Math.abs(percent) *
         (this.realHeight -
           this.height +
-          (this.horizontalScrollBar?.show
-            ? Sheet.DEFAULT_SCROLLBAR_TRACK_SIZE
-            : 0));
-      Sheet.SCROLL_Y = this.scroll.y;
+          (this.horizontalScrollBar?.show ? DEFAULT_SCROLLBAR_TRACK_SIZE : 0));
+      globalObj.SCROLL_Y = this.scroll.y;
     }
   }
 
@@ -991,6 +953,7 @@ class Sheet
     this.cellSelector!.render(
       this._ctx!,
       this.selectedCells,
+      this._startCell,
       this.scroll.x || 0,
       this.scroll.y || 0
     );

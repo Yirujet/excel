@@ -1,5 +1,5 @@
 import Element from "../components/Element";
-import Sheet from "./Sheet";
+import { DEFAULT_CELL_LINE_DASH } from "../config/index";
 
 class CellMergence extends Element<null> {
   layout: Excel.LayoutInfo;
@@ -59,7 +59,7 @@ class CellMergence extends Element<null> {
 
           ctx.save();
           if (!leftTopCell.border.top.solid) {
-            ctx.setLineDash(Sheet.DEFAULT_CELL_LINE_DASH);
+            ctx.setLineDash(DEFAULT_CELL_LINE_DASH);
           } else {
             ctx.setLineDash([]);
           }
@@ -78,7 +78,7 @@ class CellMergence extends Element<null> {
 
           ctx.save();
           if (!leftTopCell.border.right.solid) {
-            ctx.setLineDash(Sheet.DEFAULT_CELL_LINE_DASH);
+            ctx.setLineDash(DEFAULT_CELL_LINE_DASH);
           } else {
             ctx.setLineDash([]);
           }
@@ -97,7 +97,7 @@ class CellMergence extends Element<null> {
 
           ctx.save();
           if (!leftTopCell.border.bottom.solid) {
-            ctx.setLineDash(Sheet.DEFAULT_CELL_LINE_DASH);
+            ctx.setLineDash(DEFAULT_CELL_LINE_DASH);
           } else {
             ctx.setLineDash([]);
           }
@@ -116,7 +116,7 @@ class CellMergence extends Element<null> {
 
           ctx.save();
           if (!leftTopCell.border.left.solid) {
-            ctx.setLineDash(Sheet.DEFAULT_CELL_LINE_DASH);
+            ctx.setLineDash(DEFAULT_CELL_LINE_DASH);
           } else {
             ctx.setLineDash([]);
           }

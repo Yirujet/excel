@@ -1,6 +1,14 @@
 import Element from "../../components/Element";
+import {
+  DEFAULT_SCROLLBAR_THUMB_BACKGROUND_COLOR,
+  DEFAULT_SCROLLBAR_THUMB_DRAGGING_COLOR,
+  DEFAULT_SCROLLBAR_THUMB_MIN_SIZE,
+  DEFAULT_SCROLLBAR_TRACK_BACKGROUND_COLOR,
+  DEFAULT_SCROLLBAR_TRACK_BORDER_COLOR,
+  DEFAULT_SCROLLBAR_TRACK_SIZE,
+} from "../../config/index";
 import throttle from "../../utils/throttle";
-import Sheet from "../Sheet";
+import globalObj from "../globalObj";
 
 export default class Scrollbar
   extends Element<null>
@@ -9,16 +17,16 @@ export default class Scrollbar
   track = {
     width: 0,
     height: 0,
-    borderColor: Sheet.DEFAULT_SCROLLBAR_TRACK_BORDER_COLOR,
-    backgroundColor: Sheet.DEFAULT_SCROLLBAR_TRACK_BACKGROUND_COLOR,
+    borderColor: DEFAULT_SCROLLBAR_TRACK_BORDER_COLOR,
+    backgroundColor: DEFAULT_SCROLLBAR_TRACK_BACKGROUND_COLOR,
   };
   thumb = {
     width: 0,
     height: 0,
     padding: 0,
-    min: Sheet.DEFAULT_SCROLLBAR_THUMB_MIN_SIZE,
-    backgroundColor: Sheet.DEFAULT_SCROLLBAR_THUMB_BACKGROUND_COLOR,
-    draggingColor: Sheet.DEFAULT_SCROLLBAR_THUMB_DRAGGING_COLOR,
+    min: DEFAULT_SCROLLBAR_THUMB_MIN_SIZE,
+    backgroundColor: DEFAULT_SCROLLBAR_THUMB_BACKGROUND_COLOR,
+    draggingColor: DEFAULT_SCROLLBAR_THUMB_DRAGGING_COLOR,
   };
   value = 0;
   percent = 0;
@@ -73,7 +81,7 @@ export default class Scrollbar
         offsetY > this.y + this.track.height
       )
     ) {
-      Sheet.SET_CURSOR("default");
+      globalObj.SET_CURSOR("default");
     }
   }
   scrollMove(offset: number, offsetProp: "x" | "y", maxScrollDistance: number) {
@@ -158,7 +166,7 @@ export default class Scrollbar
       ctx.moveTo(this.track.width, this.y);
       ctx.lineTo(this.track.width, this.y + this.track.height);
       ctx.lineTo(
-        this.track.width + Sheet.DEFAULT_SCROLLBAR_TRACK_SIZE,
+        this.track.width + DEFAULT_SCROLLBAR_TRACK_SIZE,
         this.y + this.track.height
       );
     } else {
@@ -166,7 +174,7 @@ export default class Scrollbar
       ctx.lineTo(this.x + this.track.width, this.track.height);
       ctx.lineTo(
         this.x + this.track.width,
-        this.track.height + Sheet.DEFAULT_SCROLLBAR_TRACK_SIZE
+        this.track.height + DEFAULT_SCROLLBAR_TRACK_SIZE
       );
     }
     ctx.closePath();
