@@ -27,19 +27,24 @@ namespace Excel {
       y: boolean;
     }
 
-    export interface CellSelect {
-      x: boolean;
-      y: boolean;
-      rowIndex: number | null;
-      colIndex: number | null;
-      value?: number | null;
-    }
-
-    export interface CellResize extends CellSelect {}
-
     export type BorderSide = "top" | "bottom" | "left" | "right";
 
     export type Border = Record<BorderSide, BorderStyle>;
+
+    export type Action = "select" | "resize";
+
+    export type CellAction = Record<
+      Action,
+      {
+        x: boolean;
+        y: boolean;
+        rowIndex: number | null;
+        colIndex: number | null;
+        value?: number | null;
+        mouseX?: number | null;
+        mouseY?: number | null;
+      }
+    >;
 
     export interface CellInstance extends Excel.Event.EventInstance {
       width: number | null;

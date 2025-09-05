@@ -15,7 +15,7 @@ class CellResizer extends Element<null> {
   render(
     ctx: CanvasRenderingContext2D,
     cellInfo: Excel.Cell.CellInstance,
-    resizeInfo: Excel.Cell.CellResize,
+    resizeInfo: Excel.Cell.CellAction["resize"],
     scrollInfo: Excel.PositionPoint
   ) {
     ctx.save();

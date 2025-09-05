@@ -56,14 +56,14 @@ class Sheet
   fixedRowHeight = 0;
   fixedColWidth = 0;
   layout: Excel.LayoutInfo | null = null;
-  resizeInfo: Excel.Cell.CellResize = {
+  resizeInfo: Excel.Cell.CellAction["resize"] = {
     x: false,
     y: false,
     rowIndex: null,
     colIndex: null,
     value: null,
   };
-  selectInfo: Excel.Cell.CellSelect = {
+  selectInfo: Excel.Cell.CellAction["select"] = {
     x: false,
     y: false,
     rowIndex: null,
@@ -162,73 +162,84 @@ class Sheet
     return selectedCells;
   }
 
+  private autoScroll(x: number, y: number) {
+    const exceedInfo = this.exceed(x, y);
+    if (exceedInfo.x.exceed) {
+      this.horizontalScrollBar!.value -= exceedInfo.x.value;
+      if (
+        this.horizontalScrollBar!.value +
+          this.horizontalScrollBar!.track.width <=
+        this.horizontalScrollBar!.thumb.width
+      ) {
+        this.horizontalScrollBar!.value =
+          this.horizontalScrollBar!.thumb.width -
+          this.horizontalScrollBar!.track.width;
+        this.horizontalScrollBar!.isLast = true;
+      }
+      if (
+        this.horizontalScrollBar!.value > 0 ||
+        Math.abs(this.horizontalScrollBar!.value) <
+          this.layout!.deviationCompareValue
+      ) {
+        this.horizontalScrollBar!.value = 0;
+      }
+      this.horizontalScrollBar!.percent =
+        this.horizontalScrollBar!.value /
+        (this.horizontalScrollBar!.thumb.width -
+          this.horizontalScrollBar!.track.width);
+      this.updateScroll(
+        this.horizontalScrollBar!.percent,
+        this.horizontalScrollBar!.type
+      );
+    }
+    if (exceedInfo.y.exceed) {
+      this.verticalScrollBar!.value -= exceedInfo.y.value;
+      if (
+        this.verticalScrollBar!.value + this.verticalScrollBar!.track.height <=
+        this.verticalScrollBar!.thumb.height
+      ) {
+        this.verticalScrollBar!.value =
+          this.verticalScrollBar!.thumb.height -
+          this.verticalScrollBar!.track.height;
+        this.verticalScrollBar!.isLast = true;
+      }
+      if (
+        this.verticalScrollBar!.value > 0 ||
+        Math.abs(this.verticalScrollBar!.value) <
+          this.layout!.deviationCompareValue
+      ) {
+        this.verticalScrollBar!.value = 0;
+      }
+      this.verticalScrollBar!.percent =
+        this.verticalScrollBar!.value /
+        (this.verticalScrollBar!.thumb.height -
+          this.verticalScrollBar!.track.height);
+      this.updateScroll(
+        this.verticalScrollBar!.percent,
+        this.verticalScrollBar!.type
+      );
+    }
+  }
+
+  private getCellPointByMousePosition(mouseX: number, mouseY: number) {
+    const x = Math.max(
+      Math.min(mouseX - this.layout!.x + (this.scroll.x || 0), this.realWidth),
+      0
+    );
+    const y = Math.max(
+      Math.min(mouseY - this.layout!.y + (this.scroll.y || 0), this.realHeight),
+      0
+    );
+    return {
+      x,
+      y,
+    };
+  }
+
   private selectCells(e: MouseEvent) {
     if (this._startCell) {
-      const exceedInfo = this.exceed(e.x, e.y);
-      if (exceedInfo.x.exceed) {
-        this.horizontalScrollBar!.value -= exceedInfo.x.value;
-        if (
-          this.horizontalScrollBar!.value +
-            this.horizontalScrollBar!.track.width <=
-          this.horizontalScrollBar!.thumb.width
-        ) {
-          this.horizontalScrollBar!.value =
-            this.horizontalScrollBar!.thumb.width -
-            this.horizontalScrollBar!.track.width;
-          this.horizontalScrollBar!.isLast = true;
-        }
-        if (
-          this.horizontalScrollBar!.value > 0 ||
-          Math.abs(this.horizontalScrollBar!.value) <
-            this.layout!.deviationCompareValue
-        ) {
-          this.horizontalScrollBar!.value = 0;
-        }
-        this.horizontalScrollBar!.percent =
-          this.horizontalScrollBar!.value /
-          (this.horizontalScrollBar!.thumb.width -
-            this.horizontalScrollBar!.track.width);
-        this.updateScroll(
-          this.horizontalScrollBar!.percent,
-          this.horizontalScrollBar!.type
-        );
-      }
-      if (exceedInfo.y.exceed) {
-        this.verticalScrollBar!.value -= exceedInfo.y.value;
-        if (
-          this.verticalScrollBar!.value +
-            this.verticalScrollBar!.track.height <=
-          this.verticalScrollBar!.thumb.height
-        ) {
-          this.verticalScrollBar!.value =
-            this.verticalScrollBar!.thumb.height -
-            this.verticalScrollBar!.track.height;
-          this.verticalScrollBar!.isLast = true;
-        }
-        if (
-          this.verticalScrollBar!.value > 0 ||
-          Math.abs(this.verticalScrollBar!.value) <
-            this.layout!.deviationCompareValue
-        ) {
-          this.verticalScrollBar!.value = 0;
-        }
-        this.verticalScrollBar!.percent =
-          this.verticalScrollBar!.value /
-          (this.verticalScrollBar!.thumb.height -
-            this.verticalScrollBar!.track.height);
-        this.updateScroll(
-          this.verticalScrollBar!.percent,
-          this.verticalScrollBar!.type
-        );
-      }
-      const x = Math.max(
-        Math.min(e.x - this.layout!.x + (this.scroll.x || 0), this.realWidth),
-        0
-      );
-      const y = Math.max(
-        Math.min(e.y - this.layout!.y + (this.scroll.y || 0), this.realHeight),
-        0
-      );
+      this.autoScroll(e.x, e.y);
+      const { x, y } = this.getCellPointByMousePosition(e.x, e.y);
       const endCell = this.findCellByPoint(x, y);
       this.clearSelectCells();
       if (endCell) {
@@ -703,7 +714,7 @@ class Sheet
     }
   }
 
-  handleCellResize(resize: Excel.Cell.CellResize, isEnd = false) {
+  handleCellResize(resize: Excel.Cell.CellAction["resize"], isEnd = false) {
     if (resize.value) {
       this.resizeInfo = resize;
     }
@@ -757,10 +768,63 @@ class Sheet
     }
   }
 
-  handleCellSelect(select: Excel.Cell.CellSelect, isEnd = false) {
-    if (select.value) {
-      this.selectInfo = select;
+  handleCellSelect(select: Excel.Cell.CellAction["select"], isEnd = false) {
+    if (this.selectInfo.value === null) {
+      if (select.x) {
+        this._startCell = this.cells[this.fixedRowIndex][select.colIndex!];
+        this.selectedCells = [
+          this.fixedRowIndex,
+          this.cells.length - 1,
+          select.colIndex!,
+          select.colIndex!,
+        ];
+      } else {
+        this._startCell = this.cells[select.rowIndex!][this.fixedColIndex];
+        this.selectedCells = [
+          select.rowIndex!,
+          select.rowIndex!,
+          this.fixedColIndex,
+          this.cells[0].length - 1,
+        ];
+      }
+    } else {
+      this.autoScroll(select.mouseX!, select.mouseY!);
+      const { x, y } = this.getCellPointByMousePosition(
+        select.mouseX!,
+        select.mouseY!
+      );
+      const endCell = this.findCellByPoint(x, y);
+      this.clearSelectCells();
+      if (endCell) {
+        if (select.x) {
+          const endCellColIndex = endCell.colIndex!;
+          const minColIndex = Math.min(select.colIndex!, endCellColIndex);
+          const maxColIndex = Math.max(select.colIndex!, endCellColIndex);
+          this.selectedCells = [
+            this.fixedRowIndex,
+            this.cells.length - 1,
+            minColIndex,
+            maxColIndex,
+          ];
+        }
+        if (select.y) {
+          const endCellRowIndex = endCell.rowIndex!;
+          const minRowIndex = Math.min(select.rowIndex!, endCellRowIndex);
+          const maxRowIndex = Math.max(select.rowIndex!, endCellRowIndex);
+          this.selectedCells = [
+            minRowIndex,
+            maxRowIndex,
+            this.fixedColIndex,
+            this.cells[0].length - 1,
+          ];
+        }
+      }
     }
+    this.selectedCells = this.mergeIntersectMergedCells(
+      this.mergedCells,
+      this.selectedCells!
+    );
+    this.selectInfo = select;
     if (isEnd) {
       this.selectInfo = {
         x: false,
@@ -769,8 +833,10 @@ class Sheet
         colIndex: null,
         value: null,
       };
+      this.draw(true);
+    } else {
+      this.draw(false);
     }
-    console.log("***", this.selectInfo);
   }
 
   redraw(percent: number, type: Excel.Scrollbar.Type, isEnd: boolean) {
@@ -941,8 +1007,14 @@ class Sheet
         if (!!~index) {
           this.sheetEventsObserver.resize.splice(index, 1);
         }
-        cell.addEvent!("resize", this.handleCellResize.bind(this));
-        cell.addEvent!("select", this.handleCellSelect.bind(this));
+        cell.addEvent!(
+          "resize",
+          throttle(this.handleCellResize.bind(this), 50)
+        );
+        cell.addEvent!(
+          "select",
+          throttle(this.handleCellSelect.bind(this), 50)
+        );
       }
     }
   }
