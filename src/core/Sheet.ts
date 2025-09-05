@@ -893,7 +893,6 @@ class Sheet
     } else {
       maxYIndex = cells.length - 1;
     }
-
     let minXIndex = this.binaryQuery(
       cells[0],
       0,
@@ -991,7 +990,10 @@ class Sheet
         ) {
           break;
         }
-        if (leftTop.x - scrollX < 0 || rightBottom.y - scrollY < 0) {
+        if (!fixedInX && rightTop.x - scrollX < this.fixedColWidth) {
+          continue;
+        }
+        if (!fixedInY && rightBottom.y - scrollY < this.fixedRowHeight) {
           continue;
         }
         if (!isEnd) {
