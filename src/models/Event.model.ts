@@ -85,6 +85,7 @@ namespace Excel {
       | Excel.Sheet.SheetInstance
       | Excel.Scrollbar.ScrollbarInstance
       | Excel.Cell.CellInstance
+      | Excel.FillHandle.FillHandleInstance
     ) &
       EventInstance;
 

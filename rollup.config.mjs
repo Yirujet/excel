@@ -14,6 +14,7 @@ export default [
     output: {
       file: "./lib/excel.js",
       format: "umd",
+      // format: 'es',
       name: 'Excel',
       compact: true,
     },

@@ -25,6 +25,7 @@ import {
   DEVIATION_COMPARE_VALUE,
 } from "../config/index";
 import globalObj from "./globalObj";
+import FillHandle from "./FillHandle";
 
 class Sheet
   extends Element<HTMLCanvasElement>
@@ -44,6 +45,7 @@ class Sheet
   cellMergence: CellMergence | null = null;
   horizontalScrollBarShadow: Shadow | null = null;
   verticalScrollBarShadow: Shadow | null = null;
+  fillHandle: FillHandle | null = null;
   sheetEventsObserver: Excel.Event.ObserverInstance = new EventObserver();
   globalEventsObserver: Excel.Event.ObserverInstance = new EventObserver();
   realWidth = 0;
@@ -486,6 +488,7 @@ class Sheet
     this.initCellResizer();
     this.initCellSelector();
     this.initCellMergence();
+    this.initFillHandle();
     this.initEvents();
     this.sheetEventsObserver.observe(this.$el!);
     this.globalEventsObserver.observe(window as any);
@@ -680,6 +683,16 @@ class Sheet
     );
   }
 
+  initFillHandle() {
+    this.fillHandle = new FillHandle(
+      this.sheetEventsObserver,
+      this.layout!,
+      this.cells,
+      this.fixedColWidth,
+      this.fixedRowHeight
+    );
+  }
+
   clear() {
     this._ctx!.clearRect(0, 0, this.width, this.height);
   }
@@ -851,6 +864,8 @@ class Sheet
     this.drawScrollbar();
     this.drawCellSelector();
     this.drawCellResizer();
+    this.drawFillHandle();
+    console.log(this.sheetEventsObserver);
   }
 
   getRangeInView(
@@ -1081,6 +1096,15 @@ class Sheet
     ) {
       this.verticalScrollBarShadow!.render(this._ctx!);
     }
+  }
+
+  drawFillHandle() {
+    this.fillHandle!.render(
+      this._ctx!,
+      this.selectedCells,
+      this.scroll.x || 0,
+      this.scroll.y || 0
+    );
   }
 }
 
