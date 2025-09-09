@@ -23,9 +23,12 @@ import {
   DEFAULT_INDEX_CELL_WIDTH,
   DEFAULT_SCROLLBAR_TRACK_SIZE,
   DEVIATION_COMPARE_VALUE,
+  RESIZE_COL_SIZE,
+  RESIZE_ROW_SIZE,
 } from "../config/index";
 import globalObj from "./globalObj";
 import FillHandle from "./FillHandle";
+import Scrollbar from "./Scrollbar/Scrollbar";
 
 class Sheet
   extends Element<HTMLCanvasElement>
@@ -239,6 +242,53 @@ class Sheet
   }
 
   private selectCells(e: MouseEvent) {
+    if (
+      this.verticalScrollBar?.dragging ||
+      this.horizontalScrollBar?.dragging
+    ) {
+      return;
+    }
+    const exceedInfo = this.exceed(e.x, e.y);
+    if (exceedInfo.x.exceed || exceedInfo.y.exceed) {
+      return;
+    }
+    const x = e.x - this.layout!.x + (this.scroll.x || 0);
+    const y = e.y - this.layout!.y + (this.scroll.y || 0);
+    this._startCell = this.findCellByPoint(x, y);
+    if (this._startCell) {
+      this.clearSelectCells();
+      this.selectedCells = [
+        this._startCell.rowIndex!,
+        this._startCell.rowIndex!,
+        this._startCell.colIndex!,
+        this._startCell.colIndex!,
+      ];
+      const containedMergedCell = this.mergedCells.find((e) => {
+        const [minRowIndex, maxRowIndex, minColIndex, maxColIndex] = e;
+        return (
+          minRowIndex <= this._startCell!.rowIndex! &&
+          maxRowIndex >= this._startCell!.rowIndex! &&
+          minColIndex <= this._startCell!.colIndex! &&
+          maxColIndex >= this._startCell!.colIndex!
+        );
+      });
+      if (containedMergedCell) {
+        this.selectedCells = [...containedMergedCell];
+      }
+    }
+    const onSelectingCells = throttle(this.selectingCells.bind(this), 50);
+    const onEndSelectCells = () => {
+      if (this.selectedCells) {
+        this.draw(true);
+      }
+      window.removeEventListener("mousemove", onSelectingCells);
+      window.removeEventListener("mouseup", onEndSelectCells);
+    };
+    window.addEventListener("mousemove", onSelectingCells);
+    window.addEventListener("mouseup", onEndSelectCells);
+  }
+
+  private selectingCells(e: MouseEvent) {
     if (this._startCell) {
       this.autoScroll(e.x, e.y);
       const { x, y } = this.getCellPointByMousePosition(e.x, e.y);
@@ -314,20 +364,156 @@ class Sheet
     return index!;
   }
 
-  private findCellByPoint(x: number, y: number) {
+  private findCellByPoint(
+    x: number,
+    y: number,
+    ignoreFixedX = true,
+    ignoreFixedY = true
+  ) {
     let cell = null;
-    y = Math.max(y, this.fixedRowHeight);
-    x = Math.max(x, this.fixedColWidth);
+    if (ignoreFixedX) {
+      x = Math.max(x, this.fixedColWidth);
+    }
+    if (ignoreFixedY) {
+      y = Math.max(y, this.fixedRowHeight);
+    }
     let rowIndex = this.cells.findIndex(
       (e) => e[0].position.leftTop.y <= y && e[0].position.leftBottom.y >= y
     );
     let colIndex = this.cells[0].findIndex(
       (e) => e.position.leftTop.x <= x && e.position.rightTop.x >= x
     );
-    rowIndex = Math.max(rowIndex, this.fixedRowIndex);
-    colIndex = Math.max(colIndex, this.fixedColIndex);
+    if (ignoreFixedX) {
+      colIndex = Math.max(colIndex, this.fixedColIndex);
+    }
+    if (ignoreFixedY) {
+      rowIndex = Math.max(rowIndex, this.fixedRowIndex);
+    }
     cell = this.cells[rowIndex][colIndex];
     return cell;
+  }
+
+  private updateCursor(e: MouseEvent) {
+    const isInScrollbar = () => {
+      const { offsetX, offsetY } = e;
+      if (this.verticalScrollBar || this.horizontalScrollBar) {
+        const checkInScrollbar = (
+          offsetX: number,
+          offsetY: number,
+          scrollbar: Scrollbar | null
+        ) => {
+          if (scrollbar) {
+            return !(
+              offsetX < this.x ||
+              offsetX > this.x + scrollbar.track.width ||
+              offsetY < this.y ||
+              offsetY > this.y + scrollbar.track.height
+            );
+          } else {
+            return false;
+          }
+        };
+        return (
+          checkInScrollbar(offsetX, offsetY, this.verticalScrollBar) ||
+          checkInScrollbar(offsetX, offsetY, this.horizontalScrollBar)
+        );
+      } else {
+        return false;
+      }
+    };
+    const isInCellRange = () => {
+      const { x, y, offsetX, offsetY } = e;
+      return (
+        x >= this.layout!.x &&
+        y >= this.layout!.y &&
+        x <= this.layout!.x + this.layout!.width &&
+        y <= this.layout!.y + this.layout!.height &&
+        offsetX >= this.x - this.layout!.x &&
+        offsetX <= this.layout!.width &&
+        offsetY >= this.y - this.layout!.y &&
+        offsetY <= this.layout!.height
+      );
+    };
+    const isInFixedCell = () => {
+      if (isInCellRange()) {
+        const { x, y } = this.getCellPointByMousePosition(e.x, e.y);
+        const cell = this.findCellByPoint(
+          x - this.scroll.x,
+          y - this.scroll.y,
+          false,
+          false
+        );
+        if (cell) {
+          return cell.fixed.x || cell.fixed.y;
+        }
+      }
+      return false;
+    };
+    const isInNormalCell = () => {
+      if (isInCellRange()) {
+        return !isInFixedCell();
+      }
+      return false;
+    };
+    const isInFillHandle = () => {
+      const { offsetX, offsetY } = e;
+      if (this.fillHandle) {
+        return (
+          offsetX >= this.fillHandle.position.leftTop.x - this.scroll.x &&
+          offsetX <= this.fillHandle.position.rightBottom.x - this.scroll.x &&
+          offsetY >= this.fillHandle.position.leftTop.y - this.scroll.y &&
+          offsetY <= this.fillHandle.position.rightBottom.y - this.scroll.y
+        );
+      } else {
+        return false;
+      }
+    };
+    const isInRowResize = () => {
+      const { offsetX, offsetY } = e;
+      if (isInFixedCell()) {
+        const { x, y } = this.getCellPointByMousePosition(e.x, e.y);
+        const cell = this.findCellByPoint(x - this.scroll.x, y, false, false);
+        if (cell) {
+          if (cell.fixed.x) {
+            return (
+              offsetX >= cell.position!.leftTop.x &&
+              offsetX <= cell.position!.rightTop.x &&
+              offsetY >=
+                cell.position!.leftBottom.y - this.scroll.y - RESIZE_ROW_SIZE &&
+              offsetY <= cell.position!.leftBottom.y - this.scroll.y
+            );
+          } else {
+            return false;
+          }
+        }
+      } else {
+        return false;
+      }
+    };
+    const isInColResize = () => {
+      const { offsetX, offsetY } = e;
+      if (isInFixedCell()) {
+        const { x, y } = this.getCellPointByMousePosition(e.x, e.y);
+        const cell = this.findCellByPoint(x, y - this.scroll.y, false, false);
+        if (cell) {
+          if (cell.fixed.y) {
+            return (
+              offsetX >=
+                cell.position!.rightTop.x - this.scroll.x - RESIZE_COL_SIZE &&
+              offsetX <= cell.position!.rightTop.x - this.scroll.x &&
+              offsetY >= cell.position!.leftTop.y &&
+              offsetY <= cell.position!.leftBottom.y
+            );
+          } else {
+            return false;
+          }
+        }
+      } else {
+        return false;
+      }
+    };
+
+    console.log(isInRowResize());
   }
 
   clearSelectCells() {
@@ -425,53 +611,9 @@ class Sheet
   }
 
   initEvents() {
-    const onMousedown = (e: MouseEvent) => {
-      if (
-        this.verticalScrollBar?.dragging ||
-        this.horizontalScrollBar?.dragging
-      ) {
-        return;
-      }
-      const exceedInfo = this.exceed(e.x, e.y);
-      if (exceedInfo.x.exceed || exceedInfo.y.exceed) {
-        return;
-      }
-      const x = e.x - this.layout!.x + (this.scroll.x || 0);
-      const y = e.y - this.layout!.y + (this.scroll.y || 0);
-      this._startCell = this.findCellByPoint(x, y);
-      if (this._startCell) {
-        this.clearSelectCells();
-        this.selectedCells = [
-          this._startCell.rowIndex!,
-          this._startCell.rowIndex!,
-          this._startCell.colIndex!,
-          this._startCell.colIndex!,
-        ];
-        const containedMergedCell = this.mergedCells.find((e) => {
-          return (
-            e[0] <= this._startCell!.rowIndex! &&
-            e[1] >= this._startCell!.rowIndex! &&
-            e[2] <= this._startCell!.colIndex! &&
-            e[3] >= this._startCell!.colIndex!
-          );
-        });
-        if (containedMergedCell) {
-          this.selectedCells = [...containedMergedCell];
-        }
-      }
-      const onSelectCells = throttle(this.selectCells.bind(this), 50);
-      const onEndSelectCells = () => {
-        if (this.selectedCells) {
-          this.draw(true);
-        }
-        window.removeEventListener("mousemove", onSelectCells);
-        window.removeEventListener("mouseup", onEndSelectCells);
-      };
-      window.addEventListener("mousemove", onSelectCells);
-      window.addEventListener("mouseup", onEndSelectCells);
-    };
     const globalEventListeners = {
-      mousedown: onMousedown,
+      mousedown: this.selectCells.bind(this),
+      mousemove: this.updateCursor.bind(this),
     };
 
     this.registerListenerFromOnProp(
@@ -865,7 +1007,6 @@ class Sheet
     this.drawCellSelector();
     this.drawCellResizer();
     this.drawFillHandle();
-    console.log(this.sheetEventsObserver);
   }
 
   getRangeInView(
