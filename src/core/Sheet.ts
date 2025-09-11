@@ -29,6 +29,7 @@ import {
 import globalObj from "./globalObj";
 import FillHandle from "./FillHandle";
 import Scrollbar from "./Scrollbar/Scrollbar";
+import debounce from "../utils/debounce";
 
 class Sheet
   extends Element<HTMLCanvasElement>
@@ -404,10 +405,10 @@ class Sheet
         ) => {
           if (scrollbar) {
             return !(
-              offsetX < this.x ||
-              offsetX > this.x + scrollbar.track.width ||
-              offsetY < this.y ||
-              offsetY > this.y + scrollbar.track.height
+              offsetX < scrollbar.x ||
+              offsetX > scrollbar.x + scrollbar.track.width ||
+              offsetY < scrollbar.y ||
+              offsetY > scrollbar.y + scrollbar.track.height
             );
           } else {
             return false;
@@ -445,6 +446,36 @@ class Sheet
         );
         if (cell) {
           return cell.fixed.x || cell.fixed.y;
+        }
+      }
+      return false;
+    };
+    const isInFixedXCell = () => {
+      if (isInFixedCell()) {
+        const { x, y } = this.getCellPointByMousePosition(e.x, e.y);
+        const cell = this.findCellByPoint(
+          x - this.scroll.x,
+          y - this.scroll.y,
+          false,
+          false
+        );
+        if (cell) {
+          return cell.fixed.x;
+        }
+      }
+      return false;
+    };
+    const isInFixedYCell = () => {
+      if (isInFixedCell()) {
+        const { x, y } = this.getCellPointByMousePosition(e.x, e.y);
+        const cell = this.findCellByPoint(
+          x - this.scroll.x,
+          y - this.scroll.y,
+          false,
+          false
+        );
+        if (cell) {
+          return cell.fixed.y;
         }
       }
       return false;
@@ -512,8 +543,27 @@ class Sheet
         return false;
       }
     };
-
-    console.log(isInRowResize());
+    if (isInScrollbar()) {
+      globalObj.SET_CURSOR("default");
+    }
+    if (isInFixedXCell()) {
+      globalObj.SET_CURSOR("w-resize");
+    }
+    if (isInFixedYCell()) {
+      globalObj.SET_CURSOR("s-resize");
+    }
+    if (isInNormalCell()) {
+      globalObj.SET_CURSOR("cell");
+    }
+    if (isInFillHandle()) {
+      globalObj.SET_CURSOR("crosshair");
+    }
+    if (isInRowResize()) {
+      globalObj.SET_CURSOR("row-resize");
+    }
+    if (isInColResize()) {
+      globalObj.SET_CURSOR("col-resize");
+    }
   }
 
   clearSelectCells() {
@@ -613,7 +663,7 @@ class Sheet
   initEvents() {
     const globalEventListeners = {
       mousedown: this.selectCells.bind(this),
-      mousemove: this.updateCursor.bind(this),
+      mousemove: debounce(this.updateCursor.bind(this), 30),
     };
 
     this.registerListenerFromOnProp(

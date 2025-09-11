@@ -109,11 +109,9 @@ export default class VerticalScrollbar extends Scrollbar {
         this.isHorizontalScrolling = false;
       }
     };
-    const onMouseMove = throttle(this.checkIn.bind(this), 50);
     const defaultEventListeners = {
       wheel: onWheel,
       mousedown: onStartScroll,
-      mousemove: onMouseMove,
     };
     const globalEventListeners = {
       keydown: onKeydown,

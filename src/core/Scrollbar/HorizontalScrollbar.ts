@@ -113,11 +113,9 @@ export default class HorizontalScrollbar extends Scrollbar {
         this.isHorizontalScrolling = false;
       }
     };
-    const onMouseMove = throttle(this.checkIn.bind(this), 50);
     const defaultEventListeners = {
       mousedown: onStartScroll,
       wheel: onWheel,
-      mousemove: onMouseMove,
     };
     const globalEventListeners = {
       keydown: onKeydown,

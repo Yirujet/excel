@@ -71,19 +71,6 @@ export default class Scrollbar
       this.mouseEntered = false;
     }
   }
-  checkIn(e: MouseEvent) {
-    const { offsetX, offsetY } = e;
-    if (
-      !(
-        offsetX < this.x ||
-        offsetX > this.x + this.track.width ||
-        offsetY < this.y ||
-        offsetY > this.y + this.track.height
-      )
-    ) {
-      globalObj.SET_CURSOR("default");
-    }
-  }
   scrollMove(offset: number, offsetProp: "x" | "y", maxScrollDistance: number) {
     if (this.dragging) {
       const curScrollbarVal = -this.value;

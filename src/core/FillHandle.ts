@@ -58,32 +58,8 @@ class FillHandle
     this.initEvents();
   }
 
-  checkHit(e: MouseEvent) {
-    const { offsetX, offsetY } = e;
-    const scrollX = globalObj.SCROLL_X;
-    const scrollY = globalObj.SCROLL_Y;
-    if (
-      !(
-        offsetX < this.position!.leftTop.x - scrollX ||
-        offsetX > this.position!.rightTop.x - scrollX ||
-        offsetY < this.position!.leftTop.y - scrollY ||
-        offsetY > this.position!.leftBottom.y - scrollY
-      )
-    ) {
-      globalObj.SET_CURSOR("crosshair");
-    } else {
-      globalObj.SET_CURSOR("default");
-    }
-  }
-
   initEvents() {
-    const onMouseMove = debounce((e: MouseEvent) => {
-      this.checkHit(e);
-    }, 100);
-
-    const defaultEventListeners = {
-      mousemove: onMouseMove,
-    };
+    const defaultEventListeners = {};
     this.registerListenerFromOnProp(
       defaultEventListeners,
       this.eventObserver,

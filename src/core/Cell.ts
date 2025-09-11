@@ -119,7 +119,6 @@ class Cell extends Element<null> implements Excel.Cell.CellInstance {
   initEvents() {
     const onMouseMove = debounce((e: MouseEvent) => {
       if (this.acting) return;
-      this.checkHit(e);
       this.checkResizeOrSelect(e);
     }, 100);
 
@@ -178,33 +177,6 @@ class Cell extends Element<null> implements Excel.Cell.CellInstance {
     }
   }
 
-  checkHit(e: MouseEvent) {
-    const { offsetX, offsetY } = e;
-    const scrollX =
-      this.fixed.x || this.fixed.y ? this.scrollX : globalObj.SCROLL_X;
-    const scrollY =
-      this.fixed.x || this.fixed.y ? this.scrollY : globalObj.SCROLL_Y;
-    if (
-      !(
-        offsetX < this.position!.leftTop.x - scrollX ||
-        offsetX > this.position!.rightTop.x - scrollX ||
-        offsetY < this.position!.leftTop.y - scrollY ||
-        offsetY > this.position!.leftBottom.y - scrollY
-      )
-    ) {
-      this.mouseEntered = true;
-      if (this.fixed.y) {
-        globalObj.SET_CURSOR("s-resize");
-      } else if (this.fixed.x) {
-        globalObj.SET_CURSOR("w-resize");
-      } else {
-        globalObj.SET_CURSOR("cell");
-      }
-    } else {
-      this.mouseEntered = false;
-    }
-  }
-
   resetAction() {
     this.action = {
       select: {
@@ -251,7 +223,6 @@ class Cell extends Element<null> implements Excel.Cell.CellInstance {
           offsetY > this.position!.leftBottom.y - scrollY
         )
       ) {
-        globalObj.SET_CURSOR("col-resize");
         this.action.resize = {
           x: true,
           y: false,
@@ -284,7 +255,6 @@ class Cell extends Element<null> implements Excel.Cell.CellInstance {
           offsetY > this.position!.leftBottom.y - scrollY
         )
       ) {
-        globalObj.SET_CURSOR("row-resize");
         this.action.resize = {
           x: false,
           y: true,
