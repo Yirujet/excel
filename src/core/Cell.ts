@@ -1,7 +1,5 @@
 import getTextMetrics from "../utils/getTextMetrics";
 import Element from "../components/Element";
-import debounce from "../utils/debounce";
-import throttle from "../utils/throttle";
 import {
   DEFAULT_CELL_LINE_BOLD,
   DEFAULT_CELL_LINE_COLOR,
@@ -15,10 +13,7 @@ import {
   DEFAULT_CELL_TEXT_FONT_SIZE,
   DEFAULT_CELL_TEXT_ITALIC,
   DEFAULT_CELL_TEXT_UNDERLINE,
-  RESIZE_COL_SIZE,
-  RESIZE_ROW_SIZE,
 } from "../config/index";
-import globalObj from "./globalObj";
 
 class Cell extends Element<null> implements Excel.Cell.CellInstance {
   width: number | null = null;
@@ -88,25 +83,6 @@ class Cell extends Element<null> implements Excel.Cell.CellInstance {
   scrollX = 0;
   scrollY = 0;
   eventObserver: Excel.Event.ObserverInstance;
-  action: Excel.Cell.CellAction = {
-    select: {
-      x: false,
-      y: false,
-      rowIndex: null,
-      colIndex: null,
-      value: null,
-    },
-    resize: {
-      x: false,
-      y: false,
-      rowIndex: null,
-      colIndex: null,
-      value: null,
-    },
-  };
-  moveStartValue = 0;
-  actionEvent: Excel.Event.FnType | null = null;
-  acting = false;
 
   constructor(eventObserver: Excel.Event.ObserverInstance) {
     super("", true);
@@ -115,171 +91,6 @@ class Cell extends Element<null> implements Excel.Cell.CellInstance {
   }
 
   init() {}
-
-  initEvents() {
-    const onMouseMove = debounce((e: MouseEvent) => {
-      if (this.acting) return;
-      this.checkResizeOrSelect(e);
-    }, 100);
-
-    const handleStartAction = (e: MouseEvent, type: Excel.Cell.Action) => {
-      this.acting = true;
-      const offsetProp = this.action[type].x ? "x" : "y";
-      this.moveStartValue = e[offsetProp];
-      this.initActionEvent(offsetProp, type);
-      const onEndAction = () => {
-        this.triggerEvent(type, this.action[type], true);
-        this.acting = false;
-        this.resetAction();
-        this.moveStartValue = 0;
-        window.removeEventListener("mousemove", this.actionEvent!);
-        this.actionEvent = null;
-        window.removeEventListener("mouseup", onEndAction);
-      };
-      if (this.acting) {
-        window.addEventListener("mousemove", this.actionEvent!);
-        window.addEventListener("mouseup", onEndAction);
-      }
-    };
-
-    const onMouseDown = (e: MouseEvent) => {
-      if (!(this.action.resize.x || this.action.resize.y)) {
-        if (!(this.action.select.x || this.action.select.y)) {
-          return;
-        } else {
-          handleStartAction(e, "select");
-        }
-      } else {
-        handleStartAction(e, "resize");
-      }
-    };
-
-    const defaultEventListeners = {
-      mousemove: onMouseMove,
-      mousedown: onMouseDown,
-    };
-    this.registerListenerFromOnProp(
-      defaultEventListeners,
-      this.eventObserver,
-      this
-    );
-  }
-
-  initActionEvent(offsetProp: "x" | "y", type: Excel.Cell.Action) {
-    if (this.acting) {
-      this.actionEvent = throttle((e: MouseEvent) => {
-        if (!this.acting) return;
-        this.action[type].value = e[offsetProp] - this.moveStartValue;
-        this.action[type].mouseX = e.x;
-        this.action[type].mouseY = e.y;
-        this.triggerEvent(type, this.action[type]);
-      }, 100);
-    }
-  }
-
-  resetAction() {
-    this.action = {
-      select: {
-        x: false,
-        y: false,
-        rowIndex: null,
-        colIndex: null,
-        value: null,
-      },
-      resize: {
-        x: false,
-        y: false,
-        rowIndex: null,
-        colIndex: null,
-        value: null,
-      },
-    };
-  }
-
-  checkResizeOrSelect(e: MouseEvent) {
-    if (
-      !(
-        (this.fixed.x && this.colIndex === 0) ||
-        (this.fixed.y && this.rowIndex === 0)
-      )
-    ) {
-      this.resetAction();
-      return;
-    }
-    const { offsetX, offsetY } = e;
-    const scrollX =
-      this.fixed.x || this.fixed.y ? this.scrollX : globalObj.SCROLL_X;
-    const scrollY =
-      this.fixed.x || this.fixed.y ? this.scrollY : globalObj.SCROLL_Y;
-
-    this.resetAction();
-
-    if (this.fixed.y) {
-      if (
-        !(
-          offsetX < this.position!.rightTop.x - scrollX - RESIZE_COL_SIZE ||
-          offsetX > this.position!.rightTop.x - scrollX ||
-          offsetY < this.position!.leftTop.y - scrollY ||
-          offsetY > this.position!.leftBottom.y - scrollY
-        )
-      ) {
-        this.action.resize = {
-          x: true,
-          y: false,
-          rowIndex: this.rowIndex!,
-          colIndex: this.colIndex!,
-        };
-      } else {
-        if (
-          !(
-            offsetX < this.position!.leftTop.x - scrollX ||
-            offsetX > this.position!.rightTop.x - scrollX - RESIZE_COL_SIZE ||
-            offsetY < this.position!.leftTop.y - scrollY ||
-            offsetY > this.position!.leftBottom.y - scrollY
-          )
-        ) {
-          this.action.select = {
-            x: true,
-            y: false,
-            rowIndex: this.rowIndex!,
-            colIndex: this.colIndex!,
-          };
-        }
-      }
-    } else if (this.fixed.x) {
-      if (
-        !(
-          offsetX < this.position!.leftTop.x - scrollX ||
-          offsetX > this.position!.rightTop.x - scrollX ||
-          offsetY < this.position!.leftBottom.y - scrollY - RESIZE_ROW_SIZE ||
-          offsetY > this.position!.leftBottom.y - scrollY
-        )
-      ) {
-        this.action.resize = {
-          x: false,
-          y: true,
-          rowIndex: this.rowIndex!,
-          colIndex: this.colIndex!,
-        };
-      } else {
-        if (
-          !(
-            offsetX < this.position!.leftTop.x - scrollX ||
-            offsetX > this.position!.rightTop.x - scrollX ||
-            offsetY < this.position!.leftTop.y - scrollY ||
-            offsetY > this.position!.leftBottom.y - scrollY - RESIZE_ROW_SIZE
-          )
-        ) {
-          this.action.select = {
-            x: false,
-            y: true,
-            rowIndex: this.rowIndex!,
-            colIndex: this.colIndex!,
-          };
-        }
-      }
-    }
-  }
 
   setBorderStyle(ctx: CanvasRenderingContext2D, side: Excel.Cell.BorderSide) {
     if (!this.border[side].solid) {
@@ -343,7 +154,6 @@ class Cell extends Element<null> implements Excel.Cell.CellInstance {
   ) {
     if (isEnd) {
       this.clearEvents!(this.eventObserver, this);
-      this.initEvents();
     }
     this.scrollX = scrollX;
     this.scrollY = scrollY;

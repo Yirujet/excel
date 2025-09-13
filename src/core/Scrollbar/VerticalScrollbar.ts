@@ -3,6 +3,7 @@ import {
   DEFAULT_SCROLLBAR_TRACK_SIZE,
 } from "../../config/index";
 import throttle from "../../utils/throttle";
+import globalObj from "../globalObj";
 import Scrollbar from "./Scrollbar";
 
 export default class VerticalScrollbar extends Scrollbar {
@@ -45,6 +46,7 @@ export default class VerticalScrollbar extends Scrollbar {
       this.checkHit(e);
       if (!this.mouseEntered) return;
       this.dragging = true;
+      globalObj.EVENT_LOCKED = true;
       this.scrollMove(
         y - this.layout!.y,
         "y",
@@ -53,6 +55,7 @@ export default class VerticalScrollbar extends Scrollbar {
       const onEndScroll = () => {
         this.lastVal = null;
         this.dragging = false;
+        globalObj.EVENT_LOCKED = false;
         this.triggerEvent("percent", this.percent, this.type, true);
         window.removeEventListener("mousemove", this.moveEvent!);
         this.moveEvent = null;

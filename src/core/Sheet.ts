@@ -105,8 +105,8 @@ class Sheet
       exceedInfo.x.exceed = true;
       exceedInfo.x.value = offsetX - this.layout!.width;
     } else {
-      exceedInfo.y.exceed = false;
-      exceedInfo.y.value = 0;
+      exceedInfo.x.exceed = false;
+      exceedInfo.x.value = 0;
     }
     if (offsetY < this.fixedRowHeight) {
       exceedInfo.y.exceed = true;
@@ -242,17 +242,15 @@ class Sheet
     };
   }
 
-  private selectCells(e: MouseEvent) {
-    if (
-      this.verticalScrollBar?.dragging ||
-      this.horizontalScrollBar?.dragging
-    ) {
+  private selectCellRange(e: MouseEvent) {
+    if (globalObj.EVENT_LOCKED) {
       return;
     }
     const exceedInfo = this.exceed(e.x, e.y);
     if (exceedInfo.x.exceed || exceedInfo.y.exceed) {
       return;
     }
+    globalObj.EVENT_LOCKED = true;
     const x = e.x - this.layout!.x + (this.scroll.x || 0);
     const y = e.y - this.layout!.y + (this.scroll.y || 0);
     this._startCell = this.findCellByPoint(x, y);
@@ -277,11 +275,12 @@ class Sheet
         this.selectedCells = [...containedMergedCell];
       }
     }
-    const onSelectingCells = throttle(this.selectingCells.bind(this), 50);
+    const onSelectingCells = throttle(this.selectingCellRange.bind(this), 50);
     const onEndSelectCells = () => {
       if (this.selectedCells) {
         this.draw(true);
       }
+      globalObj.EVENT_LOCKED = false;
       window.removeEventListener("mousemove", onSelectingCells);
       window.removeEventListener("mouseup", onEndSelectCells);
     };
@@ -289,7 +288,7 @@ class Sheet
     window.addEventListener("mouseup", onEndSelectCells);
   }
 
-  private selectingCells(e: MouseEvent) {
+  private selectingCellRange(e: MouseEvent) {
     if (this._startCell) {
       this.autoScroll(e.x, e.y);
       const { x, y } = this.getCellPointByMousePosition(e.x, e.y);
@@ -325,6 +324,80 @@ class Sheet
         this.draw(false);
       }
     }
+  }
+
+  private handleCellAction(
+    e: MouseEvent,
+    isInX: boolean,
+    isInY: boolean,
+    triggerEvent: (
+      resize: Excel.Cell.CellAction[Excel.Cell.Action],
+      isEnd?: boolean
+    ) => void
+  ) {
+    if (!(isInX || isInY)) return;
+    const offsetProp = isInX ? "x" : "y";
+    const start = e[offsetProp];
+    const { x, y } = this.getCellPointByMousePosition(e.x, e.y);
+    const pointX = isInY ? x - this.scroll.x : x;
+    const pointY = isInX ? y - this.scroll.y : y;
+    const cell = this.findCellByPoint(pointX, pointY, false, false);
+    const onMove = throttle((e: MouseEvent) => {
+      triggerEvent.call(this, {
+        x: isInX,
+        y: isInY,
+        rowIndex: cell.rowIndex,
+        colIndex: cell.colIndex,
+        value: e[offsetProp] - start,
+        mouseX: e.x,
+        mouseY: e.y,
+      });
+    }, 100);
+    const onEnd = (e: MouseEvent) => {
+      triggerEvent.call(
+        this,
+        {
+          x: isInX,
+          y: isInY,
+          rowIndex: cell.rowIndex,
+          colIndex: cell.colIndex,
+          value: e[offsetProp] - start,
+          mouseX: e.x,
+          mouseY: e.y,
+        },
+        true
+      );
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onEnd);
+    };
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onEnd);
+  }
+
+  private resizeCell(e: MouseEvent) {
+    const isInColResize = this.pointInColResize(e);
+    const isInRowResize = this.pointInRowResize(e);
+    this.handleCellAction(
+      e,
+      isInColResize,
+      isInRowResize,
+      this.handleCellResize
+    );
+  }
+
+  private selectFullCell(e: MouseEvent) {
+    if (!this.pointInFixedCell(e)) return;
+    const isInFixedYCell =
+      this.pointInFixedXCell(e) && !this.pointInRowResize(e);
+    const isInFixedXCell =
+      this.pointInFixedYCell(e) && !this.pointInColResize(e);
+    if (!(isInFixedXCell || isInFixedYCell)) return;
+    this.handleCellAction(
+      e,
+      isInFixedXCell,
+      isInFixedYCell,
+      this.handleCellSelect
+    );
   }
 
   private binaryQuery<T>(
@@ -394,175 +467,192 @@ class Sheet
     return cell;
   }
 
-  private updateCursor(e: MouseEvent) {
-    const isInScrollbar = () => {
-      const { offsetX, offsetY } = e;
-      if (this.verticalScrollBar || this.horizontalScrollBar) {
-        const checkInScrollbar = (
-          offsetX: number,
-          offsetY: number,
-          scrollbar: Scrollbar | null
-        ) => {
-          if (scrollbar) {
-            return !(
-              offsetX < scrollbar.x ||
-              offsetX > scrollbar.x + scrollbar.track.width ||
-              offsetY < scrollbar.y ||
-              offsetY > scrollbar.y + scrollbar.track.height
-            );
-          } else {
-            return false;
-          }
-        };
-        return (
-          checkInScrollbar(offsetX, offsetY, this.verticalScrollBar) ||
-          checkInScrollbar(offsetX, offsetY, this.horizontalScrollBar)
-        );
-      } else {
-        return false;
-      }
-    };
-    const isInCellRange = () => {
-      const { x, y, offsetX, offsetY } = e;
+  private pointInScrollbar(e: MouseEvent) {
+    const { offsetX, offsetY } = e;
+    if (this.verticalScrollBar || this.horizontalScrollBar) {
+      const checkInScrollbar = (
+        offsetX: number,
+        offsetY: number,
+        scrollbar: Scrollbar | null
+      ) => {
+        if (scrollbar) {
+          return !(
+            offsetX < scrollbar.x ||
+            offsetX > scrollbar.x + scrollbar.track.width ||
+            offsetY < scrollbar.y ||
+            offsetY > scrollbar.y + scrollbar.track.height
+          );
+        } else {
+          return false;
+        }
+      };
       return (
-        x >= this.layout!.x &&
-        y >= this.layout!.y &&
-        x <= this.layout!.x + this.layout!.width &&
-        y <= this.layout!.y + this.layout!.height &&
-        offsetX >= this.x - this.layout!.x &&
-        offsetX <= this.layout!.width &&
-        offsetY >= this.y - this.layout!.y &&
-        offsetY <= this.layout!.height
+        checkInScrollbar(offsetX, offsetY, this.verticalScrollBar) ||
+        checkInScrollbar(offsetX, offsetY, this.horizontalScrollBar)
       );
-    };
-    const isInFixedCell = () => {
-      if (isInCellRange()) {
-        const { x, y } = this.getCellPointByMousePosition(e.x, e.y);
-        const cell = this.findCellByPoint(
-          x - this.scroll.x,
-          y - this.scroll.y,
-          false,
-          false
-        );
-        if (cell) {
-          return cell.fixed.x || cell.fixed.y;
+    } else {
+      return false;
+    }
+  }
+
+  private pointInCellRange(e: MouseEvent) {
+    const { x, y, offsetX, offsetY } = e;
+    return (
+      x >= this.layout!.x &&
+      y >= this.layout!.y &&
+      x <= this.layout!.x + this.layout!.width &&
+      y <= this.layout!.y + this.layout!.height &&
+      offsetX >= this.x - this.layout!.x &&
+      offsetX <= this.layout!.width &&
+      offsetY >= this.y - this.layout!.y &&
+      offsetY <= this.layout!.height
+    );
+  }
+
+  private pointInFixedCell(e: MouseEvent) {
+    if (this.pointInCellRange(e)) {
+      const { x, y } = this.getCellPointByMousePosition(e.x, e.y);
+      const cell = this.findCellByPoint(
+        x - this.scroll.x,
+        y - this.scroll.y,
+        false,
+        false
+      );
+      if (cell) {
+        return cell.fixed.x || cell.fixed.y;
+      }
+    }
+    return false;
+  }
+
+  private pointInFixedXCell(e: MouseEvent) {
+    if (this.pointInFixedCell(e)) {
+      const { x, y } = this.getCellPointByMousePosition(e.x, e.y);
+      const cell = this.findCellByPoint(
+        x - this.scroll.x,
+        y - this.scroll.y,
+        false,
+        false
+      );
+      if (cell) {
+        return cell.fixed.x;
+      }
+    }
+    return false;
+  }
+
+  private pointInFixedYCell(e: MouseEvent) {
+    if (this.pointInFixedCell(e)) {
+      const { x, y } = this.getCellPointByMousePosition(e.x, e.y);
+      const cell = this.findCellByPoint(
+        x - this.scroll.x,
+        y - this.scroll.y,
+        false,
+        false
+      );
+      if (cell) {
+        return cell.fixed.y;
+      }
+    }
+    return false;
+  }
+
+  private pointInNormalCell(e: MouseEvent) {
+    if (this.pointInCellRange(e)) {
+      return !this.pointInFixedCell(e);
+    }
+    return false;
+  }
+
+  private pointInFillHandle(e: MouseEvent) {
+    const { offsetX, offsetY } = e;
+    if (this.fillHandle) {
+      return (
+        offsetX >= this.fillHandle.position.leftTop.x - this.scroll.x &&
+        offsetX <= this.fillHandle.position.rightBottom.x - this.scroll.x &&
+        offsetY >= this.fillHandle.position.leftTop.y - this.scroll.y &&
+        offsetY <= this.fillHandle.position.rightBottom.y - this.scroll.y
+      );
+    } else {
+      return false;
+    }
+  }
+
+  private pointInRowResize(e: MouseEvent) {
+    const { offsetX, offsetY } = e;
+    if (this.pointInFixedCell(e)) {
+      const { x, y } = this.getCellPointByMousePosition(e.x, e.y);
+      const cell = this.findCellByPoint(x - this.scroll.x, y, false, false);
+      if (cell) {
+        if (cell.fixed.x) {
+          return (
+            offsetX >= cell.position!.leftTop.x &&
+            offsetX <= cell.position!.rightTop.x &&
+            offsetY >=
+              cell.position!.leftBottom.y - this.scroll.y - RESIZE_ROW_SIZE &&
+            offsetY <= cell.position!.leftBottom.y - this.scroll.y
+          );
+        } else {
+          return false;
         }
       }
       return false;
-    };
-    const isInFixedXCell = () => {
-      if (isInFixedCell()) {
-        const { x, y } = this.getCellPointByMousePosition(e.x, e.y);
-        const cell = this.findCellByPoint(
-          x - this.scroll.x,
-          y - this.scroll.y,
-          false,
-          false
-        );
-        if (cell) {
-          return cell.fixed.x;
+    } else {
+      return false;
+    }
+  }
+
+  private pointInColResize(e: MouseEvent) {
+    const { offsetX, offsetY } = e;
+    if (this.pointInFixedCell(e)) {
+      const { x, y } = this.getCellPointByMousePosition(e.x, e.y);
+      const cell = this.findCellByPoint(x, y - this.scroll.y, false, false);
+      if (cell) {
+        if (cell.fixed.y) {
+          return (
+            offsetX >=
+              cell.position!.rightTop.x - this.scroll.x - RESIZE_COL_SIZE &&
+            offsetX <= cell.position!.rightTop.x - this.scroll.x &&
+            offsetY >= cell.position!.leftTop.y &&
+            offsetY <= cell.position!.leftBottom.y
+          );
+        } else {
+          return false;
         }
       }
       return false;
-    };
-    const isInFixedYCell = () => {
-      if (isInFixedCell()) {
-        const { x, y } = this.getCellPointByMousePosition(e.x, e.y);
-        const cell = this.findCellByPoint(
-          x - this.scroll.x,
-          y - this.scroll.y,
-          false,
-          false
-        );
-        if (cell) {
-          return cell.fixed.y;
-        }
-      }
+    } else {
       return false;
-    };
-    const isInNormalCell = () => {
-      if (isInCellRange()) {
-        return !isInFixedCell();
-      }
-      return false;
-    };
-    const isInFillHandle = () => {
-      const { offsetX, offsetY } = e;
-      if (this.fillHandle) {
-        return (
-          offsetX >= this.fillHandle.position.leftTop.x - this.scroll.x &&
-          offsetX <= this.fillHandle.position.rightBottom.x - this.scroll.x &&
-          offsetY >= this.fillHandle.position.leftTop.y - this.scroll.y &&
-          offsetY <= this.fillHandle.position.rightBottom.y - this.scroll.y
-        );
+    }
+  }
+
+  private updateCursor(e: MouseEvent) {
+    if (globalObj.EVENT_LOCKED) return;
+    if (!this.pointInCellRange(e)) {
+      if (this.pointInScrollbar(e)) {
+        globalObj.SET_CURSOR("default");
       } else {
-        return false;
+        globalObj.SET_CURSOR("default");
       }
-    };
-    const isInRowResize = () => {
-      const { offsetX, offsetY } = e;
-      if (isInFixedCell()) {
-        const { x, y } = this.getCellPointByMousePosition(e.x, e.y);
-        const cell = this.findCellByPoint(x - this.scroll.x, y, false, false);
-        if (cell) {
-          if (cell.fixed.x) {
-            return (
-              offsetX >= cell.position!.leftTop.x &&
-              offsetX <= cell.position!.rightTop.x &&
-              offsetY >=
-                cell.position!.leftBottom.y - this.scroll.y - RESIZE_ROW_SIZE &&
-              offsetY <= cell.position!.leftBottom.y - this.scroll.y
-            );
-          } else {
-            return false;
-          }
-        }
-      } else {
-        return false;
+    } else {
+      if (this.pointInFixedXCell(e)) {
+        globalObj.SET_CURSOR("w-resize");
       }
-    };
-    const isInColResize = () => {
-      const { offsetX, offsetY } = e;
-      if (isInFixedCell()) {
-        const { x, y } = this.getCellPointByMousePosition(e.x, e.y);
-        const cell = this.findCellByPoint(x, y - this.scroll.y, false, false);
-        if (cell) {
-          if (cell.fixed.y) {
-            return (
-              offsetX >=
-                cell.position!.rightTop.x - this.scroll.x - RESIZE_COL_SIZE &&
-              offsetX <= cell.position!.rightTop.x - this.scroll.x &&
-              offsetY >= cell.position!.leftTop.y &&
-              offsetY <= cell.position!.leftBottom.y
-            );
-          } else {
-            return false;
-          }
-        }
-      } else {
-        return false;
+      if (this.pointInFixedYCell(e)) {
+        globalObj.SET_CURSOR("s-resize");
       }
-    };
-    if (isInScrollbar()) {
-      globalObj.SET_CURSOR("default");
-    }
-    if (isInFixedXCell()) {
-      globalObj.SET_CURSOR("w-resize");
-    }
-    if (isInFixedYCell()) {
-      globalObj.SET_CURSOR("s-resize");
-    }
-    if (isInNormalCell()) {
-      globalObj.SET_CURSOR("cell");
-    }
-    if (isInFillHandle()) {
-      globalObj.SET_CURSOR("crosshair");
-    }
-    if (isInRowResize()) {
-      globalObj.SET_CURSOR("row-resize");
-    }
-    if (isInColResize()) {
-      globalObj.SET_CURSOR("col-resize");
+      if (this.pointInNormalCell(e)) {
+        globalObj.SET_CURSOR("cell");
+      }
+      if (this.pointInFillHandle(e)) {
+        globalObj.SET_CURSOR("crosshair");
+      }
+      if (this.pointInRowResize(e)) {
+        globalObj.SET_CURSOR("row-resize");
+      }
+      if (this.pointInColResize(e)) {
+        globalObj.SET_CURSOR("col-resize");
+      }
     }
   }
 
@@ -662,7 +752,11 @@ class Sheet
 
   initEvents() {
     const globalEventListeners = {
-      mousedown: this.selectCells.bind(this),
+      mousedown: (e: MouseEvent) => {
+        this.selectCellRange.call(this, e);
+        this.resizeCell.call(this, e);
+        this.selectFullCell.call(this, e);
+      },
       mousemove: debounce(this.updateCursor.bind(this), 30),
     };
 
@@ -1215,14 +1309,6 @@ class Sheet
         if (!!~index) {
           this.sheetEventsObserver.resize.splice(index, 1);
         }
-        cell.addEvent!(
-          "resize",
-          throttle(this.handleCellResize.bind(this), 50)
-        );
-        cell.addEvent!(
-          "select",
-          throttle(this.handleCellSelect.bind(this), 50)
-        );
       }
     }
   }
