@@ -336,6 +336,7 @@ class Sheet
     ) => void
   ) {
     if (!(isInX || isInY)) return;
+    globalObj.EVENT_LOCKED = true;
     const offsetProp = isInX ? "x" : "y";
     const start = e[offsetProp];
     const { x, y } = this.getCellPointByMousePosition(e.x, e.y);
@@ -367,6 +368,7 @@ class Sheet
         },
         true
       );
+      globalObj.EVENT_LOCKED = false;
       window.removeEventListener("mousemove", onMove);
       window.removeEventListener("mouseup", onEnd);
     };
