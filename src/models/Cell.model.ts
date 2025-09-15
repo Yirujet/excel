@@ -70,8 +70,7 @@ namespace Excel {
       render(
         ctx: CanvasRenderingContext2D,
         scrollX: number,
-        scrollY: number,
-        isEnd: boolean
+        scrollY: number
       ): void;
       updatePosition: Excel.Event.FnType;
       getTextAlignOffsetX(w: number): number;

@@ -146,15 +146,7 @@ class Cell extends Element<null> implements Excel.Cell.CellInstance {
     return baseWidth;
   }
 
-  render(
-    ctx: CanvasRenderingContext2D,
-    scrollX: number,
-    scrollY: number,
-    isEnd: boolean
-  ) {
-    if (isEnd) {
-      this.clearEvents!(this.eventObserver, this);
-    }
+  render(ctx: CanvasRenderingContext2D, scrollX: number, scrollY: number) {
     this.scrollX = scrollX;
     this.scrollY = scrollY;
     this.drawCellBg(ctx);

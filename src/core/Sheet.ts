@@ -278,7 +278,7 @@ class Sheet
     const onSelectingCells = throttle(this.selectingCellRange.bind(this), 50);
     const onEndSelectCells = () => {
       if (this.selectedCells) {
-        this.draw(true);
+        this.draw();
       }
       globalObj.EVENT_LOCKED = false;
       window.removeEventListener("mousemove", onSelectingCells);
@@ -321,7 +321,7 @@ class Sheet
           this.mergedCells,
           this.selectedCells!
         );
-        this.draw(false);
+        this.draw();
       }
     }
   }
@@ -669,7 +669,7 @@ class Sheet
     maxColIndex,
   ]: Excel.Sheet.CellRange) {
     this.mergedCells.push([minRowIndex, maxRowIndex, minColIndex, maxColIndex]);
-    this.draw(false);
+    this.draw();
   }
 
   getCell(rowIndex: number, colIndex: number) {
@@ -747,7 +747,7 @@ class Sheet
         }
       }
     }
-    this.draw(true);
+    this.draw();
   }
 
   initEvents() {
@@ -778,7 +778,7 @@ class Sheet
     this.initEvents();
     this.sheetEventsObserver.observe(this.$el!);
     this.globalEventsObserver.observe(window as any);
-    this.draw(true);
+    this.draw();
   }
 
   initSheet() {
@@ -1061,10 +1061,8 @@ class Sheet
         colIndex: null,
         value: null,
       };
-      this.draw(true);
-    } else {
-      this.draw(false);
     }
+    this.draw();
   }
 
   handleCellSelect(select: Excel.Cell.CellAction["select"], isEnd = false) {
@@ -1132,19 +1130,17 @@ class Sheet
         colIndex: null,
         value: null,
       };
-      this.draw(true);
-    } else {
-      this.draw(false);
     }
+    this.draw();
   }
 
-  redraw(percent: number, type: Excel.Scrollbar.Type, isEnd: boolean) {
+  redraw(percent: number, type: Excel.Scrollbar.Type) {
     this.updateScroll(percent, type);
-    this.draw(isEnd);
+    this.draw();
   }
 
-  draw(isEnd: boolean = false) {
-    this.drawSheetCells(isEnd);
+  draw() {
+    this.drawSheetCells();
     this.drawMergedCells();
     this.drawShadow();
     this.drawScrollbar();
@@ -1229,33 +1225,18 @@ class Sheet
     return [minXIndex, maxXIndex, minYIndex, maxYIndex];
   }
 
-  drawSheetCells(isEnd: boolean = false) {
+  drawSheetCells() {
     this.sheetEventsObserver.clearEventsWhenReRender();
     this.drawCells(
       this.cells,
       false,
       false,
       this.fixedColIndex,
-      this.fixedRowIndex,
-      isEnd
+      this.fixedRowIndex
     );
-    this.drawCells(
-      this.fixedRowCells,
-      false,
-      true,
-      this.fixedColIndex,
-      null,
-      isEnd
-    );
-    this.drawCells(
-      this.fixedColCells,
-      true,
-      false,
-      null,
-      this.fixedRowIndex,
-      isEnd
-    );
-    this.drawCells(this.fixedCells, true, true, null, null, isEnd);
+    this.drawCells(this.fixedRowCells, false, true, this.fixedColIndex, null);
+    this.drawCells(this.fixedColCells, true, false, null, this.fixedRowIndex);
+    this.drawCells(this.fixedCells, true, true, null, null);
   }
 
   drawCells(
@@ -1263,8 +1244,7 @@ class Sheet
     fixedInX: boolean,
     fixedInY: boolean,
     ignoreXIndex: number | null,
-    ignoreYIndex: number | null,
-    isEnd: boolean
+    ignoreYIndex: number | null
   ) {
     this.clearCells(fixedInX, fixedInY);
     const scrollX = fixedInX ? 0 : this.scroll.x || 0;
@@ -1296,13 +1276,7 @@ class Sheet
         if (!fixedInY && rightBottom.y - scrollY < this.fixedRowHeight) {
           continue;
         }
-        if (!isEnd) {
-          cell.clearEvents!(this.sheetEventsObserver, cell);
-        }
-        cell.render(this._ctx!, scrollX, scrollY, isEnd);
-        if (cell.events["resize"]) {
-          cell.events["resize"] = [];
-        }
+        cell.render(this._ctx!, scrollX, scrollY);
         let index = this.sheetEventsObserver.resize.findIndex(
           (e) => e === cell
         );
