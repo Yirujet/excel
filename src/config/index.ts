@@ -17,6 +17,7 @@ export const DEFAULT_CELL_LINE_SOLID = false;
 export const DEFAULT_CELL_LINE_BOLD = false;
 export const DEFAULT_CELL_LINE_DASH = [3, 5];
 export const DEFAULT_CELL_LINE_COLOR = "#ccc";
+export const DEFAULT_CELL_PADDING = 0.5;
 export const DEFAULT_FIXED_CELL_BACKGROUND_COLOR = "rgb(238, 238, 238)";
 export const DEFAULT_FIXED_CELL_COLOR = "rgb(141, 87, 87)";
 export const DEVIATION_COMPARE_VALUE = 10e-6;

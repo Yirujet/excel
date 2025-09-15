@@ -46,6 +46,29 @@ namespace Excel {
       }
     >;
 
+    export type CellTextMetaData = string;
+
+    export type CellTextMeta = CellMeta<"text", CellTextMetaData>;
+
+    export type CellImageMetaFill = "fill" | "contain" | "cover" | "none";
+
+    export type CellImageMetaData = {
+      img: CanvasImageSource;
+      width: number;
+      height: number;
+      fill: CellImageMetaFill;
+    };
+
+    export type CellImageMeta = CellMeta<"image", CellImageMetaData>;
+
+    export interface CellMeta<T, D> {
+      type: T;
+      data: D;
+      [key: string]: any;
+    }
+
+    export type Meta = CellTextMeta | CellImageMeta | null;
+
     export interface CellInstance extends Excel.Event.EventInstance {
       width: number | null;
       height: number | null;
@@ -58,8 +81,8 @@ namespace Excel {
       position: Excel.Position;
       textStyle: TextStyle;
       border: Border;
-      meta: any | null;
-      value: string;
+      meta: Meta;
+      value: any;
       fn: string | null;
       fixed: CellFixed;
       hidden?: boolean;

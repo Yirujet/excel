@@ -97,6 +97,10 @@
         </select>
       </div>
       <button id="btnMerge">合并单元格</button>
+      <div>
+        设置图片:
+        <input type="file" id="fileInput" accept="image/*" />
+      </div>
     </div>
     <div id="app"></div>
   </body>
@@ -209,6 +213,15 @@
           bold: e.target.value === "bold" ? true : false,
         },
       });
+    });
+    const fileInput = document.querySelector("#fileInput");
+    fileInput.addEventListener("change", (e) => {
+      const curSheet = excel.sheets[excel.sheetIndex];
+      const cell = curSheet.getCell(
+        curSheet.selectedCells[0],
+        curSheet.selectedCells[2]
+      );
+      curSheet.setCellImageMeta(cell, fileInput.files[0]);
     });
   </script>
 </html>

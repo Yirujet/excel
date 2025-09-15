@@ -734,6 +734,40 @@ class Sheet
     }
   }
 
+  setCellImageMeta(cell: Excel.Cell.CellInstance, image: File) {
+    const reader = new FileReader();
+    reader.readAsDataURL(image);
+    reader.onload = () => {
+      const img = new Image();
+      img.src = reader.result as string;
+      img.onload = () => {
+        this.setCellMeta(cell, {
+          type: "image",
+          data: {
+            img,
+            width: img.width,
+            height: img.height,
+            fill: "none",
+          },
+        });
+      };
+    };
+  }
+
+  setCellMeta(
+    cell: Excel.Cell.CellInstance,
+    cellMeta: Excel.Cell.Meta,
+    needDraw: boolean = true
+  ) {
+    if (cellMeta) {
+      cell.meta = cellMeta;
+      cell.value = cellMeta.data;
+    }
+    if (needDraw) {
+      this.draw();
+    }
+  }
+
   setSelectionCellsStyle(
     selectedCells: Excel.Sheet.CellRange,
     cellStyle: Excel.Cell.Style
@@ -843,17 +877,31 @@ class Sheet
           cell.cellName = $10226(j - 1);
           cell.updatePosition();
           if (i === 0) {
-            cell.value = cell.cellName;
+            this.setCellMeta(
+              cell,
+              {
+                type: "text",
+                data: cell.cellName,
+              },
+              false
+            );
           }
           if (j === 0) {
-            cell.value = i.toString();
+            this.setCellMeta(
+              cell,
+              {
+                type: "text",
+                data: i.toString(),
+              },
+              false
+            );
           }
           if (i === 0 && j === 0) {
             cell.hidden = true;
           }
-          if (i > 0 && j > 0) {
-            cell.value = i.toString() + "-" + j.toString();
-          }
+          // if (i > 0 && j > 0) {
+          //   cell.value = i.toString() + "-" + j.toString();
+          // }
           if (j < this.fixedColIndex) {
             fixedColRows.push(cell);
             if (i < this.fixedRowIndex) {

@@ -5,6 +5,7 @@ import {
   DEFAULT_CELL_LINE_COLOR,
   DEFAULT_CELL_LINE_DASH,
   DEFAULT_CELL_LINE_SOLID,
+  DEFAULT_CELL_PADDING,
   DEFAULT_CELL_TEXT_ALIGN,
   DEFAULT_CELL_TEXT_BACKGROUND_COLOR,
   DEFAULT_CELL_TEXT_BOLD,
@@ -72,7 +73,7 @@ class Cell extends Element<null> implements Excel.Cell.CellInstance {
       bold: DEFAULT_CELL_LINE_BOLD,
     },
   };
-  meta = null;
+  meta: Excel.Cell.Meta = null;
   value = "";
   fn = null;
   fixed = {
@@ -138,12 +139,12 @@ class Cell extends Element<null> implements Excel.Cell.CellInstance {
 
   getTextAlignOffsetX(baseWidth: number) {
     if (this.textStyle.align === "left") {
-      return 0;
+      return DEFAULT_CELL_PADDING;
     }
     if (this.textStyle.align === "center") {
       return baseWidth / 2;
     }
-    return baseWidth;
+    return baseWidth - DEFAULT_CELL_PADDING;
   }
 
   render(ctx: CanvasRenderingContext2D, scrollX: number, scrollY: number) {
@@ -152,11 +153,7 @@ class Cell extends Element<null> implements Excel.Cell.CellInstance {
     this.drawCellBg(ctx);
     this.drawCellBorder(ctx);
     if (!this.hidden) {
-      const textAlignOffsetX = this.getTextAlignOffsetX(this.width!);
-      this.drawDataCellText(ctx, textAlignOffsetX);
-      if (this.textStyle.underline) {
-        this.drawDataCellUnderline(ctx, textAlignOffsetX);
-      }
+      this.drawDataCell(ctx);
     }
   }
 
@@ -242,6 +239,21 @@ class Cell extends Element<null> implements Excel.Cell.CellInstance {
     ctx.restore();
   }
 
+  drawDataCell(ctx: CanvasRenderingContext2D) {
+    switch (this.meta?.type) {
+      case "text":
+        const textAlignOffsetX = this.getTextAlignOffsetX(this.width!);
+        this.drawDataCellText(ctx, textAlignOffsetX);
+        if (this.textStyle.underline) {
+          this.drawDataCellUnderline(ctx, textAlignOffsetX);
+        }
+        break;
+      case "image":
+        this.drawDataCellImage(ctx);
+        break;
+    }
+  }
+
   drawDataCellText(ctx: CanvasRenderingContext2D, textAlignOffsetX: number) {
     ctx.save();
     this.setTextStyle(ctx);
@@ -278,6 +290,16 @@ class Cell extends Element<null> implements Excel.Cell.CellInstance {
     ctx.closePath();
     ctx.stroke();
     ctx.restore();
+  }
+
+  drawDataCellImage(ctx: CanvasRenderingContext2D) {
+    ctx.drawImage(
+      (this.meta!.data as Excel.Cell.CellImageMetaData).img,
+      this.position.leftTop.x - this.scrollX + DEFAULT_CELL_PADDING,
+      this.position.leftTop.y - this.scrollY + DEFAULT_CELL_PADDING,
+      this.width! - DEFAULT_CELL_PADDING * 2,
+      this.height! - DEFAULT_CELL_PADDING * 2
+    );
   }
 }
 
