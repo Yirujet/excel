@@ -49,6 +49,7 @@ const GlobalEvents: Excel.Event.GlobalEvent = {
         triggerName: "triggerEvent",
       },
     },
+    passive: false,
   },
   keydown: {
     dispatchEvents: {
@@ -89,7 +90,7 @@ export default class EventObserver implements Excel.Event.ObserverInstance {
   observe(target: HTMLCanvasElement) {
     if (target && "addEventListener" in target) {
       Object.entries(GlobalEvents).forEach(
-        ([targetEvent, { dispatchEvents }]) => {
+        ([targetEvent, { dispatchEvents, passive }]) => {
           const listener: Excel.Event.FnType = (...args) => {
             Object.entries(dispatchEvents).forEach(
               ([dispatchEvent, { triggerName }]) => {
@@ -103,7 +104,9 @@ export default class EventObserver implements Excel.Event.ObserverInstance {
               }
             );
           };
-          target.addEventListener(targetEvent, listener);
+          target.addEventListener(targetEvent, listener, {
+            passive: passive === false ? false : true,
+          });
         }
       );
     }

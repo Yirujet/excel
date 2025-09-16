@@ -31,6 +31,7 @@ namespace Excel {
             triggerName: "triggerEvent";
           };
         };
+        passive?: boolean;
       };
     } & {
       mousemove: {
@@ -39,6 +40,7 @@ namespace Excel {
             triggerName: "triggerEvent";
           };
         };
+        passive?: boolean;
       };
     } & {
       click: {
@@ -50,6 +52,7 @@ namespace Excel {
             triggerName: "triggerEvent";
           };
         };
+        passive?: boolean;
       };
     } & {
       resize?: {
@@ -58,6 +61,7 @@ namespace Excel {
             triggerName: "triggerEvent";
           };
         };
+        passive?: boolean;
       };
     } & {
       select?: {
@@ -66,6 +70,7 @@ namespace Excel {
             triggerName: "triggerEvent";
           };
         };
+        passive?: boolean;
       };
     };
 

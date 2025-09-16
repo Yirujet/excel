@@ -794,6 +794,17 @@ class Sheet
         this.selectFullCell.call(this, e);
       },
       mousemove: debounce(this.updateCursor.bind(this), 30),
+      wheel: (e: WheelEvent) => {
+        if (
+          e.x >= this.x &&
+          e.x <= this.x + this.width &&
+          e.y >= this.y &&
+          e.y <= this.y + this.height
+        ) {
+          e.stopPropagation();
+          e.preventDefault();
+        }
+      },
     };
 
     this.registerListenerFromOnProp(
@@ -901,9 +912,17 @@ class Sheet
           if (i === 0 && j === 0) {
             cell.hidden = true;
           }
-          // if (i > 0 && j > 0) {
-          //   cell.value = i.toString() + "-" + j.toString();
-          // }
+          if (i > 0 && j > 0) {
+            // cell.value = i.toString() + "-" + j.toString();
+            this.setCellMeta(
+              cell,
+              {
+                type: "text",
+                data: i.toString() + "-" + j.toString(),
+              },
+              false
+            );
+          }
           if (j < this.fixedColIndex) {
             fixedColRows.push(cell);
             if (i < this.fixedRowIndex) {
