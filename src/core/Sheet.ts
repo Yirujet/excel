@@ -749,7 +749,7 @@ class Sheet
             img,
             width: img.width,
             height: img.height,
-            fill: "none",
+            fit: "fill",
           },
         });
       };

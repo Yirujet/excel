@@ -56,7 +56,7 @@ namespace Excel {
       img: CanvasImageSource;
       width: number;
       height: number;
-      fill: CellImageMetaFill;
+      fit: CellImageMetaFill;
     };
 
     export type CellImageMeta = CellMeta<"image", CellImageMetaData>;

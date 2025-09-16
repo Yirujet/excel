@@ -101,6 +101,15 @@
         设置图片:
         <input type="file" id="fileInput" accept="image/*" />
       </div>
+      <div>
+        图片填充模式:
+        <select id="imgFitSelect">
+          <option value="fill">填充</option>
+          <option value="contain">包含</option>
+          <option value="cover">覆盖</option>
+          <option value="none">无</option>
+        </select>
+      </div>
     </div>
     <div id="app"></div>
   </body>
@@ -222,6 +231,25 @@
         curSheet.selectedCells[2]
       );
       curSheet.setCellImageMeta(cell, fileInput.files[0]);
+    });
+    const imgFitSelect = document.querySelector("#imgFitSelect");
+    imgFitSelect.addEventListener("change", (e) => {
+      const curSheet = excel.sheets[excel.sheetIndex];
+      const cell = curSheet.getCell(
+        curSheet.selectedCells[0],
+        curSheet.selectedCells[2]
+      );
+      curSheet.setCellMeta(
+        cell,
+        {
+          type: "image",
+          data: {
+            ...cell.meta.data,
+            fit: e.target.value,
+          },
+        },
+        true
+      );
     });
   </script>
 </html>
