@@ -90,12 +90,32 @@ class CellSelector extends Element<null> {
     ctx.restore();
   }
 
+  private checkStartCellInMergedRange(
+    startCell: Excel.Cell.CellInstance | null,
+    mergedCells: Excel.Sheet.CellRange[] | null
+  ) {
+    if (startCell && mergedCells) {
+      for (const range of mergedCells) {
+        if (
+          startCell.rowIndex! >= range[0] &&
+          startCell.rowIndex! <= range[1] &&
+          startCell.colIndex! >= range[2] &&
+          startCell.colIndex! <= range[3]
+        ) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
   render(
     ctx: CanvasRenderingContext2D,
     selectedCells: Excel.Sheet.CellRange | null,
     startCell: Excel.Cell.CellInstance | null,
     scrollX: number,
-    scrollY: number
+    scrollY: number,
+    mergedCells: Excel.Sheet.CellRange[] | null
   ) {
     if (selectedCells) {
       ctx.save();
@@ -174,6 +194,9 @@ class CellSelector extends Element<null> {
       }
     }
     if (startCell) {
+      if (this.checkStartCellInMergedRange(startCell, mergedCells)) {
+        return;
+      }
       const {
         minX,
         minY,

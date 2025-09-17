@@ -658,6 +658,18 @@ class Sheet
     }
   }
 
+  private preventGlobalWheel(e: WheelEvent) {
+    if (
+      e.x >= this.x &&
+      e.x <= this.x + this.width &&
+      e.y >= this.y &&
+      e.y <= this.y + this.height
+    ) {
+      e.stopPropagation();
+      e.preventDefault();
+    }
+  }
+
   clearSelectCells() {
     if (this.selectedCells) {
       this.selectedCells = null;
@@ -671,6 +683,24 @@ class Sheet
     maxColIndex,
   ]: Excel.Sheet.CellRange) {
     this.mergedCells.push([minRowIndex, maxRowIndex, minColIndex, maxColIndex]);
+    this.draw();
+  }
+
+  unmerge([
+    minRowIndex,
+    maxRowIndex,
+    minColIndex,
+    maxColIndex,
+  ]: Excel.Sheet.CellRange) {
+    this.mergedCells = this.mergedCells.filter(
+      (range) =>
+        !(
+          range[0] >= minRowIndex &&
+          range[1] <= maxRowIndex &&
+          range[2] >= minColIndex &&
+          range[3] <= maxColIndex
+        )
+    );
     this.draw();
   }
 
@@ -794,17 +824,7 @@ class Sheet
         this.selectFullCell.call(this, e);
       },
       mousemove: debounce(this.updateCursor.bind(this), 30),
-      wheel: (e: WheelEvent) => {
-        if (
-          e.x >= this.x &&
-          e.x <= this.x + this.width &&
-          e.y >= this.y &&
-          e.y <= this.y + this.height
-        ) {
-          e.stopPropagation();
-          e.preventDefault();
-        }
-      },
+      wheel: this.preventGlobalWheel.bind(this),
     };
 
     this.registerListenerFromOnProp(
@@ -1388,7 +1408,8 @@ class Sheet
       this.selectedCells,
       this._startCell,
       this.scroll.x || 0,
-      this.scroll.y || 0
+      this.scroll.y || 0,
+      this.mergedCells
     );
   }
 

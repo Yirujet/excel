@@ -89,20 +89,21 @@
         <input type="color" id="bgColorPicker" />
       </div>
       <div>
-        对齐方式:
+        对齐:
         <select id="alignSelect">
           <option value="left">左对齐</option>
           <option value="center">居中对齐</option>
           <option value="right">右对齐</option>
         </select>
       </div>
-      <button id="btnMerge">合并单元格</button>
+      <button id="btnMerge">合并</button>
+      <button id="btnUnmerge">取消合并</button>
       <div>
-        设置图片:
+        图片:
         <input type="file" id="fileInput" accept="image/*" />
       </div>
       <div>
-        图片填充模式:
+        填充:
         <select id="imgFitSelect">
           <option value="fill">填充</option>
           <option value="contain">包含</option>
@@ -122,6 +123,11 @@
     btnMerge.addEventListener("click", () => {
       const curSheet = excel.sheets[excel.sheetIndex];
       curSheet.merge(curSheet.selectedCells);
+    });
+    const btnUnmerge = document.querySelector("#btnUnmerge");
+    btnUnmerge.addEventListener("click", () => {
+      const curSheet = excel.sheets[excel.sheetIndex];
+      curSheet.unmerge(curSheet.selectedCells);
     });
     const fontFamilySelect = document.querySelector("#fontFamilySelect");
     fontFamilySelect.addEventListener("change", (e) => {
