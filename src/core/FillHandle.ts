@@ -5,8 +5,6 @@ import {
   DEFAULT_FILL_HANDLE_BORDER_WIDTH,
   DEFAULT_FILL_HANDLE_SIZE,
 } from "../config/index";
-import debounce from "../utils/debounce";
-import globalObj from "./globalObj";
 
 class FillHandle
   extends Element<null>

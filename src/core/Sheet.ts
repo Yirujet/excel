@@ -29,6 +29,7 @@ import {
 import globalObj from "./globalObj";
 import FillHandle from "./FillHandle";
 import Scrollbar from "./Scrollbar/Scrollbar";
+import Filling from "./Filling";
 import debounce from "../utils/debounce";
 
 class Sheet
@@ -50,6 +51,7 @@ class Sheet
   horizontalScrollBarShadow: Shadow | null = null;
   verticalScrollBarShadow: Shadow | null = null;
   fillHandle: FillHandle | null = null;
+  filling: Filling | null = null;
   sheetEventsObserver: Excel.Event.ObserverInstance = new EventObserver();
   globalEventsObserver: Excel.Event.ObserverInstance = new EventObserver();
   realWidth = 0;
@@ -78,6 +80,8 @@ class Sheet
   };
   selectedCells: Excel.Sheet.CellRange | null = null;
   mergedCells: Excel.Sheet.CellRange[] = [];
+  isFilling = false;
+  fillingCells: Excel.Sheet.CellRange | null = null;
 
   constructor(name: string, cells?: Excel.Cell.CellInstance[][]) {
     super("canvas");
@@ -246,6 +250,9 @@ class Sheet
     if (globalObj.EVENT_LOCKED) {
       return;
     }
+    if (this.isFilling) {
+      return;
+    }
     const exceedInfo = this.exceed(e.x, e.y);
     if (exceedInfo.x.exceed || exceedInfo.y.exceed) {
       return;
@@ -400,6 +407,35 @@ class Sheet
       isInFixedYCell,
       this.handleCellSelect
     );
+  }
+
+  private fill(e: MouseEvent) {
+    if (!this.pointInFillHandle(e)) return;
+    globalObj.EVENT_LOCKED = true;
+    this.isFilling = true;
+    const onFill = throttle(this.fillingCellRange.bind(this), 50);
+    const onEndFill = () => {
+      globalObj.EVENT_LOCKED = false;
+      this.isFilling = false;
+      this.clearFillingCells();
+      window.removeEventListener("mousemove", onFill);
+      window.removeEventListener("mouseup", onEndFill);
+    };
+    window.addEventListener("mousemove", onFill);
+    window.addEventListener("mouseup", onEndFill);
+  }
+
+  private fillingCellRange(e: MouseEvent) {
+    if (this.selectedCells) {
+      this.autoScroll(e.x, e.y);
+      const { x, y } = this.getCellPointByMousePosition(e.x, e.y);
+      const endCell = this.findCellByPoint(x, y);
+      this.clearFillingCells();
+      if (endCell) {
+        console.log(endCell.value);
+        this.draw();
+      }
+    }
   }
 
   private binaryQuery<T>(
@@ -676,6 +712,12 @@ class Sheet
     }
   }
 
+  clearFillingCells() {
+    if (this.fillingCells) {
+      this.fillingCells = null;
+    }
+  }
+
   merge([
     minRowIndex,
     maxRowIndex,
@@ -819,6 +861,7 @@ class Sheet
   initEvents() {
     const globalEventListeners = {
       mousedown: (e: MouseEvent) => {
+        this.fill.call(this, e);
         this.selectCellRange.call(this, e);
         this.resizeCell.call(this, e);
         this.selectFullCell.call(this, e);
@@ -842,6 +885,7 @@ class Sheet
     this.initCellSelector();
     this.initCellMergence();
     this.initFillHandle();
+    this.initFilling();
     this.initEvents();
     this.sheetEventsObserver.observe(this.$el!);
     this.globalEventsObserver.observe(window as any);
@@ -1068,6 +1112,15 @@ class Sheet
     );
   }
 
+  initFilling() {
+    this.filling = new Filling(
+      this.layout!,
+      this.cells,
+      this.fixedColWidth,
+      this.fixedRowHeight
+    );
+  }
+
   clear() {
     this._ctx!.clearRect(0, 0, this.width, this.height);
   }
@@ -1236,6 +1289,7 @@ class Sheet
     this.drawCellSelector();
     this.drawCellResizer();
     this.drawFillHandle();
+    this.drawFilling();
   }
 
   getRangeInView(
@@ -1443,6 +1497,15 @@ class Sheet
     this.fillHandle!.render(
       this._ctx!,
       this.selectedCells,
+      this.scroll.x || 0,
+      this.scroll.y || 0
+    );
+  }
+
+  drawFilling() {
+    this.filling!.render(
+      this._ctx!,
+      this.fillingCells,
       this.scroll.x || 0,
       this.scroll.y || 0
     );
