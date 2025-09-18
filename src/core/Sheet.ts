@@ -425,6 +425,59 @@ class Sheet
     window.addEventListener("mouseup", onEndFill);
   }
 
+  private getFillingRangeByEndCell(
+    endCell: Excel.Cell.CellInstance,
+    key: "colIndex" | "rowIndex",
+    compareMinIndex: (index: number) => boolean,
+    compareMaxIndex: (index: number) => boolean
+  ) {
+    let minIndex, maxIndex;
+    const [minRowIndex, maxRowIndex, minColIndex, maxColIndex] =
+      this.selectedCells!;
+    if (key === "rowIndex") {
+      minIndex = minRowIndex;
+      maxIndex = maxRowIndex;
+    } else {
+      minIndex = minColIndex;
+      maxIndex = maxColIndex;
+    }
+    const span = maxIndex - minIndex + 1;
+    let fillingMinIndex, fillingMaxIndex;
+    if (endCell[key]! < minIndex) {
+      let cnt = Math.floor((endCell[key]! - minIndex) / span);
+      fillingMinIndex = cnt * span + minIndex;
+      if (compareMinIndex(fillingMinIndex)) {
+        fillingMinIndex = (cnt + 1) * span + minIndex;
+      }
+      fillingMaxIndex = minIndex - 1;
+    } else if (endCell[key]! > maxIndex) {
+      let cnt = Math.ceil((endCell[key]! - maxIndex) / span);
+      fillingMaxIndex = cnt * span + maxIndex;
+      if (compareMaxIndex(fillingMaxIndex)) {
+        fillingMaxIndex = (cnt - 1) * span + maxIndex;
+      }
+      fillingMinIndex = maxIndex + 1;
+    }
+    if (fillingMinIndex! > fillingMaxIndex!) {
+      return null;
+    }
+    if (key === "rowIndex") {
+      return [
+        fillingMinIndex!,
+        fillingMaxIndex!,
+        minColIndex!,
+        maxColIndex!,
+      ] as Excel.Sheet.CellRange;
+    } else {
+      return [
+        minRowIndex!,
+        maxRowIndex!,
+        fillingMinIndex!,
+        fillingMaxIndex!,
+      ] as Excel.Sheet.CellRange;
+    }
+  }
+
   private fillingCellRange(e: MouseEvent) {
     if (this.selectedCells) {
       this.autoScroll(e.x, e.y);
@@ -432,7 +485,33 @@ class Sheet
       const endCell = this.findCellByPoint(x, y);
       this.clearFillingCells();
       if (endCell) {
-        console.log(endCell.value);
+        const [minRowIndex, maxRowIndex, minColIndex, maxColIndex] =
+          this.selectedCells;
+        if (
+          endCell.rowIndex! >= minRowIndex &&
+          endCell.rowIndex! <= maxRowIndex
+        ) {
+          if (
+            endCell.colIndex! >= minColIndex &&
+            endCell.colIndex! <= maxColIndex
+          ) {
+            this.fillingCells = null;
+          } else {
+            this.fillingCells = this.getFillingRangeByEndCell(
+              endCell,
+              "colIndex",
+              (index) => index < this.fixedColIndex,
+              (index) => index > this.cells[0].length - 1
+            );
+          }
+        } else {
+          this.fillingCells = this.getFillingRangeByEndCell(
+            endCell,
+            "rowIndex",
+            (index) => index < this.fixedRowIndex,
+            (index) => index > this.cells.length - 1
+          );
+        }
         this.draw();
       }
     }
@@ -1505,6 +1584,7 @@ class Sheet
   drawFilling() {
     this.filling!.render(
       this._ctx!,
+      this.selectedCells,
       this.fillingCells,
       this.scroll.x || 0,
       this.scroll.y || 0

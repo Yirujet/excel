@@ -5,6 +5,7 @@ import {
   DEFAULT_FILL_HANDLE_BORDER_WIDTH,
   DEFAULT_FILL_HANDLE_SIZE,
 } from "../config/index";
+import drawBorder from "../utils/drawBorder";
 
 class FillHandle
   extends Element<null>
@@ -63,25 +64,6 @@ class FillHandle
       this.eventObserver,
       this
     );
-  }
-
-  private drawBorder(
-    ctx: CanvasRenderingContext2D,
-    startX: number,
-    startY: number,
-    endX: number,
-    endY: number,
-    lineWidth: number = 1
-  ) {
-    ctx.save();
-    ctx.strokeStyle = DEFAULT_FILL_HANDLE_BORDER_COLOR;
-    ctx.lineWidth = lineWidth;
-    ctx.beginPath();
-    ctx.moveTo(startX, startY);
-    ctx.lineTo(endX, endY);
-    ctx.closePath();
-    ctx.stroke();
-    ctx.restore();
   }
 
   updatePosition() {
@@ -160,42 +142,46 @@ class FillHandle
         topY < bottomY;
 
       if (topBorderShow) {
-        this.drawBorder(
+        drawBorder(
           ctx,
           leftX,
           minY - scrollY,
           rightX,
           minY - scrollY,
+          DEFAULT_FILL_HANDLE_BORDER_COLOR,
           DEFAULT_FILL_HANDLE_BORDER_WIDTH
         );
       }
       if (bottomBorderShow) {
-        this.drawBorder(
+        drawBorder(
           ctx,
           leftX,
           maxY - scrollY,
           rightX,
           maxY - scrollY,
+          DEFAULT_FILL_HANDLE_BORDER_COLOR,
           DEFAULT_FILL_HANDLE_BORDER_WIDTH
         );
       }
       if (leftBorderShow) {
-        this.drawBorder(
+        drawBorder(
           ctx,
           minX - scrollX,
           topY,
           minX - scrollX,
           bottomY,
+          DEFAULT_FILL_HANDLE_BORDER_COLOR,
           DEFAULT_FILL_HANDLE_BORDER_WIDTH
         );
       }
       if (rightBorderShow) {
-        this.drawBorder(
+        drawBorder(
           ctx,
           maxX - scrollX,
           topY,
           maxX - scrollX,
           bottomY,
+          DEFAULT_FILL_HANDLE_BORDER_COLOR,
           DEFAULT_FILL_HANDLE_BORDER_WIDTH
         );
       }
@@ -208,6 +194,7 @@ class FillHandle
         ctx.fillRect(leftX, topY, rightX - leftX, bottomY - topY);
         ctx.restore();
       }
+      ctx.restore();
     }
   }
 }
