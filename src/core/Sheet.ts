@@ -458,6 +458,12 @@ class Sheet
       }
       fillingMinIndex = maxIndex + 1;
     }
+    if (
+      typeof fillingMinIndex === "undefined" ||
+      typeof fillingMaxIndex === "undefined"
+    ) {
+      return null;
+    }
     if (fillingMinIndex! > fillingMaxIndex!) {
       return null;
     }
@@ -489,13 +495,24 @@ class Sheet
           this.selectedCells;
         if (
           endCell.rowIndex! >= minRowIndex &&
-          endCell.rowIndex! <= maxRowIndex
+          endCell.rowIndex! <= maxRowIndex &&
+          endCell.colIndex! >= minColIndex &&
+          endCell.colIndex! <= maxColIndex
         ) {
-          if (
-            endCell.colIndex! >= minColIndex &&
-            endCell.colIndex! <= maxColIndex
-          ) {
-            this.fillingCells = null;
+          this.fillingCells = null;
+        } else {
+          const rightBottomCell = this.cells[maxRowIndex][maxColIndex];
+          const tanVal =
+            (rightBottomCell.position.rightBottom.y - y) /
+            (x - rightBottomCell.position.rightBottom.x);
+          const deg = Math.atan(tanVal) * (180 / Math.PI);
+          if ((deg > 0 && deg > 45) || (deg < 0 && deg < -45)) {
+            this.fillingCells = this.getFillingRangeByEndCell(
+              endCell,
+              "rowIndex",
+              (index) => index < this.fixedRowIndex,
+              (index) => index > this.cells.length - 1
+            );
           } else {
             this.fillingCells = this.getFillingRangeByEndCell(
               endCell,
@@ -504,14 +521,32 @@ class Sheet
               (index) => index > this.cells[0].length - 1
             );
           }
-        } else {
-          this.fillingCells = this.getFillingRangeByEndCell(
-            endCell,
-            "rowIndex",
-            (index) => index < this.fixedRowIndex,
-            (index) => index > this.cells.length - 1
-          );
         }
+        // if (
+        //   endCell.rowIndex! >= minRowIndex &&
+        //   endCell.rowIndex! <= maxRowIndex
+        // ) {
+        //   if (
+        //     endCell.colIndex! >= minColIndex &&
+        //     endCell.colIndex! <= maxColIndex
+        //   ) {
+        //     this.fillingCells = null;
+        //   } else {
+        //     this.fillingCells = this.getFillingRangeByEndCell(
+        //       endCell,
+        //       "colIndex",
+        //       (index) => index < this.fixedColIndex,
+        //       (index) => index > this.cells[0].length - 1
+        //     );
+        //   }
+        // } else {
+        //   this.fillingCells = this.getFillingRangeByEndCell(
+        //     endCell,
+        //     "rowIndex",
+        //     (index) => index < this.fixedRowIndex,
+        //     (index) => index > this.cells.length - 1
+        //   );
+        // }
         this.draw();
       }
     }
