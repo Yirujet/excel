@@ -27,7 +27,6 @@ class Filling extends Element<null> {
 
   render(
     ctx: CanvasRenderingContext2D,
-    selectedCells: Excel.Sheet.CellRange | null,
     fillingCells: Excel.Sheet.CellRange | null,
     scrollX: number,
     scrollY: number

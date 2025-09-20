@@ -409,12 +409,162 @@ class Sheet
     );
   }
 
+  private repeatByMergedCells(
+    minIndex: number,
+    maxIndex: number,
+    mergedCells: Excel.Sheet.CellRange[],
+    times: number,
+    d: number
+  ) {
+    if (mergedCells.length > 0) {
+      for (let i = 0; i < times; i++) {
+        mergedCells.forEach((item) => {
+          const [
+            mergedMinRowIndex,
+            mergedMaxRowIndex,
+            mergedMinColIndex,
+            mergedMaxColIndex,
+          ] = item;
+          const nextItem: Excel.Sheet.CellRange = [
+            mergedMinRowIndex,
+            mergedMaxRowIndex,
+            mergedMinColIndex,
+            mergedMaxColIndex,
+          ];
+          const offset =
+            (i + 1) *
+            d *
+            (this.selectedCells![maxIndex] - this.selectedCells![minIndex] + 1);
+          nextItem[minIndex] += offset;
+          nextItem[maxIndex] += offset;
+          this.mergedCells.push(nextItem);
+        });
+      }
+    }
+  }
+
+  private repeatByCommonCells(
+    minIndex: number,
+    maxIndex: number,
+    mergedCells: Excel.Sheet.CellRange[],
+    times: number,
+    d: number
+  ) {
+    const [minRowIndex, maxRowIndex, minColIndex, maxColIndex] =
+      this.selectedCells!;
+    const checkInMergedCells = (cellRowIndex: number, cellColIndex: number) => {
+      return mergedCells.some((item) => {
+        const [
+          mergedMinRowIndex,
+          mergedMaxRowIndex,
+          mergedMinColIndex,
+          mergedMaxColIndex,
+        ] = item;
+        return (
+          cellRowIndex >= mergedMinRowIndex &&
+          cellRowIndex <= mergedMaxRowIndex &&
+          cellColIndex >= mergedMinColIndex &&
+          cellColIndex <= mergedMaxColIndex
+        );
+      });
+    };
+    for (let r = minRowIndex; r <= maxRowIndex; r++) {
+      for (let c = minColIndex; c <= maxColIndex; c++) {
+        const cell = this.cells[r][c];
+        if (checkInMergedCells(r, c)) {
+          continue;
+        }
+        for (let i = 0; i < times; i++) {
+          const offset =
+            (i + 1) *
+            d *
+            (this.selectedCells![maxIndex] - this.selectedCells![minIndex] + 1);
+          const nextRowIndex = minIndex === 0 ? r + offset : r;
+          const nextColIndex = minIndex === 0 ? c : c + offset;
+          const nextCell = this.cells[nextRowIndex][nextColIndex];
+          nextCell.value = cell.value;
+          nextCell.meta = cell.meta;
+        }
+      }
+    }
+  }
+
+  private repeatCells(minIndex: number, maxIndex: number) {
+    const mergedRangesInSelectedCells = this.getMergedRangesInSelectedCells();
+    const times =
+      (this.fillingCells![maxIndex] - this.fillingCells![minIndex] + 1) /
+      (this.selectedCells![maxIndex] - this.selectedCells![minIndex] + 1);
+    const d = Math.sign(
+      this.fillingCells![minIndex] - this.selectedCells![minIndex]
+    );
+    this.repeatByCommonCells(
+      minIndex,
+      maxIndex,
+      mergedRangesInSelectedCells,
+      times,
+      d
+    );
+    this.repeatByMergedCells(
+      minIndex,
+      maxIndex,
+      mergedRangesInSelectedCells,
+      times,
+      d
+    );
+  }
+
+  private getMergedRangesInSelectedCells() {
+    const [minRowIndex, maxRowIndex, minColIndex, maxColIndex] =
+      this.selectedCells!;
+    const mergedRangesInSelectedCells = this.mergedCells.filter((item) => {
+      const [
+        mergedMinRowIndex,
+        mergedMaxRowIndex,
+        mergedMinColIndex,
+        mergedMaxColIndex,
+      ] = item;
+      return (
+        mergedMinRowIndex >= minRowIndex &&
+        mergedMaxRowIndex <= maxRowIndex &&
+        mergedMinColIndex >= minColIndex &&
+        mergedMaxColIndex <= maxColIndex
+      );
+    });
+    return mergedRangesInSelectedCells;
+  }
+
+  private fillCells() {
+    const [minRowIndex, maxRowIndex, minColIndex, maxColIndex] =
+      this.selectedCells!;
+    const [
+      minFillingRowIndex,
+      maxFillingRowIndex,
+      minFillingColIndex,
+      maxFillingColIndex,
+    ] = this.fillingCells!;
+    if (
+      minRowIndex === minFillingRowIndex &&
+      maxRowIndex === maxFillingRowIndex
+    ) {
+      this.repeatCells(2, 3);
+    } else if (
+      minColIndex === minFillingColIndex &&
+      maxColIndex === maxFillingColIndex
+    ) {
+      this.repeatCells(0, 1);
+    }
+  }
+
   private fill(e: MouseEvent) {
     if (!this.pointInFillHandle(e)) return;
     globalObj.EVENT_LOCKED = true;
     this.isFilling = true;
     const onFill = throttle(this.fillingCellRange.bind(this), 50);
     const onEndFill = () => {
+      if (this.selectedCells) {
+        this.fillCells();
+        this.draw();
+      }
       globalObj.EVENT_LOCKED = false;
       this.isFilling = false;
       this.clearFillingCells();
@@ -522,31 +672,6 @@ class Sheet
             );
           }
         }
-        // if (
-        //   endCell.rowIndex! >= minRowIndex &&
-        //   endCell.rowIndex! <= maxRowIndex
-        // ) {
-        //   if (
-        //     endCell.colIndex! >= minColIndex &&
-        //     endCell.colIndex! <= maxColIndex
-        //   ) {
-        //     this.fillingCells = null;
-        //   } else {
-        //     this.fillingCells = this.getFillingRangeByEndCell(
-        //       endCell,
-        //       "colIndex",
-        //       (index) => index < this.fixedColIndex,
-        //       (index) => index > this.cells[0].length - 1
-        //     );
-        //   }
-        // } else {
-        //   this.fillingCells = this.getFillingRangeByEndCell(
-        //     endCell,
-        //     "rowIndex",
-        //     (index) => index < this.fixedRowIndex,
-        //     (index) => index > this.cells.length - 1
-        //   );
-        // }
         this.draw();
       }
     }
@@ -1090,17 +1215,17 @@ class Sheet
           if (i === 0 && j === 0) {
             cell.hidden = true;
           }
-          if (i > 0 && j > 0) {
-            // cell.value = i.toString() + "-" + j.toString();
-            this.setCellMeta(
-              cell,
-              {
-                type: "text",
-                data: i.toString() + "-" + j.toString(),
-              },
-              false
-            );
-          }
+          // if (i > 0 && j > 0) {
+          //   // cell.value = i.toString() + "-" + j.toString();
+          //   this.setCellMeta(
+          //     cell,
+          //     {
+          //       type: "text",
+          //       data: i.toString() + "-" + j.toString(),
+          //     },
+          //     false
+          //   );
+          // }
           if (j < this.fixedColIndex) {
             fixedColRows.push(cell);
             if (i < this.fixedRowIndex) {
@@ -1619,7 +1744,6 @@ class Sheet
   drawFilling() {
     this.filling!.render(
       this._ctx!,
-      this.selectedCells,
       this.fillingCells,
       this.scroll.x || 0,
       this.scroll.y || 0
