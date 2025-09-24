@@ -1215,17 +1215,16 @@ class Sheet
           if (i === 0 && j === 0) {
             cell.hidden = true;
           }
-          // if (i > 0 && j > 0) {
-          //   // cell.value = i.toString() + "-" + j.toString();
-          //   this.setCellMeta(
-          //     cell,
-          //     {
-          //       type: "text",
-          //       data: i.toString() + "-" + j.toString(),
-          //     },
-          //     false
-          //   );
-          // }
+          if (i > 0 && j > 0) {
+            this.setCellMeta(
+              cell,
+              {
+                type: "text",
+                data: i.toString() + "-" + j.toString(),
+              },
+              false
+            );
+          }
           if (j < this.fixedColIndex) {
             fixedColRows.push(cell);
             if (i < this.fixedRowIndex) {

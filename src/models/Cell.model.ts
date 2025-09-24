@@ -97,6 +97,7 @@ namespace Excel {
       ): void;
       updatePosition: Excel.Event.FnType;
       getTextAlignOffsetX(w: number): number;
+      setTextStyle(ctx: CanvasRenderingContext2D): void;
     }
   }
 }

@@ -1,5 +1,7 @@
 import Element from "../components/Element";
-import { DEFAULT_CELL_LINE_DASH } from "../config/index";
+import { DEFAULT_CELL_LINE_DASH, DEFAULT_CELL_PADDING } from "../config/index";
+import getImgDrawInfoByFillMode from "../utils/getImgDrawInfoByFillMode";
+import getTextMetrics from "../utils/getTextMetrics";
 
 class CellMergence extends Element<null> {
   layout: Excel.LayoutInfo;
@@ -17,6 +19,156 @@ class CellMergence extends Element<null> {
     this.cells = cells;
     this.fixedColWidth = fixedColWidth;
     this.fixedRowHeight = fixedRowHeight;
+  }
+  drawDataCell(
+    ctx: CanvasRenderingContext2D,
+    cell: Excel.Cell.CellInstance,
+    x: number,
+    y: number,
+    width: number,
+    height: number,
+    scrollX: number,
+    scrollY: number
+  ) {
+    switch (cell.meta?.type) {
+      case "text":
+        const textAlignOffsetX = cell.getTextAlignOffsetX(width);
+        this.drawDataCellText(
+          ctx,
+          cell,
+          textAlignOffsetX,
+          x,
+          y,
+          width,
+          height,
+          scrollX,
+          scrollY
+        );
+        if (cell.textStyle.underline) {
+          this.drawDataCellUnderline(
+            ctx,
+            cell,
+            textAlignOffsetX,
+            x,
+            y,
+            width,
+            height,
+            scrollX,
+            scrollY
+          );
+        }
+        break;
+      case "image":
+        this.drawDataCellImage(
+          ctx,
+          cell,
+          x,
+          y,
+          width,
+          height,
+          scrollX,
+          scrollY
+        );
+        break;
+    }
+  }
+  drawDataCellText(
+    ctx: CanvasRenderingContext2D,
+    cell: Excel.Cell.CellInstance,
+    textAlignOffsetX: number,
+    x: number,
+    y: number,
+    width: number,
+    height: number,
+    scrollX: number,
+    scrollY: number
+  ) {
+    ctx.save();
+    cell.setTextStyle(ctx);
+    ctx.fillText(
+      cell.value,
+      x! + textAlignOffsetX - scrollX,
+      y! + height! / 2 - scrollY
+    );
+    ctx.restore();
+  }
+
+  drawDataCellUnderline(
+    ctx: CanvasRenderingContext2D,
+    cell: Excel.Cell.CellInstance,
+    textAlignOffsetX: number,
+    x: number,
+    y: number,
+    width: number,
+    height: number,
+    scrollX: number,
+    scrollY: number
+  ) {
+    const { width: wordWidth, height: wordHeight } = getTextMetrics(
+      cell.value,
+      cell.textStyle.fontSize
+    );
+    const underlineOffset = cell.getTextAlignOffsetX(wordWidth);
+    ctx.save();
+    ctx.translate(0, 0.5);
+    ctx.lineWidth = 0.5;
+    ctx.strokeStyle = cell.textStyle.color;
+    ctx.beginPath();
+    ctx.moveTo(
+      x! + textAlignOffsetX - scrollX - underlineOffset,
+      y! + height! / 2 - scrollY + wordHeight / 2
+    );
+    ctx.lineTo(
+      x! + textAlignOffsetX - scrollX - underlineOffset + wordWidth,
+      y! + height! / 2 - scrollY + wordHeight / 2
+    );
+    ctx.closePath();
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  drawDataCellImage(
+    ctx: CanvasRenderingContext2D,
+    cell: Excel.Cell.CellInstance,
+    cellX: number,
+    cellY: number,
+    cellWidth: number,
+    cellHeight: number,
+    scrollX: number,
+    scrollY: number
+  ) {
+    const { x, y, width, height } = getImgDrawInfoByFillMode(
+      cell.meta!.data as Excel.Cell.CellImageMetaData,
+      {
+        x: cell.position.leftTop.x! - scrollX + DEFAULT_CELL_PADDING,
+        y: cell.position.leftTop.y! - scrollY + DEFAULT_CELL_PADDING,
+        width: cellWidth - DEFAULT_CELL_PADDING * 2,
+        height: cellHeight - DEFAULT_CELL_PADDING * 2,
+      }
+    )!;
+    // const sx = cellX - cell.position.leftTop.x!;
+    // const sy = cellY - cell.position.leftTop.y!;
+    // const dw = width - sx;
+    // const dh = height - sy;
+    // console.log(sx, sy, dw, dh);
+    // ctx.drawImage(
+    //   (cell.meta!.data as Excel.Cell.CellImageMetaData).img,
+    //   sx,
+    //   sy,
+    //   dw,
+    //   dh,
+    //   x,
+    //   y,
+    //   width,
+    //   height
+    // );
+    ctx.drawImage(
+      (cell.meta!.data as Excel.Cell.CellImageMetaData).img,
+      x,
+      y,
+      width,
+      height
+    );
   }
   render(
     ctx: CanvasRenderingContext2D,
@@ -133,22 +285,32 @@ class CellMergence extends Element<null> {
           ctx.stroke();
           ctx.restore();
 
-          ctx.save();
-          ctx.font = `${leftTopCell.textStyle.italic ? "italic" : ""} ${
-            leftTopCell.textStyle.bold ? "bold" : "normal"
-          } ${leftTopCell.textStyle.fontSize}px ${
-            leftTopCell.textStyle.fontFamily
-          }`;
-          ctx.textBaseline = "middle";
-          ctx.textAlign = leftTopCell.textStyle.align as CanvasTextAlign;
-          ctx.fillStyle = leftTopCell.textStyle.color;
-          const textAlignOffsetX = leftTopCell.getTextAlignOffsetX(w);
-          ctx.fillText(
-            leftTopCell.value,
-            leftTopCell.x! + textAlignOffsetX - scrollX,
-            leftTopCell.y! + h / 2 - scrollY
+          // ctx.save();
+          // ctx.font = `${leftTopCell.textStyle.italic ? "italic" : ""} ${
+          //   leftTopCell.textStyle.bold ? "bold" : "normal"
+          // } ${leftTopCell.textStyle.fontSize}px ${
+          //   leftTopCell.textStyle.fontFamily
+          // }`;
+          // ctx.textBaseline = "middle";
+          // ctx.textAlign = leftTopCell.textStyle.align as CanvasTextAlign;
+          // ctx.fillStyle = leftTopCell.textStyle.color;
+          // const textAlignOffsetX = leftTopCell.getTextAlignOffsetX(w);
+          // ctx.fillText(
+          //   leftTopCell.value,
+          //   leftTopCell.x! + textAlignOffsetX - scrollX,
+          //   leftTopCell.y! + h / 2 - scrollY
+          // );
+          // ctx.restore();
+          this.drawDataCell(
+            ctx,
+            leftTopCell,
+            leftX + scrollX,
+            topY + scrollY,
+            w,
+            h,
+            scrollX,
+            scrollY
           );
-          ctx.restore();
         }
       });
     }
