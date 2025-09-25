@@ -384,8 +384,10 @@ class Sheet
   }
 
   private resizeCell(e: MouseEvent) {
+    const isInAbsFixedCell = this.pointInAbsFixedCell(e);
     const isInColResize = this.pointInColResize(e);
     const isInRowResize = this.pointInRowResize(e);
+    if (isInAbsFixedCell) return;
     this.handleCellAction(
       e,
       isInColResize,
@@ -401,6 +403,17 @@ class Sheet
     const isInFixedXCell =
       this.pointInFixedYCell(e) && !this.pointInColResize(e);
     if (!(isInFixedXCell || isInFixedYCell)) return;
+    if (isInFixedXCell && isInFixedYCell) {
+      this._startCell = this.cells[this.fixedRowIndex][this.fixedColIndex];
+      this.selectedCells = [
+        this.fixedRowIndex,
+        this.cells.length - 1,
+        this.fixedColIndex,
+        this.cells[0].length - 1,
+      ];
+      this.draw();
+      return;
+    }
     this.handleCellAction(
       e,
       isInFixedXCell,
@@ -786,6 +799,22 @@ class Sheet
     );
   }
 
+  private pointInAbsFixedCell(e: MouseEvent) {
+    if (this.pointInCellRange(e)) {
+      const { x, y } = this.getCellPointByMousePosition(e.x, e.y);
+      const cell = this.findCellByPoint(
+        x - this.scroll.x,
+        y - this.scroll.y,
+        false,
+        false
+      );
+      if (cell) {
+        return cell.fixed.x && cell.fixed.y;
+      }
+    }
+    return false;
+  }
+
   private pointInFixedCell(e: MouseEvent) {
     if (this.pointInCellRange(e)) {
       const { x, y } = this.getCellPointByMousePosition(e.x, e.y);
@@ -929,6 +958,9 @@ class Sheet
       }
       if (this.pointInColResize(e)) {
         globalObj.SET_CURSOR("col-resize");
+      }
+      if (this.pointInAbsFixedCell(e)) {
+        globalObj.SET_CURSOR("default");
       }
     }
   }

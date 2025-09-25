@@ -91,8 +91,8 @@ class CellMergence extends Element<null> {
     cell.setTextStyle(ctx);
     ctx.fillText(
       cell.value,
-      x! + textAlignOffsetX - scrollX,
-      y! + height! / 2 - scrollY
+      cell.position.leftTop.x! + textAlignOffsetX - scrollX,
+      cell.position.leftTop.y! + height! / 2 - scrollY
     );
     ctx.restore();
   }
@@ -119,12 +119,16 @@ class CellMergence extends Element<null> {
     ctx.strokeStyle = cell.textStyle.color;
     ctx.beginPath();
     ctx.moveTo(
-      x! + textAlignOffsetX - scrollX - underlineOffset,
-      y! + height! / 2 - scrollY + wordHeight / 2
+      cell.position.leftTop.x! + textAlignOffsetX - scrollX - underlineOffset,
+      cell.position.leftTop.y! + height! / 2 - scrollY + wordHeight / 2
     );
     ctx.lineTo(
-      x! + textAlignOffsetX - scrollX - underlineOffset + wordWidth,
-      y! + height! / 2 - scrollY + wordHeight / 2
+      cell.position.leftTop.x! +
+        textAlignOffsetX -
+        scrollX -
+        underlineOffset +
+        wordWidth,
+      cell.position.leftTop.y! + height! / 2 - scrollY + wordHeight / 2
     );
     ctx.closePath();
     ctx.stroke();
