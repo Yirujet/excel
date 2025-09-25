@@ -27,6 +27,8 @@ class CellMergence extends Element<null> {
     y: number,
     width: number,
     height: number,
+    cellWidth: number,
+    cellHeight: number,
     scrollX: number,
     scrollY: number
   ) {
@@ -66,6 +68,8 @@ class CellMergence extends Element<null> {
           y,
           width,
           height,
+          cellWidth,
+          cellHeight,
           scrollX,
           scrollY
         );
@@ -134,6 +138,8 @@ class CellMergence extends Element<null> {
     cellY: number,
     cellWidth: number,
     cellHeight: number,
+    viewWidth: number,
+    viewHeight: number,
     scrollX: number,
     scrollY: number
   ) {
@@ -146,22 +152,10 @@ class CellMergence extends Element<null> {
         height: cellHeight - DEFAULT_CELL_PADDING * 2,
       }
     )!;
-    // const sx = cellX - cell.position.leftTop.x!;
-    // const sy = cellY - cell.position.leftTop.y!;
-    // const dw = width - sx;
-    // const dh = height - sy;
-    // console.log(sx, sy, dw, dh);
-    // ctx.drawImage(
-    //   (cell.meta!.data as Excel.Cell.CellImageMetaData).img,
-    //   sx,
-    //   sy,
-    //   dw,
-    //   dh,
-    //   x,
-    //   y,
-    //   width,
-    //   height
-    // );
+    ctx.save();
+    const range = new Path2D();
+    range.rect(cellX - scrollX, cellY - scrollY, viewWidth, viewHeight);
+    ctx.clip(range);
     ctx.drawImage(
       (cell.meta!.data as Excel.Cell.CellImageMetaData).img,
       x,
@@ -169,6 +163,7 @@ class CellMergence extends Element<null> {
       width,
       height
     );
+    ctx.restore();
   }
   render(
     ctx: CanvasRenderingContext2D,
@@ -285,22 +280,6 @@ class CellMergence extends Element<null> {
           ctx.stroke();
           ctx.restore();
 
-          // ctx.save();
-          // ctx.font = `${leftTopCell.textStyle.italic ? "italic" : ""} ${
-          //   leftTopCell.textStyle.bold ? "bold" : "normal"
-          // } ${leftTopCell.textStyle.fontSize}px ${
-          //   leftTopCell.textStyle.fontFamily
-          // }`;
-          // ctx.textBaseline = "middle";
-          // ctx.textAlign = leftTopCell.textStyle.align as CanvasTextAlign;
-          // ctx.fillStyle = leftTopCell.textStyle.color;
-          // const textAlignOffsetX = leftTopCell.getTextAlignOffsetX(w);
-          // ctx.fillText(
-          //   leftTopCell.value,
-          //   leftTopCell.x! + textAlignOffsetX - scrollX,
-          //   leftTopCell.y! + h / 2 - scrollY
-          // );
-          // ctx.restore();
           this.drawDataCell(
             ctx,
             leftTopCell,
@@ -308,6 +287,8 @@ class CellMergence extends Element<null> {
             topY + scrollY,
             w,
             h,
+            rightX - leftX,
+            bottomY - topY,
             scrollX,
             scrollY
           );
