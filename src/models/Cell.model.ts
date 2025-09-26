@@ -61,13 +61,20 @@ namespace Excel {
 
     export type CellImageMeta = CellMeta<"image", CellImageMetaData>;
 
+    export type CellDiagonalMetaData = {
+      direction: "top-left" | "top-right" | "bottom-left" | "bottom-right";
+      value: string[];
+    };
+
+    export type CellDiagonalMeta = CellMeta<"diagonal", CellDiagonalMetaData>;
+
     export interface CellMeta<T, D> {
       type: T;
       data: D;
       [key: string]: any;
     }
 
-    export type Meta = CellTextMeta | CellImageMeta | null;
+    export type Meta = CellTextMeta | CellImageMeta | CellDiagonalMeta | null;
 
     export interface CellInstance extends Excel.Event.EventInstance {
       width: number | null;

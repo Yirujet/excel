@@ -111,6 +111,7 @@
           <option value="none">无</option>
         </select>
       </div>
+      <button id="btnDiagonal">对角线</button>
     </div>
     <div id="app"></div>
   </body>
@@ -252,6 +253,24 @@
           data: {
             ...cell.meta.data,
             fit: e.target.value,
+          },
+        },
+        true
+      );
+    });
+    const btnDiagonal = document.querySelector("#btnDiagonal");
+    btnDiagonal.addEventListener("click", () => {
+      const curSheet = excel.sheets[excel.sheetIndex];
+      const cell = curSheet.getCell(
+        curSheet.selectedCells[0],
+        curSheet.selectedCells[2]
+      );
+      curSheet.setCellMeta(
+        cell,
+        {
+          type: "diagonal",
+          data: {
+            value: [1, 2],
           },
         },
         true

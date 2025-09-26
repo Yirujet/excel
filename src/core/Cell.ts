@@ -252,6 +252,9 @@ class Cell extends Element<null> implements Excel.Cell.CellInstance {
       case "image":
         this.drawDataCellImage(ctx);
         break;
+      case "diagonal":
+        this.drawDataCellDiagonal(ctx);
+        break;
     }
   }
 
@@ -310,6 +313,41 @@ class Cell extends Element<null> implements Excel.Cell.CellInstance {
       width,
       height
     );
+  }
+
+  drawDataCellDiagonal(ctx: CanvasRenderingContext2D) {
+    const { direction, value } = this.meta!
+      .data as Excel.Cell.CellDiagonalMetaData;
+    const d =
+      ((this.position.rightBottom.x - this.position.leftTop.x) ** 2 +
+        (this.position.rightBottom.y - this.position.leftTop.y) ** 2) **
+      0.5;
+    const pieceAngle = Math.PI / 2 / value.length;
+    const deg = Math.atan(this.width! / this.height!);
+    value.forEach((v, i) => {
+      ctx.save();
+      // const range = new Path2D();
+      // range.rect(
+      //   this.position.leftTop.x - this.scrollX,
+      //   this.position.leftTop.y - this.scrollY,
+      //   this.width!,
+      //   this.height!
+      // );
+      // ctx.clip(range);
+      ctx.translate(
+        this.position.leftTop.x - this.scrollX,
+        this.position.leftTop.y - this.scrollY
+      );
+      const angle = pieceAngle * (i + 1) - deg;
+      ctx.rotate(angle);
+      ctx.beginPath();
+      ctx.strokeStyle = "blue";
+      ctx.moveTo(0, 0);
+      ctx.lineTo(d, 0);
+      ctx.closePath();
+      ctx.stroke();
+      ctx.restore();
+    });
   }
 }
 
