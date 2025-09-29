@@ -1,6 +1,8 @@
 import getTextMetrics from "../utils/getTextMetrics";
 import Element from "../components/Element";
 import {
+  DEFAULT_CELL_DIAGONAL_LINE_COLOR,
+  DEFAULT_CELL_DIAGONAL_LINE_WIDTH,
   DEFAULT_CELL_LINE_BOLD,
   DEFAULT_CELL_LINE_COLOR,
   DEFAULT_CELL_LINE_DASH,
@@ -323,30 +325,100 @@ class Cell extends Element<null> implements Excel.Cell.CellInstance {
         (this.position.rightBottom.y - this.position.leftTop.y) ** 2) **
       0.5;
     const pieceAngle = Math.PI / 2 / value.length;
-    const deg = Math.atan(this.width! / this.height!);
-    value.forEach((v, i) => {
+    const deg = Math.atan(this.height! / this.width!) - Math.PI / 4;
+    const times =
+      value.length & 1 ? Math.floor(value.length / 2) : value.length / 2 - 1;
+    let endPoints: [number, number][] = [];
+    for (let i = 1; i <= times; i++) {
+      endPoints.push([
+        this.position.rightTop.x,
+        this.position.rightTop.y + i * (this.height! / (times + 1)),
+      ]);
+      endPoints.push([
+        this.position.leftBottom.x + i * (this.width! / (times + 1)),
+        this.position.leftBottom.y,
+      ]);
+    }
+    if (!(value.length & 1)) {
+      endPoints.splice(times, 0, [
+        this.position.rightBottom.x,
+        this.position.rightBottom.y,
+      ]);
+    }
+    // value.forEach((v, i) => {
+    //   ctx.save();
+    //   // const range = new Path2D();
+    //   // range.rect(
+    //   //   this.position.leftTop.x - this.scrollX,
+    //   //   this.position.leftTop.y - this.scrollY,
+    //   //   this.width!,
+    //   //   this.height!
+    //   // );
+    //   // ctx.clip(range);
+    //   ctx.translate(
+    //     this.position.leftTop.x - this.scrollX,
+    //     this.position.leftTop.y - this.scrollY
+    //   );
+    //   const angle = i > 0 ? pieceAngle * i + deg : 0;
+    //   ctx.rotate(angle);
+    //   ctx.beginPath();
+    //   ctx.strokeStyle = "blue";
+    //   ctx.moveTo(0, 0);
+    //   ctx.lineTo(d, 0);
+    //   ctx.closePath();
+    //   ctx.stroke();
+    //   ctx.restore();
+    // });
+    endPoints.forEach(([x, y], i) => {
       ctx.save();
-      // const range = new Path2D();
-      // range.rect(
-      //   this.position.leftTop.x - this.scrollX,
-      //   this.position.leftTop.y - this.scrollY,
-      //   this.width!,
-      //   this.height!
-      // );
-      // ctx.clip(range);
-      ctx.translate(
+      ctx.beginPath();
+      ctx.strokeStyle = DEFAULT_CELL_DIAGONAL_LINE_COLOR;
+      ctx.lineWidth = DEFAULT_CELL_DIAGONAL_LINE_WIDTH;
+      ctx.moveTo(
         this.position.leftTop.x - this.scrollX,
         this.position.leftTop.y - this.scrollY
       );
-      const angle = pieceAngle * (i + 1) - deg;
-      ctx.rotate(angle);
-      ctx.beginPath();
-      ctx.strokeStyle = "blue";
-      ctx.moveTo(0, 0);
-      ctx.lineTo(d, 0);
+      ctx.lineTo(x - this.scrollX, y - this.scrollY);
       ctx.closePath();
       ctx.stroke();
       ctx.restore();
+      if (i > 0) {
+        const prePoint = endPoints[i - 1];
+        const tanCur =
+          Math.abs(x - this.position.leftTop.x) /
+          Math.abs(y - this.position.leftTop.y);
+        const tanPre =
+          Math.abs(prePoint[0] - this.position.leftTop.x) /
+          Math.abs(prePoint[1] - this.position.leftTop.y);
+        const angle = Math.atan(tanCur) - Math.atan(tanPre);
+        console.log(angle);
+
+        ctx.save();
+        ctx.translate(
+          this.position.leftTop.x - this.scrollX,
+          this.position.leftTop.y - this.scrollY
+        );
+        ctx.rotate(angle);
+        ctx.fillStyle = "#000";
+        ctx.fillText(value[i], 30, 0);
+        ctx.restore();
+      } else {
+        const tanCur =
+          Math.abs(x - this.position.leftTop.x) /
+          Math.abs(y - this.position.leftTop.y);
+        const angle = Math.atan(tanCur) - Math.atan(1);
+        console.log(angle);
+
+        ctx.save();
+        ctx.translate(
+          this.position.leftTop.x - this.scrollX,
+          this.position.leftTop.y - this.scrollY
+        );
+        ctx.rotate(angle);
+        ctx.fillStyle = "#000";
+        ctx.fillText(value[i], 30, 0);
+        ctx.restore();
+      }
     });
   }
 }
