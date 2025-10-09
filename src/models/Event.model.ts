@@ -9,6 +9,7 @@ namespace Excel {
       | "mousedown"
       | "mouseup"
       | "click"
+      | "dblclick"
       | "clickoutside"
       | "wheel"
       | "keydown"
@@ -22,6 +23,7 @@ namespace Excel {
         | "mouseenter"
         | "mousemove"
         | "click"
+        | "dblclick"
         | "clickoutside"
         | "resize"
         | "select"
@@ -49,6 +51,15 @@ namespace Excel {
             triggerName: "triggerClickEvent";
           };
           clickoutside: {
+            triggerName: "triggerEvent";
+          };
+        };
+        passive?: boolean;
+      };
+    } & {
+      dblclick: {
+        dispatchEvents: {
+          dblclick: {
             triggerName: "triggerEvent";
           };
         };

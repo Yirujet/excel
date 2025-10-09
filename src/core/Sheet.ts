@@ -82,6 +82,7 @@ class Sheet
   mergedCells: Excel.Sheet.CellRange[] = [];
   isFilling = false;
   fillingCells: Excel.Sheet.CellRange | null = null;
+  editingCell: Excel.Cell.CellInstance | null = null;
 
   constructor(name: string, cells?: Excel.Cell.CellInstance[][]) {
     super("canvas");
@@ -420,6 +421,22 @@ class Sheet
       isInFixedYCell,
       this.handleCellSelect
     );
+  }
+
+  private editCell(e: MouseEvent) {
+    if (this.pointInFixedCell(e)) return;
+    const x = e.x - this.layout!.x + (this.scroll.x || 0);
+    const y = e.y - this.layout!.y + (this.scroll.y || 0);
+    const cell = this.findCellByPoint(x, y);
+    this.editingCell = cell;
+  }
+
+  private endEditingCell(e: MouseEvent) {
+    const x = e.x - this.layout!.x + (this.scroll.x || 0);
+    const y = e.y - this.layout!.y + (this.scroll.y || 0);
+    const cell = this.findCellByPoint(x, y);
+    if (cell === this.editingCell) return;
+    this.editingCell = null;
   }
 
   private repeatByMergedCells(
@@ -1110,6 +1127,10 @@ class Sheet
         this.selectCellRange.call(this, e);
         this.resizeCell.call(this, e);
         this.selectFullCell.call(this, e);
+        this.endEditingCell.call(this, e);
+      },
+      dblclick: (e: MouseEvent) => {
+        this.editCell.call(this, e);
       },
       mousemove: debounce(this.updateCursor.bind(this), 30),
       wheel: this.preventGlobalWheel.bind(this),

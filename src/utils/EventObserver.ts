@@ -43,6 +43,13 @@ const GlobalEvents: Excel.Event.GlobalEvent = {
       },
     },
   },
+  dblclick: {
+    dispatchEvents: {
+      dblclick: {
+        triggerName: "triggerEvent",
+      },
+    },
+  },
   wheel: {
     dispatchEvents: {
       wheel: {
@@ -81,6 +88,7 @@ export default class EventObserver implements Excel.Event.ObserverInstance {
   mousedown: Excel.Event.ObserverTypes[] = [];
   mouseup: Excel.Event.ObserverTypes[] = [];
   click: Excel.Event.ObserverTypes[] = [];
+  dblclick: Excel.Event.ObserverTypes[] = [];
   clickoutside: Excel.Event.ObserverTypes[] = [];
   wheel: Excel.Event.ObserverTypes[] = [];
   keydown: Excel.Event.ObserverTypes[] = [];
