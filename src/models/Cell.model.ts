@@ -100,7 +100,8 @@ namespace Excel {
       render(
         ctx: CanvasRenderingContext2D,
         scrollX: number,
-        scrollY: number
+        scrollY: number,
+        mergedCells: Excel.Sheet.CellRange[]
       ): void;
       updatePosition: Excel.Event.FnType;
       getTextAlignOffsetX(w: number): number;

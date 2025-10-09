@@ -1,5 +1,12 @@
 import Element from "../components/Element";
-import { DEFAULT_CELL_LINE_DASH, DEFAULT_CELL_PADDING } from "../config/index";
+import {
+  DEFAULT_CELL_DIAGONAL_LINE_COLOR,
+  DEFAULT_CELL_DIAGONAL_LINE_WIDTH,
+  DEFAULT_CELL_DIAGONAL_TEXT_COLOR,
+  DEFAULT_CELL_DIAGONAL_TEXT_FONT_SIZE,
+  DEFAULT_CELL_LINE_DASH,
+  DEFAULT_CELL_PADDING,
+} from "../config/index";
 import getImgDrawInfoByFillMode from "../utils/getImgDrawInfoByFillMode";
 import getTextMetrics from "../utils/getTextMetrics";
 
@@ -68,6 +75,18 @@ class CellMergence extends Element<null> {
           y,
           width,
           height,
+          cellWidth,
+          cellHeight,
+          scrollX,
+          scrollY
+        );
+        break;
+      case "diagonal":
+        this.drawDataCellDiagonal(
+          ctx,
+          cell,
+          x,
+          y,
           cellWidth,
           cellHeight,
           scrollX,
@@ -169,6 +188,109 @@ class CellMergence extends Element<null> {
     );
     ctx.restore();
   }
+
+  drawDiagonalText(
+    ctx: CanvasRenderingContext2D,
+    prePoint: [number, number],
+    curPoint: [number, number],
+    text: string,
+    cellX: number,
+    cellY: number,
+    scrollX: number,
+    scrollY: number
+  ) {
+    const preAngle =
+      Math.abs(prePoint[1] - cellY) / Math.abs(prePoint[0] - cellX);
+    const curAngle =
+      Math.abs(curPoint[1] - cellY) / Math.abs(curPoint[0] - cellX);
+    const angle =
+      Math.atan(preAngle) + (Math.atan(curAngle) - Math.atan(preAngle)) / 2;
+    ctx.save();
+    ctx.translate(cellX - scrollX, cellY - scrollY);
+    ctx.rotate(angle);
+    const midPoint = [
+      (prePoint[0] + curPoint[0]) / 2,
+      (prePoint[1] + curPoint[1]) / 2,
+    ];
+    const d = Math.sqrt(
+      Math.pow(midPoint[0] - cellX, 2) + Math.pow(midPoint[1] - cellY, 2)
+    );
+    ctx.fillStyle = DEFAULT_CELL_DIAGONAL_TEXT_COLOR;
+    ctx.font = `${DEFAULT_CELL_DIAGONAL_TEXT_FONT_SIZE}px sans-serif`;
+    ctx.textBaseline = "middle";
+    ctx.fillText(text, d / 2, 0);
+    ctx.restore();
+  }
+
+  drawDataCellDiagonal(
+    ctx: CanvasRenderingContext2D,
+    cell: Excel.Cell.CellInstance,
+    cellX: number,
+    cellY: number,
+    cellWidth: number,
+    cellHeight: number,
+    scrollX: number,
+    scrollY: number
+  ) {
+    const { direction, value } = cell.meta!
+      .data as Excel.Cell.CellDiagonalMetaData;
+    const times =
+      value.length & 1 ? Math.floor(value.length / 2) : value.length / 2 - 1;
+    let endPoints: [number, number][] = [];
+    for (let i = 1; i <= times; i++) {
+      endPoints.push([
+        cellX + cellWidth,
+        cellY + i * (cellHeight / (times + 1)),
+      ]);
+    }
+    for (let i = times; i >= 1; i--) {
+      endPoints.push([
+        cellX + i * (cellWidth / (times + 1)),
+        cellY + cellHeight,
+      ]);
+    }
+    if (!(value.length & 1)) {
+      endPoints.splice(times, 0, [cellX + cellWidth, cellY + cellHeight]);
+    }
+    endPoints.forEach(([x, y], i) => {
+      ctx.save();
+      ctx.beginPath();
+      ctx.strokeStyle = DEFAULT_CELL_DIAGONAL_LINE_COLOR;
+      ctx.lineWidth = DEFAULT_CELL_DIAGONAL_LINE_WIDTH;
+      ctx.moveTo(cellX - scrollX, cellY - scrollY);
+      ctx.lineTo(x - scrollX, y - scrollY);
+      ctx.closePath();
+      ctx.stroke();
+      ctx.restore();
+      let prePoint: [number, number];
+      if (i > 0) {
+        prePoint = endPoints[i - 1];
+      } else {
+        prePoint = [cellX + cellWidth, cellY];
+      }
+      this.drawDiagonalText(
+        ctx,
+        prePoint,
+        [x, y],
+        value[i],
+        cellX,
+        cellY,
+        scrollX,
+        scrollY
+      );
+    });
+    this.drawDiagonalText(
+      ctx,
+      endPoints[endPoints.length - 1],
+      [cellX, cellY + cellHeight],
+      value[value.length - 1],
+      cellX,
+      cellY,
+      scrollX,
+      scrollY
+    );
+  }
+
   render(
     ctx: CanvasRenderingContext2D,
     mergedCells: Excel.Sheet.CellRange[] | null,

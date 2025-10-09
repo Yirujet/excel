@@ -1689,7 +1689,7 @@ class Sheet
         if (!fixedInY && rightBottom.y - scrollY < this.fixedRowHeight) {
           continue;
         }
-        cell.render(this._ctx!, scrollX, scrollY);
+        cell.render(this._ctx!, scrollX, scrollY, this.mergedCells);
         let index = this.sheetEventsObserver.resize.findIndex(
           (e) => e === cell
         );

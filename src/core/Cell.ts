@@ -3,6 +3,8 @@ import Element from "../components/Element";
 import {
   DEFAULT_CELL_DIAGONAL_LINE_COLOR,
   DEFAULT_CELL_DIAGONAL_LINE_WIDTH,
+  DEFAULT_CELL_DIAGONAL_TEXT_COLOR,
+  DEFAULT_CELL_DIAGONAL_TEXT_FONT_SIZE,
   DEFAULT_CELL_LINE_BOLD,
   DEFAULT_CELL_LINE_COLOR,
   DEFAULT_CELL_LINE_DASH,
@@ -150,7 +152,32 @@ class Cell extends Element<null> implements Excel.Cell.CellInstance {
     return baseWidth - DEFAULT_CELL_PADDING;
   }
 
-  render(ctx: CanvasRenderingContext2D, scrollX: number, scrollY: number) {
+  isInMergedCells(mergedCells: Excel.Sheet.CellRange[]): boolean {
+    return mergedCells.some((e) => {
+      const [
+        minRowIndexMerged,
+        maxRowIndexMerged,
+        minColIndexMerged,
+        maxColIndexMerged,
+      ] = e;
+      return (
+        minRowIndexMerged <= this.rowIndex! &&
+        this.rowIndex! <= maxRowIndexMerged &&
+        minColIndexMerged <= this.colIndex! &&
+        this.colIndex! <= maxColIndexMerged
+      );
+    });
+  }
+
+  render(
+    ctx: CanvasRenderingContext2D,
+    scrollX: number,
+    scrollY: number,
+    mergedCells: Excel.Sheet.CellRange[]
+  ) {
+    if (this.isInMergedCells(mergedCells)) {
+      return;
+    }
     this.scrollX = scrollX;
     this.scrollY = scrollY;
     this.drawCellBg(ctx);
@@ -317,15 +344,44 @@ class Cell extends Element<null> implements Excel.Cell.CellInstance {
     );
   }
 
+  drawDiagonalText(
+    ctx: CanvasRenderingContext2D,
+    prePoint: [number, number],
+    curPoint: [number, number],
+    text: string
+  ) {
+    const preAngle =
+      Math.abs(prePoint[1] - this.position.leftTop.y) /
+      Math.abs(prePoint[0] - this.position.leftTop.x);
+    const curAngle =
+      Math.abs(curPoint[1] - this.position.leftTop.y) /
+      Math.abs(curPoint[0] - this.position.leftTop.x);
+    const angle =
+      Math.atan(preAngle) + (Math.atan(curAngle) - Math.atan(preAngle)) / 2;
+    ctx.save();
+    ctx.translate(
+      this.position.leftTop.x - this.scrollX,
+      this.position.leftTop.y - this.scrollY
+    );
+    ctx.rotate(angle);
+    const midPoint = [
+      (prePoint[0] + curPoint[0]) / 2,
+      (prePoint[1] + curPoint[1]) / 2,
+    ];
+    const d = Math.sqrt(
+      Math.pow(midPoint[0] - this.position.leftTop.x, 2) +
+        Math.pow(midPoint[1] - this.position.leftTop.y, 2)
+    );
+    ctx.fillStyle = DEFAULT_CELL_DIAGONAL_TEXT_COLOR;
+    ctx.font = `${DEFAULT_CELL_DIAGONAL_TEXT_FONT_SIZE}px sans-serif`;
+    ctx.textBaseline = "middle";
+    ctx.fillText(text, d / 2, 0);
+    ctx.restore();
+  }
+
   drawDataCellDiagonal(ctx: CanvasRenderingContext2D) {
     const { direction, value } = this.meta!
       .data as Excel.Cell.CellDiagonalMetaData;
-    const d =
-      ((this.position.rightBottom.x - this.position.leftTop.x) ** 2 +
-        (this.position.rightBottom.y - this.position.leftTop.y) ** 2) **
-      0.5;
-    const pieceAngle = Math.PI / 2 / value.length;
-    const deg = Math.atan(this.height! / this.width!) - Math.PI / 4;
     const times =
       value.length & 1 ? Math.floor(value.length / 2) : value.length / 2 - 1;
     let endPoints: [number, number][] = [];
@@ -334,6 +390,8 @@ class Cell extends Element<null> implements Excel.Cell.CellInstance {
         this.position.rightTop.x,
         this.position.rightTop.y + i * (this.height! / (times + 1)),
       ]);
+    }
+    for (let i = times; i >= 1; i--) {
       endPoints.push([
         this.position.leftBottom.x + i * (this.width! / (times + 1)),
         this.position.leftBottom.y,
@@ -345,30 +403,6 @@ class Cell extends Element<null> implements Excel.Cell.CellInstance {
         this.position.rightBottom.y,
       ]);
     }
-    // value.forEach((v, i) => {
-    //   ctx.save();
-    //   // const range = new Path2D();
-    //   // range.rect(
-    //   //   this.position.leftTop.x - this.scrollX,
-    //   //   this.position.leftTop.y - this.scrollY,
-    //   //   this.width!,
-    //   //   this.height!
-    //   // );
-    //   // ctx.clip(range);
-    //   ctx.translate(
-    //     this.position.leftTop.x - this.scrollX,
-    //     this.position.leftTop.y - this.scrollY
-    //   );
-    //   const angle = i > 0 ? pieceAngle * i + deg : 0;
-    //   ctx.rotate(angle);
-    //   ctx.beginPath();
-    //   ctx.strokeStyle = "blue";
-    //   ctx.moveTo(0, 0);
-    //   ctx.lineTo(d, 0);
-    //   ctx.closePath();
-    //   ctx.stroke();
-    //   ctx.restore();
-    // });
     endPoints.forEach(([x, y], i) => {
       ctx.save();
       ctx.beginPath();
@@ -382,44 +416,20 @@ class Cell extends Element<null> implements Excel.Cell.CellInstance {
       ctx.closePath();
       ctx.stroke();
       ctx.restore();
+      let prePoint: [number, number];
       if (i > 0) {
-        const prePoint = endPoints[i - 1];
-        const tanCur =
-          Math.abs(x - this.position.leftTop.x) /
-          Math.abs(y - this.position.leftTop.y);
-        const tanPre =
-          Math.abs(prePoint[0] - this.position.leftTop.x) /
-          Math.abs(prePoint[1] - this.position.leftTop.y);
-        const angle = Math.atan(tanCur) - Math.atan(tanPre);
-        console.log(angle);
-
-        ctx.save();
-        ctx.translate(
-          this.position.leftTop.x - this.scrollX,
-          this.position.leftTop.y - this.scrollY
-        );
-        ctx.rotate(angle);
-        ctx.fillStyle = "#000";
-        ctx.fillText(value[i], 30, 0);
-        ctx.restore();
+        prePoint = endPoints[i - 1];
       } else {
-        const tanCur =
-          Math.abs(x - this.position.leftTop.x) /
-          Math.abs(y - this.position.leftTop.y);
-        const angle = Math.atan(tanCur) - Math.atan(1);
-        console.log(angle);
-
-        ctx.save();
-        ctx.translate(
-          this.position.leftTop.x - this.scrollX,
-          this.position.leftTop.y - this.scrollY
-        );
-        ctx.rotate(angle);
-        ctx.fillStyle = "#000";
-        ctx.fillText(value[i], 30, 0);
-        ctx.restore();
+        prePoint = [this.position.rightTop.x, this.position.rightTop.y];
       }
+      this.drawDiagonalText(ctx, prePoint, [x, y], value[i]);
     });
+    this.drawDiagonalText(
+      ctx,
+      endPoints[endPoints.length - 1],
+      [this.position.leftBottom.x, this.position.leftBottom.y],
+      value[value.length - 1]
+    );
   }
 }
 
