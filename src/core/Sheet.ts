@@ -459,34 +459,14 @@ class Sheet
   private repeatByCommonCells(
     minIndex: number,
     maxIndex: number,
-    mergedCells: Excel.Sheet.CellRange[],
     times: number,
     d: number
   ) {
     const [minRowIndex, maxRowIndex, minColIndex, maxColIndex] =
       this.selectedCells!;
-    const checkInMergedCells = (cellRowIndex: number, cellColIndex: number) => {
-      return mergedCells.some((item) => {
-        const [
-          mergedMinRowIndex,
-          mergedMaxRowIndex,
-          mergedMinColIndex,
-          mergedMaxColIndex,
-        ] = item;
-        return (
-          cellRowIndex >= mergedMinRowIndex &&
-          cellRowIndex <= mergedMaxRowIndex &&
-          cellColIndex >= mergedMinColIndex &&
-          cellColIndex <= mergedMaxColIndex
-        );
-      });
-    };
     for (let r = minRowIndex; r <= maxRowIndex; r++) {
       for (let c = minColIndex; c <= maxColIndex; c++) {
         const cell = this.cells[r][c];
-        if (checkInMergedCells(r, c)) {
-          continue;
-        }
         for (let i = 0; i < times; i++) {
           const offset =
             (i + 1) *
@@ -510,13 +490,7 @@ class Sheet
     const d = Math.sign(
       this.fillingCells![minIndex] - this.selectedCells![minIndex]
     );
-    this.repeatByCommonCells(
-      minIndex,
-      maxIndex,
-      mergedRangesInSelectedCells,
-      times,
-      d
-    );
+    this.repeatByCommonCells(minIndex, maxIndex, times, d);
     this.repeatByMergedCells(
       minIndex,
       maxIndex,
