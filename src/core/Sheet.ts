@@ -31,6 +31,7 @@ import FillHandle from "./FillHandle";
 import Scrollbar from "./Scrollbar/Scrollbar";
 import Filling from "./Filling";
 import debounce from "../utils/debounce";
+import CellInput from "./CellInput";
 
 class Sheet
   extends Element<HTMLCanvasElement>
@@ -52,6 +53,7 @@ class Sheet
   verticalScrollBarShadow: Shadow | null = null;
   fillHandle: FillHandle | null = null;
   filling: Filling | null = null;
+  cellInput: CellInput | null = null;
   sheetEventsObserver: Excel.Event.ObserverInstance = new EventObserver();
   globalEventsObserver: Excel.Event.ObserverInstance = new EventObserver();
   realWidth = 0;
@@ -429,6 +431,29 @@ class Sheet
     const y = e.y - this.layout!.y + (this.scroll.y || 0);
     const cell = this.findCellByPoint(x, y);
     this.editingCell = cell;
+    const containedMergedCell = this.mergedCells.find((e) => {
+      const [minRowIndex, maxRowIndex, minColIndex, maxColIndex] = e;
+      return (
+        minRowIndex <= cell.rowIndex! &&
+        maxRowIndex >= cell.rowIndex! &&
+        minColIndex <= cell.colIndex! &&
+        maxColIndex >= cell.colIndex!
+      );
+    });
+    if (containedMergedCell) {
+      const [minRowIndex, maxRowIndex, minColIndex, maxColIndex] =
+        containedMergedCell;
+      this.editingCell = {
+        ...this.cells[minRowIndex][minColIndex],
+        width:
+          this.cells[minRowIndex][maxColIndex].position.rightTop.x -
+          this.cells[minRowIndex][minColIndex].position.leftBottom.x,
+        height:
+          this.cells[maxRowIndex][minColIndex].position.leftBottom.y -
+          this.cells[minRowIndex][minColIndex].position.leftTop.y,
+      };
+    }
+    this.drawCellEditor();
   }
 
   private endEditingCell(e: MouseEvent) {
@@ -1152,6 +1177,7 @@ class Sheet
     this.initCellMergence();
     this.initFillHandle();
     this.initFilling();
+    this.initCellEditor();
     this.initEvents();
     this.sheetEventsObserver.observe(this.$el!);
     this.globalEventsObserver.observe(window as any);
@@ -1242,16 +1268,6 @@ class Sheet
           if (i === 0 && j === 0) {
             cell.hidden = true;
           }
-          // if (i > 0 && j > 0) {
-          //   this.setCellMeta(
-          //     cell,
-          //     {
-          //       type: "text",
-          //       data: i.toString() + "-" + j.toString(),
-          //     },
-          //     false
-          //   );
-          // }
           if (j < this.fixedColIndex) {
             fixedColRows.push(cell);
             if (i < this.fixedRowIndex) {
@@ -1383,6 +1399,24 @@ class Sheet
       this.cells,
       this.fixedColWidth,
       this.fixedRowHeight
+    );
+  }
+
+  initCellEditor() {
+    this.cellInput = new CellInput(this.layout!);
+    this.cellInput.addEvent(
+      "input",
+      (value: string, cell: Excel.Cell.CellInstance) => {
+        this.setCellMeta(
+          this.cells[cell.rowIndex!][cell.colIndex!],
+          {
+            type: "text",
+            data: value,
+          },
+          true
+        );
+        this.cellInput!.hide();
+      }
     );
   }
 
@@ -1774,6 +1808,16 @@ class Sheet
       this.scroll.x || 0,
       this.scroll.y || 0
     );
+  }
+
+  drawCellEditor() {
+    if (this.cellInput && this.editingCell) {
+      this.cellInput.render(
+        this.editingCell,
+        this.scroll.x || 0,
+        this.scroll.y || 0
+      );
+    }
   }
 }
 
