@@ -1,13 +1,23 @@
 {
-  "name": "excel",
+  "name": "tiny-excel",
   "version": "1.0.0",
-  "description": "网页版Excel",
-  "main": "index.js",
+  "description": "tiny-excel is a simple web Excel implemented by JavaScript, cross-framework, and supports React, Angular and Vue.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Yirujet/excel.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Yirujet/excel/issues"
+  },
+  "files": [
+    "lib/*"
+  ],
+  "main": "lib/excel.esm.js",
   "scripts": {
     "build": "rollup --config rollup.config.mjs"
   },
   "keywords": [],
-  "author": "",
+  "author": "Yirujet <409273887@qq.com>",
   "license": "ISC",
   "dependencies": {
     "@babel/core": "^7.28.0",

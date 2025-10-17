@@ -60,6 +60,8 @@ class Sheet
   realHeight = 0;
   fixedRowIndex = 1;
   fixedColIndex = 1;
+  rowCount = DEFAULT_CELL_ROW_COUNT;
+  colCount = DEFAULT_CELL_COL_COUNT;
   fixedRowCells: Excel.Cell.CellInstance[][] = [];
   fixedColCells: Excel.Cell.CellInstance[][] = [];
   fixedCells: Excel.Cell.CellInstance[][] = [];
@@ -86,10 +88,14 @@ class Sheet
   fillingCells: Excel.Sheet.CellRange | null = null;
   editingCell: Excel.Cell.CellInstance | null = null;
 
-  constructor(name: string, cells?: Excel.Cell.CellInstance[][]) {
+  constructor(name: string, config: Excel.Sheet.Configuration) {
     super("canvas");
     this.name = name;
-    this.initCells(cells);
+    this.fixedRowIndex = config.fixedRowIndex;
+    this.fixedColIndex = config.fixedColIndex;
+    this.rowCount = config.rowCount;
+    this.colCount = config.colCount;
+    this.initCells(config?.cells);
   }
 
   private exceed(x: number, y: number) {
@@ -454,6 +460,20 @@ class Sheet
       };
     }
     this.drawCellEditor();
+  }
+
+  private clearCellsMeta(e: KeyboardEvent) {
+    if (e.key.toLocaleLowerCase() !== "delete") return;
+    if (this.selectedCells === null) return;
+    const [minRowIndex, maxRowIndex, minColIndex, maxColIndex] =
+      this.selectedCells!;
+    for (let r = minRowIndex; r <= maxRowIndex; r++) {
+      for (let c = minColIndex; c <= maxColIndex; c++) {
+        const cell = this.cells[r][c];
+        this.clearCellMeta(cell);
+      }
+    }
+    this.draw();
   }
 
   private endEditingCell(e: MouseEvent) {
@@ -1115,6 +1135,11 @@ class Sheet
     };
   }
 
+  clearCellMeta(cell: Excel.Cell.CellInstance) {
+    cell.meta = null;
+    cell.value = "";
+  }
+
   setCellMeta(
     cell: Excel.Cell.CellInstance,
     cellMeta: Excel.Cell.Meta,
@@ -1159,6 +1184,9 @@ class Sheet
       },
       mousemove: debounce(this.updateCursor.bind(this), 30),
       wheel: this.preventGlobalWheel.bind(this),
+      keydown: (e: KeyboardEvent) => {
+        this.clearCellsMeta.call(this, e);
+      },
     };
 
     this.registerListenerFromOnProp(
@@ -1225,13 +1253,13 @@ class Sheet
       this.fixedRowHeight = 0;
       let x = 0;
       let y = 0;
-      for (let i = 0; i < DEFAULT_CELL_ROW_COUNT + 1; i++) {
+      for (let i = 0; i < this.rowCount + 1; i++) {
         let row: Excel.Cell.CellInstance[] = [];
         y = i * DEFAULT_CELL_HEIGHT;
         x = 0;
         let fixedColRows: Excel.Cell.CellInstance[] = [];
         let fixedRows: Excel.Cell.CellInstance[] = [];
-        for (let j = 0; j < DEFAULT_CELL_COL_COUNT + 1; j++) {
+        for (let j = 0; j < this.colCount + 1; j++) {
           x =
             j === 0
               ? 0

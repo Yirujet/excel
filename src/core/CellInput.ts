@@ -1,4 +1,11 @@
 import Element from "../components/Element";
+import {
+  DEFAULT_CELL_INPUT_COLOR,
+  DEFAULT_CELL_INPUT_FONT_FAMILY,
+  DEFAULT_CELL_INPUT_FONT_SIZE,
+  DEFAULT_CELL_INPUT_MARGIN,
+  DEFAULT_CELL_INPUT_PLACEHOLDER_COLOR,
+} from "../config/index";
 import getTextMetrics from "../utils/getTextMetrics";
 
 class CellInput extends Element<HTMLDivElement> {
@@ -18,9 +25,9 @@ class CellInput extends Element<HTMLDivElement> {
                             position: fixed;
                             margin: 0;
                             background-color: #fff;
-                            color: #606266;
-                            font-size: 14px;
-                            font-family: Helvetica;
+                            color: ${DEFAULT_CELL_INPUT_COLOR};
+                            font-size: ${DEFAULT_CELL_INPUT_FONT_SIZE}px;
+                            font-family: ${DEFAULT_CELL_INPUT_FONT_FAMILY};
                             border: none;
                             outline: none;
                             overflow: hidden;
@@ -29,7 +36,7 @@ class CellInput extends Element<HTMLDivElement> {
                         }
                         .excel-cell-input-div:empty:before {
                             content: attr(placeholder);
-                            color: #ccc4d6
+                            color: ${DEFAULT_CELL_INPUT_PLACEHOLDER_COLOR};
                         }
                         .excel-cell-input-div:focus:before {
                             content: none;
@@ -65,14 +72,24 @@ class CellInput extends Element<HTMLDivElement> {
     this.$el!.innerText = "";
     this.cell = null;
   }
+  setValue(value: string) {
+    if (!this.$el) return;
+    this.$el!.innerText = value;
+  }
   render(cell: Excel.Cell.CellInstance, scrollX: number, scrollY: number) {
     const { height: wordHeight } = getTextMetrics("1", cell.textStyle.fontSize);
     this.$el!.innerText = cell.value;
-    this.$el!.style.width = `${cell.width! - 2}px`;
-    this.$el!.style.height = `${cell.height! - 2}px`;
+    this.$el!.style.width = `${cell.width! - 2 * DEFAULT_CELL_INPUT_MARGIN}px`;
+    this.$el!.style.height = `${
+      cell.height! - 2 * DEFAULT_CELL_INPUT_MARGIN
+    }px`;
     this.$el!.style.lineHeight = `${wordHeight}px`;
-    this.$el!.style.left = `${cell.x! - scrollX + this.layout.x + 1}px`;
-    this.$el!.style.top = `${cell.y! - scrollY + this.layout.y + 1}px`;
+    this.$el!.style.left = `${
+      cell.x! - scrollX + this.layout.x + DEFAULT_CELL_INPUT_MARGIN
+    }px`;
+    this.$el!.style.top = `${
+      cell.y! - scrollY + this.layout.y + DEFAULT_CELL_INPUT_MARGIN
+    }px`;
     this.$el!.style.display = "block";
     this.$el!.focus();
     this.cell = cell;

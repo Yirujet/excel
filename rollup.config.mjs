@@ -11,13 +11,18 @@ export default [
   {
     external: [/node_modules/],
     input: "./src/core/Excel.ts",
-    output: {
-      file: "./lib/excel.js",
-      format: "umd",
-      // format: 'es',
-      name: 'Excel',
-      compact: true,
-    },
+    output: [
+      {
+        file: "./lib/excel.umd.js",
+        format: "umd",
+        name: 'Excel',
+        compact: true,
+      },
+      {
+        file: "./lib/excel.esm.js",
+        format: "es",
+      },
+    ],
     // mode: 'production',
     plugins: [
       // commonjs(

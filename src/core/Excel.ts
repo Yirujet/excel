@@ -3,6 +3,10 @@
 import Sheet from "./Sheet";
 import Element from "../components/Element";
 import "../styles/index.less";
+import {
+  DEFAULT_CELL_COL_COUNT,
+  DEFAULT_CELL_ROW_COUNT,
+} from "../config/index";
 
 class Excel extends Element<HTMLDivElement> implements Excel.ExcelInstance {
   static CSS_PREFIX = "excel";
@@ -10,10 +14,10 @@ class Excel extends Element<HTMLDivElement> implements Excel.ExcelInstance {
   $target: HTMLElement | null = null;
   name = "";
   sheets: Excel.Sheet.SheetInstance[] = [];
-  configuration!: Excel.ExcelConfiguration;
+  configuration!: Excel.Configuration;
   sheetIndex = 0;
 
-  constructor(config: Excel.ExcelConfiguration) {
+  constructor(config: Excel.Configuration) {
     super("div");
     this.configuration = config;
     this.name = config.name || `Excel-${Date.now()}`;
@@ -36,7 +40,7 @@ class Excel extends Element<HTMLDivElement> implements Excel.ExcelInstance {
   private initSheets() {
     const { width, height, x, y } = this.$target!.getBoundingClientRect();
     if (this.sheets.length === 0) {
-      this.addSheet(width, height, x, y);
+      this.addSheet();
     } else {
       this.sheets.forEach((item) => {
         item.width = width;
@@ -63,9 +67,16 @@ class Excel extends Element<HTMLDivElement> implements Excel.ExcelInstance {
     return `${baseName}-${this._sequence}`;
   }
 
-  addSheet(width: number, height: number, x: number, y: number) {
-    const sheesName = this.getNextSheetName();
-    const sheet = new Sheet(sheesName);
+  addSheet(name?: string, config?: Excel.Sheet.Configuration) {
+    const { width, height, x, y } = this.$target!.getBoundingClientRect();
+    const sheesName = name || this.getNextSheetName();
+    const sheetConfig = config || {
+      fixedRowIndex: 1,
+      fixedColIndex: 1,
+      rowCount: DEFAULT_CELL_ROW_COUNT,
+      colCount: DEFAULT_CELL_COL_COUNT,
+    };
+    const sheet = new Sheet(sheesName, sheetConfig);
     sheet.x = x;
     sheet.y = y;
     sheet.width = width;

@@ -1,16 +1,21 @@
 namespace Excel {
   export namespace Sheet {
+    export interface Configuration {
+      fixedRowIndex: number;
+      fixedColIndex: number;
+      rowCount: number;
+      colCount: number;
+      cells?: Cell.CellInstance[][];
+    }
+
     export type CellRange = [number, number, number, number];
 
-    export interface SheetInstance {
+    export interface SheetInstance extends Required<Configuration> {
       $el: HTMLCanvasElement | null;
       name: string;
       width: number;
       height: number;
-      cells: Cell.CellInstance[][];
       scroll: Excel.PositionPoint;
-      fixedRowIndex: number;
-      fixedColIndex: number;
       fixedRowCells: Cell.CellInstance[][];
       fixedColCells: Cell.CellInstance[][];
       fixedCells: Cell.CellInstance[][];

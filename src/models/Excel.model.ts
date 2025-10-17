@@ -3,18 +3,17 @@
 /// <reference path="./Event.model.ts" />
 
 namespace Excel {
-  export interface ExcelConfiguration {
+  export interface Configuration {
     name: string;
     cssPrefix?: string;
     sheets?: Sheet.SheetInstance[];
   }
 
-  export interface ExcelInstance {
+  export interface ExcelInstance
+    extends Required<Omit<Configuration, "cssPrefix">> {
     $el: HTMLElement | null;
     $target: HTMLElement | null;
-    name: string;
-    sheets: Sheet.SheetInstance[];
-    configuration: ExcelConfiguration;
+    configuration: Configuration;
     sheetIndex: number;
   }
 

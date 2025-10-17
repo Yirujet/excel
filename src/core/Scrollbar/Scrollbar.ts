@@ -8,7 +8,6 @@ import {
   DEFAULT_SCROLLBAR_TRACK_SIZE,
 } from "../../config/index";
 import throttle from "../../utils/throttle";
-import globalObj from "../globalObj";
 
 export default class Scrollbar
   extends Element<null>
