@@ -123,6 +123,7 @@
     const btnMerge = document.querySelector("#btnMerge");
     btnMerge.addEventListener("click", () => {
       const curSheet = excel.sheets[excel.sheetIndex];
+      console.log(curSheet.selectedCells);
       curSheet.merge(curSheet.selectedCells);
     });
     const btnUnmerge = document.querySelector("#btnUnmerge");

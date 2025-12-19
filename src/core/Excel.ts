@@ -29,7 +29,6 @@ class Excel extends Element<HTMLDivElement> implements Excel.ExcelInstance {
 
   mount(target: HTMLElement) {
     this.$target = target;
-    this.sheets = this.configuration.sheets || [];
     this.initSheets();
     this.initSequence();
     const sheetRender = this.createSheetRender();
@@ -39,12 +38,16 @@ class Excel extends Element<HTMLDivElement> implements Excel.ExcelInstance {
 
   private initSheets() {
     const { width, height, x, y } = this.$target!.getBoundingClientRect();
-    if (this.sheets.length === 0) {
+    if (!this.configuration.sheets?.length) {
       this.addSheet();
     } else {
-      this.sheets.forEach((item) => {
-        item.width = width;
-        item.height = height;
+      this.configuration.sheets.forEach((item) => {
+        const sheet = new Sheet(item.name, item);
+        sheet.x = x;
+        sheet.y = y;
+        sheet.width = width;
+        sheet.height = height;
+        this.sheets.push(sheet);
       });
     }
   }

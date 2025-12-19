@@ -6,6 +6,7 @@ namespace Excel {
       rowCount: number;
       colCount: number;
       cells?: Cell.CellInstance[][];
+      mergedCells?: CellRange[];
     }
 
     export type CellRange = [number, number, number, number];
@@ -20,7 +21,6 @@ namespace Excel {
       fixedColCells: Cell.CellInstance[][];
       fixedCells: Cell.CellInstance[][];
       selectedCells: CellRange | null;
-      mergedCells: CellRange[];
       render: () => void;
     }
   }

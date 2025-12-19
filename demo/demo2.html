@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+      }
+
+      #app {
+        width: 95vw;
+        height: calc(100vh - 100px);
+        margin-left: 20px;
+        margin-top: 20px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app"></div>
+  </body>
+  <script src="../lib/excel.umd.js"></script>
+  <script src="./mock.js"></script>
+  <script>
+    const { colWidth, rowHeight, mergeCell, configData } = data;
+    const colCount = colWidth.length;
+    const rowCount = rowHeight.length;
+    const cells = [];
+    let cellX = 0;
+    let cellY = 0;
+    for (let i = 0; i < rowCount; i++) {
+      let row = [];
+      cellX = 0;
+      if (i > 0) {
+        cellY += rowHeight[i - 1];
+      }
+      for (let j = 0; j < colCount; j++) {
+        if (j > 0) {
+          cellX += colWidth[j - 1];
+        }
+        const cell = {
+          x: j === 0 ? 0 : cellX,
+          y: i === 0 ? 0 : cellY,
+          width: colWidth[j],
+          height: rowHeight[i],
+        };
+        const cellData = configData[i]?.[j];
+        if (cellData && cellData.cellValue) {
+          if (["datasets", "static"].includes(cellData.cellTypeDict)) {
+            cell.meta = {
+              type: "text",
+              data: cellData.cellValue,
+            };
+            cell.value = cellData.cellValue;
+          }
+          if (cellData.cellTypeDict === "oblique_line") {
+            cell.meta = {
+              type: "diagonal",
+              data: {
+                value: JSON.parse(cellData.cellValue).biasText.split("|"),
+              },
+            };
+            cell.value = cellData.cellValue;
+          }
+        }
+        if (cellData && cellData.cellConfig && cellData.cellConfig.basicStyle) {
+          cell.textStyle = {
+            ...cell.textStyle,
+            align:
+              cellData.cellConfig.basicStyle.alignTypeDict !== "none"
+                ? cellData.cellConfig.basicStyle.alignTypeDict
+                : "center",
+            color: cellData.cellConfig.basicStyle.fontColor || "#000000",
+            backgroundColor:
+              cellData.cellConfig.basicStyle.colorFill || "#ffffff",
+            bold: cellData.cellConfig.basicStyle.fontBold || false,
+            fontSize: cellData.cellConfig.basicStyle.fontSize || 12,
+            italic: cellData.cellConfig.basicStyle.italic || false,
+            fontFamily: cellData.cellConfig.basicStyle.font || "宋体",
+          };
+
+          if (
+            cellData.cellConfig.basicStyle.border &&
+            cellData.cellConfig.basicStyle.border !== "unset"
+          ) {
+            const [borderWidth, borderStyle, borderColor] =
+              cellData.cellConfig.basicStyle.border.split(" ");
+            cell.border = {
+              top: {
+                solid: borderStyle === "solid",
+                color: borderColor,
+              },
+              left: {
+                solid: borderStyle === "solid",
+                color: borderColor,
+              },
+              right: {
+                solid: borderStyle === "solid",
+                color: borderColor,
+              },
+              bottom: {
+                solid: borderStyle === "solid",
+                color: borderColor,
+              },
+            };
+          }
+        }
+        row.push(cell);
+      }
+      cells.push(row);
+    }
+    const mergedCells = mergeCell.map((item) => [
+      item.row + 1,
+      item.row + item.rowspan,
+      item.col + 1,
+      item.col + item.colspan,
+    ]);
+    const app = document.querySelector("#app");
+    const { width, height, x, y } = app.getBoundingClientRect();
+    const excel = new Excel({
+      name: "test",
+      sheets: [
+        {
+          name: "sheet1",
+          fixedRowIndex: 1,
+          fixedColIndex: 1,
+          rowCount,
+          colCount,
+          cells,
+          mergedCells,
+        },
+      ],
+    });
+    excel.mount(app);
+  </script>
+</html>

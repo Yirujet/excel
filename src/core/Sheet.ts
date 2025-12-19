@@ -95,6 +95,7 @@ class Sheet
     this.fixedColIndex = config.fixedColIndex;
     this.rowCount = config.rowCount;
     this.colCount = config.colCount;
+    this.mergedCells = config.mergedCells || [];
     this.initCells(config?.cells);
   }
 
@@ -1246,7 +1247,118 @@ class Sheet
 
   initCells(cells: Excel.Cell.CellInstance[][] | undefined) {
     if (cells) {
-      this.cells = cells!;
+      this.cells = [];
+      this.fixedColWidth = 0;
+      this.fixedRowHeight = 0;
+      let cellXIndex = 0;
+      let cellYIndex = 0;
+      for (let i = 0; i < this.rowCount + 1; i++) {
+        let row: Excel.Cell.CellInstance[] = [];
+        let fixedColRows: Excel.Cell.CellInstance[] = [];
+        let fixedRows: Excel.Cell.CellInstance[] = [];
+        cellYIndex = i === 0 ? 0 : i - 1;
+        for (let j = 0; j < this.colCount + 1; j++) {
+          cellXIndex = j === 0 ? 0 : j - 1;
+          const cell = new Cell(this.sheetEventsObserver);
+          cell.rowIndex = i;
+          cell.colIndex = j;
+          if (i > 0 && j > 0) {
+            Object.assign(cell, cells[cellYIndex]?.[cellXIndex]!);
+            cell.x =
+              cells[cellYIndex]?.[cellXIndex]!.x! + DEFAULT_INDEX_CELL_WIDTH;
+            cell.y = cells[cellYIndex]?.[cellXIndex]!.y! + DEFAULT_CELL_HEIGHT;
+          } else {
+            if (j === 0) {
+              cell.x = 0;
+              cell.y =
+                i === 0
+                  ? 0
+                  : cells[cellYIndex]?.[cellXIndex]!.y! + DEFAULT_CELL_HEIGHT;
+              cell.width = DEFAULT_INDEX_CELL_WIDTH;
+              cell.height =
+                i === 0
+                  ? DEFAULT_CELL_HEIGHT
+                  : cells[cellYIndex]?.[cellXIndex]!.height!;
+            }
+            if (i === 0) {
+              cell.x =
+                j === 0
+                  ? 0
+                  : cells[cellYIndex]?.[cellXIndex]!.x! +
+                    DEFAULT_INDEX_CELL_WIDTH;
+              cell.y = 0;
+              cell.width =
+                j === 0
+                  ? DEFAULT_INDEX_CELL_WIDTH
+                  : cells[cellYIndex]?.[cellXIndex]!.width!;
+              cell.height = DEFAULT_CELL_HEIGHT;
+            }
+          }
+          cell.cellName = $10226(j - 1);
+          cell.updatePosition();
+          if (i === 0) {
+            this.setCellMeta(
+              cell,
+              {
+                type: "text",
+                data: cell.cellName,
+              },
+              false
+            );
+          }
+          if (j === 0) {
+            this.setCellMeta(
+              cell,
+              {
+                type: "text",
+                data: i.toString(),
+              },
+              false
+            );
+          }
+          if (i === 0 && j === 0) {
+            cell.hidden = true;
+          }
+          if (j < this.fixedColIndex) {
+            fixedColRows.push(cell);
+            if (i < this.fixedRowIndex) {
+              fixedRows.push(cell);
+            }
+            if (i === 0) {
+              this.fixedColWidth += cell.width!;
+            }
+          }
+          if (i < this.fixedRowIndex || j < this.fixedColIndex) {
+            if (i < this.fixedRowIndex) {
+              cell.fixed.y = true;
+            }
+            if (j < this.fixedColIndex) {
+              cell.fixed.x = true;
+            }
+            this.setCellStyle(cell, {
+              border: {
+                solid: true,
+                color: DEFAULT_CELL_LINE_COLOR,
+                bold: false,
+              },
+              text: {
+                color: DEFAULT_FIXED_CELL_COLOR,
+                backgroundColor: DEFAULT_FIXED_CELL_BACKGROUND_COLOR,
+                fontSize: 13,
+                align: "center",
+              },
+            });
+          }
+          row.push(cell);
+        }
+        this.fixedColCells.push(fixedColRows);
+        if (i < this.fixedRowIndex) {
+          this.fixedCells.push(fixedRows);
+          this.fixedRowCells.push(row);
+          this.fixedRowHeight += row[0].height!;
+        }
+        this.cells.push(row);
+      }
     } else {
       this.cells = [];
       this.fixedColWidth = 0;
