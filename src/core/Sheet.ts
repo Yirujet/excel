@@ -139,46 +139,58 @@ class Sheet
     mergedCells: Excel.Sheet.CellRange[],
     selectedCells: Excel.Sheet.CellRange
   ) {
-    mergedCells.forEach((e, i) => {
+    // 创建合并单元格的副本，避免修改原数组
+    const mergedCellsCopy = [...mergedCells];
+
+    // 标记已处理的索引，避免重复处理
+    const processedIndices = new Set<number>();
+
+    let i = 0;
+    while (i < mergedCellsCopy.length) {
+      // 如果当前索引已处理，跳过
+      if (processedIndices.has(i)) {
+        i++;
+        continue;
+      }
+
+      const mergedCell = mergedCellsCopy[i];
       const [
         minRowIndexMerged,
         maxRowIndexMerged,
         minColIndexMerged,
         maxColIndexMerged,
-      ] = e;
+      ] = mergedCell;
+
       const [minRowIndex, maxRowIndex, minColIndex, maxColIndex] =
         selectedCells;
-      if (
-        (minRowIndex >= minRowIndexMerged &&
-          minRowIndex <= maxRowIndexMerged &&
-          !(
-            minColIndex > maxColIndexMerged || maxColIndex < maxColIndexMerged
-          )) ||
-        (maxColIndex >= minColIndexMerged &&
-          maxColIndex <= maxColIndexMerged &&
-          !(
-            minRowIndex > maxRowIndexMerged || maxRowIndex < minRowIndexMerged
-          )) ||
-        (maxRowIndex >= minRowIndexMerged &&
-          maxRowIndex <= maxRowIndexMerged &&
-          !(
-            minColIndex > maxColIndexMerged || maxColIndex < maxColIndexMerged
-          )) ||
-        (minColIndex >= minColIndexMerged &&
-          minColIndex <= maxColIndexMerged &&
-          !(minRowIndex > maxRowIndexMerged || maxRowIndex < minRowIndexMerged))
-      ) {
-        selectedCells = this.mergeIntersectMergedCells(
-          [...mergedCells.slice(0, i), ...mergedCells.slice(i + 1)],
-          [
-            Math.min(minRowIndex, minRowIndexMerged),
-            Math.max(maxRowIndex, maxRowIndexMerged),
-            Math.min(minColIndex, minColIndexMerged),
-            Math.max(maxColIndex, maxColIndexMerged),
-          ]
-        );
+
+      // 检查两个单元格范围是否重叠
+      const isOverlap =
+        minRowIndex <= maxRowIndexMerged &&
+        maxRowIndex >= minRowIndexMerged &&
+        minColIndex <= maxColIndexMerged &&
+        maxColIndex >= minColIndexMerged;
+
+      if (isOverlap) {
+        // 更新选中范围为合并后的更大范围
+        selectedCells = [
+          Math.min(minRowIndex, minRowIndexMerged),
+          Math.max(maxRowIndex, maxRowIndexMerged),
+          Math.min(minColIndex, minColIndexMerged),
+          Math.max(maxColIndex, maxColIndexMerged),
+        ];
+
+        // 标记当前索引为已处理
+        processedIndices.add(i);
+
+        // 重置索引，重新检查所有未处理的合并单元格
+        i = 0;
+      } else {
+        // 没有重叠，继续检查下一个合并单元格
+        i++;
       }
-    });
+    }
+
     return selectedCells;
   }
 
@@ -338,6 +350,7 @@ class Sheet
           this.mergedCells,
           this.selectedCells!
         );
+        console.log(this.selectedCells);
         this.draw();
       }
     }
