@@ -50,6 +50,8 @@ class CellMergence extends Element<null> {
           y,
           width,
           height,
+          cellWidth,
+          cellHeight,
           scrollX,
           scrollY
         );
@@ -103,10 +105,15 @@ class CellMergence extends Element<null> {
     y: number,
     width: number,
     height: number,
+    viewWidth: number,
+    viewHeight: number,
     scrollX: number,
     scrollY: number
   ) {
     ctx.save();
+    const path = new Path2D();
+    path.rect(x - scrollX, y - scrollY, viewWidth, viewHeight);
+    ctx.clip(path);
     cell.setTextStyle(ctx);
     ctx.fillText(
       cell.value,
@@ -184,9 +191,9 @@ class CellMergence extends Element<null> {
       }
     )!;
     ctx.save();
-    const range = new Path2D();
-    range.rect(cellX - scrollX, cellY - scrollY, viewWidth, viewHeight);
-    ctx.clip(range);
+    const path = new Path2D();
+    path.rect(cellX - scrollX, cellY - scrollY, viewWidth, viewHeight);
+    ctx.clip(path);
     ctx.drawImage(
       (cell.meta!.data as Excel.Cell.CellImageMetaData).img,
       x,
