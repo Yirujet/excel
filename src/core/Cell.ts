@@ -360,12 +360,14 @@ class Cell extends Element<null> implements Excel.Cell.CellInstance {
       Math.abs(curPoint[0] - this.position.leftTop.x);
     const angle =
       Math.atan(preAngle) + (Math.atan(curAngle) - Math.atan(preAngle)) / 2;
+
     ctx.save();
     ctx.translate(
       this.position.leftTop.x - this.scrollX,
       this.position.leftTop.y - this.scrollY
     );
     ctx.rotate(angle);
+
     const midPoint = [
       (prePoint[0] + curPoint[0]) / 2,
       (prePoint[1] + curPoint[1]) / 2,
@@ -374,10 +376,18 @@ class Cell extends Element<null> implements Excel.Cell.CellInstance {
       Math.pow(midPoint[0] - this.position.leftTop.x, 2) +
         Math.pow(midPoint[1] - this.position.leftTop.y, 2)
     );
+
     ctx.fillStyle = DEFAULT_CELL_DIAGONAL_TEXT_COLOR;
     ctx.font = `${DEFAULT_CELL_DIAGONAL_TEXT_FONT_SIZE}px sans-serif`;
     ctx.textBaseline = "middle";
-    ctx.fillText(text, d / 2, 0);
+
+    // 修复文字居中问题：计算文字宽度并调整x坐标
+    const textWidth = getTextMetrics(
+      text,
+      DEFAULT_CELL_DIAGONAL_TEXT_FONT_SIZE
+    ).width;
+    ctx.fillText(text, d / 2 - textWidth / 2, 0);
+
     ctx.restore();
   }
 
@@ -386,6 +396,8 @@ class Cell extends Element<null> implements Excel.Cell.CellInstance {
       .data as Excel.Cell.CellDiagonalMetaData;
     const times =
       value.length & 1 ? Math.floor(value.length / 2) : value.length / 2 - 1;
+
+    // 预计算所有端点，避免重复计算
     let endPoints: [number, number][] = [];
     for (let i = 1; i <= times; i++) {
       endPoints.push([
@@ -405,27 +417,35 @@ class Cell extends Element<null> implements Excel.Cell.CellInstance {
         this.position.rightBottom.y,
       ]);
     }
-    endPoints.forEach(([x, y], i) => {
-      ctx.save();
-      ctx.beginPath();
-      ctx.strokeStyle = DEFAULT_CELL_DIAGONAL_LINE_COLOR;
-      ctx.lineWidth = DEFAULT_CELL_DIAGONAL_LINE_WIDTH;
-      ctx.moveTo(
-        Math.round(this.position.leftTop.x - this.scrollX),
-        Math.round(this.position.leftTop.y - this.scrollY)
-      );
+
+    // 优化1: 减少save/restore操作，合并路径
+    ctx.save();
+    ctx.strokeStyle = DEFAULT_CELL_DIAGONAL_LINE_COLOR;
+    ctx.lineWidth = DEFAULT_CELL_DIAGONAL_LINE_WIDTH;
+    ctx.beginPath();
+
+    const startX = Math.round(this.position.leftTop.x - this.scrollX);
+    const startY = Math.round(this.position.leftTop.y - this.scrollY);
+
+    // 绘制所有对角线
+    endPoints.forEach(([x, y]) => {
+      ctx.moveTo(startX, startY);
       ctx.lineTo(Math.round(x - this.scrollX), Math.round(y - this.scrollY));
-      ctx.closePath();
-      ctx.stroke();
-      ctx.restore();
-      let prePoint: [number, number];
-      if (i > 0) {
-        prePoint = endPoints[i - 1];
-      } else {
-        prePoint = [this.position.rightTop.x, this.position.rightTop.y];
-      }
+    });
+
+    // 一次性stroke所有路径
+    ctx.stroke();
+    ctx.restore();
+
+    // 绘制文本
+    endPoints.forEach(([x, y], i) => {
+      const prePoint: [number, number] =
+        i > 0
+          ? endPoints[i - 1]
+          : [this.position.rightTop.x, this.position.rightTop.y];
       this.drawDiagonalText(ctx, prePoint, [x, y], value[i]);
     });
+
     this.drawDiagonalText(
       ctx,
       endPoints[endPoints.length - 1],

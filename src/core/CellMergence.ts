@@ -220,9 +220,11 @@ class CellMergence extends Element<null> {
       Math.abs(curPoint[1] - cellY) / Math.abs(curPoint[0] - cellX);
     const angle =
       Math.atan(preAngle) + (Math.atan(curAngle) - Math.atan(preAngle)) / 2;
+
     ctx.save();
     ctx.translate(cellX - scrollX, cellY - scrollY);
     ctx.rotate(angle);
+
     const midPoint = [
       (prePoint[0] + curPoint[0]) / 2,
       (prePoint[1] + curPoint[1]) / 2,
@@ -230,10 +232,18 @@ class CellMergence extends Element<null> {
     const d = Math.sqrt(
       Math.pow(midPoint[0] - cellX, 2) + Math.pow(midPoint[1] - cellY, 2)
     );
+
     ctx.fillStyle = DEFAULT_CELL_DIAGONAL_TEXT_COLOR;
     ctx.font = `${DEFAULT_CELL_DIAGONAL_TEXT_FONT_SIZE}px sans-serif`;
     ctx.textBaseline = "middle";
-    ctx.fillText(text, d / 2, 0);
+
+    // 修复文字居中问题：计算文字宽度并调整x坐标
+    const textWidth = getTextMetrics(
+      text,
+      DEFAULT_CELL_DIAGONAL_TEXT_FONT_SIZE
+    ).width;
+    ctx.fillText(text, d / 2 - textWidth / 2, 0);
+
     ctx.restore();
   }
 
@@ -251,6 +261,7 @@ class CellMergence extends Element<null> {
       .data as Excel.Cell.CellDiagonalMetaData;
     const times =
       value.length & 1 ? Math.floor(value.length / 2) : value.length / 2 - 1;
+
     let endPoints: [number, number][] = [];
     for (let i = 1; i <= times; i++) {
       endPoints.push([
@@ -267,22 +278,30 @@ class CellMergence extends Element<null> {
     if (!(value.length & 1)) {
       endPoints.splice(times, 0, [cellX + cellWidth, cellY + cellHeight]);
     }
-    endPoints.forEach(([x, y], i) => {
-      ctx.save();
-      ctx.beginPath();
-      ctx.strokeStyle = DEFAULT_CELL_DIAGONAL_LINE_COLOR;
-      ctx.lineWidth = DEFAULT_CELL_DIAGONAL_LINE_WIDTH;
-      ctx.moveTo(Math.round(cellX - scrollX), Math.round(cellY - scrollY));
+
+    // 优化1: 减少save/restore操作，合并路径
+    ctx.save();
+    ctx.strokeStyle = DEFAULT_CELL_DIAGONAL_LINE_COLOR;
+    ctx.lineWidth = DEFAULT_CELL_DIAGONAL_LINE_WIDTH;
+    ctx.beginPath();
+
+    const startX = Math.round(cellX - scrollX);
+    const startY = Math.round(cellY - scrollY);
+
+    // 绘制所有对角线
+    endPoints.forEach(([x, y]) => {
+      ctx.moveTo(startX, startY);
       ctx.lineTo(Math.round(x - scrollX), Math.round(y - scrollY));
-      ctx.closePath();
-      ctx.stroke();
-      ctx.restore();
-      let prePoint: [number, number];
-      if (i > 0) {
-        prePoint = endPoints[i - 1];
-      } else {
-        prePoint = [cellX + cellWidth, cellY];
-      }
+    });
+
+    // 一次性stroke所有路径
+    ctx.stroke();
+    ctx.restore();
+
+    // 绘制文本
+    endPoints.forEach(([x, y], i) => {
+      const prePoint: [number, number] =
+        i > 0 ? endPoints[i - 1] : [cellX + cellWidth, cellY];
       this.drawDiagonalText(
         ctx,
         prePoint,
@@ -294,6 +313,7 @@ class CellMergence extends Element<null> {
         scrollY
       );
     });
+
     this.drawDiagonalText(
       ctx,
       endPoints[endPoints.length - 1],
