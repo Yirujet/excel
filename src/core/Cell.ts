@@ -211,12 +211,12 @@ class Cell extends Element<null> implements Excel.Cell.CellInstance {
         this.setBorderStyle(ctx, "top");
         ctx.beginPath();
         ctx.moveTo(
-          this.position.leftTop.x - this.scrollX,
-          this.position.leftTop.y - this.scrollY
+          Math.round(this.position.leftTop.x - this.scrollX),
+          Math.round(this.position.leftTop.y - this.scrollY)
         );
         ctx.lineTo(
-          this.position.rightTop.x - this.scrollX,
-          this.position.rightTop.y - this.scrollY
+          Math.round(this.position.rightTop.x - this.scrollX),
+          Math.round(this.position.rightTop.y - this.scrollY)
         );
         ctx.closePath();
         ctx.stroke();
@@ -227,12 +227,12 @@ class Cell extends Element<null> implements Excel.Cell.CellInstance {
         this.setBorderStyle(ctx, "left");
         ctx.beginPath();
         ctx.moveTo(
-          this.position.leftBottom.x - this.scrollX,
-          this.position.leftBottom.y - this.scrollY
+          Math.round(this.position.leftBottom.x - this.scrollX),
+          Math.round(this.position.leftBottom.y - this.scrollY)
         );
         ctx.lineTo(
-          this.position.leftTop.x - this.scrollX,
-          this.position.leftTop.y - this.scrollY
+          Math.round(this.position.leftTop.x - this.scrollX),
+          Math.round(this.position.leftTop.y - this.scrollY)
         );
         ctx.closePath();
         ctx.stroke();
@@ -243,12 +243,12 @@ class Cell extends Element<null> implements Excel.Cell.CellInstance {
     this.setBorderStyle(ctx, "right");
     ctx.beginPath();
     ctx.moveTo(
-      this.position.rightTop.x - this.scrollX,
-      this.position.rightTop.y - this.scrollY
+      Math.round(this.position.rightTop.x - this.scrollX),
+      Math.round(this.position.rightTop.y - this.scrollY)
     );
     ctx.lineTo(
-      this.position.rightBottom.x - this.scrollX,
-      this.position.rightBottom.y - this.scrollY
+      Math.round(this.position.rightBottom.x - this.scrollX),
+      Math.round(this.position.rightBottom.y - this.scrollY)
     );
     ctx.closePath();
     ctx.stroke();
@@ -257,12 +257,12 @@ class Cell extends Element<null> implements Excel.Cell.CellInstance {
     this.setBorderStyle(ctx, "bottom");
     ctx.beginPath();
     ctx.moveTo(
-      this.position.rightBottom.x - this.scrollX,
-      this.position.rightBottom.y - this.scrollY
+      Math.round(this.position.rightBottom.x - this.scrollX),
+      Math.round(this.position.rightBottom.y - this.scrollY)
     );
     ctx.lineTo(
-      this.position.leftBottom.x - this.scrollX,
-      this.position.leftBottom.y - this.scrollY
+      Math.round(this.position.leftBottom.x - this.scrollX),
+      Math.round(this.position.leftBottom.y - this.scrollY)
     );
     ctx.closePath();
     ctx.stroke();
@@ -313,12 +313,14 @@ class Cell extends Element<null> implements Excel.Cell.CellInstance {
     ctx.strokeStyle = this.textStyle.color;
     ctx.beginPath();
     ctx.moveTo(
-      this.x! + textAlignOffsetX - this.scrollX - underlineOffset,
-      this.y! + this.height! / 2 - this.scrollY + wordHeight / 2
+      Math.round(this.x! + textAlignOffsetX - this.scrollX - underlineOffset),
+      Math.round(this.y! + this.height! / 2 - this.scrollY + wordHeight / 2)
     );
     ctx.lineTo(
-      this.x! + textAlignOffsetX - this.scrollX - underlineOffset + wordWidth,
-      this.y! + this.height! / 2 - this.scrollY + wordHeight / 2
+      Math.round(
+        this.x! + textAlignOffsetX - this.scrollX - underlineOffset + wordWidth
+      ),
+      Math.round(this.y! + this.height! / 2 - this.scrollY + wordHeight / 2)
     );
     ctx.closePath();
     ctx.stroke();
@@ -409,10 +411,10 @@ class Cell extends Element<null> implements Excel.Cell.CellInstance {
       ctx.strokeStyle = DEFAULT_CELL_DIAGONAL_LINE_COLOR;
       ctx.lineWidth = DEFAULT_CELL_DIAGONAL_LINE_WIDTH;
       ctx.moveTo(
-        this.position.leftTop.x - this.scrollX,
-        this.position.leftTop.y - this.scrollY
+        Math.round(this.position.leftTop.x - this.scrollX),
+        Math.round(this.position.leftTop.y - this.scrollY)
       );
-      ctx.lineTo(x - this.scrollX, y - this.scrollY);
+      ctx.lineTo(Math.round(x - this.scrollX), Math.round(y - this.scrollY));
       ctx.closePath();
       ctx.stroke();
       ctx.restore();

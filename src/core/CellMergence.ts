@@ -138,16 +138,24 @@ class CellMergence extends Element<null> {
     ctx.strokeStyle = cell.textStyle.color;
     ctx.beginPath();
     ctx.moveTo(
-      cell.position.leftTop.x! + textAlignOffsetX - scrollX - underlineOffset,
-      cell.position.leftTop.y! + height! / 2 - scrollY + wordHeight / 2
+      Math.round(
+        cell.position.leftTop.x! + textAlignOffsetX - scrollX - underlineOffset
+      ),
+      Math.round(
+        cell.position.leftTop.y! + height! / 2 - scrollY + wordHeight / 2
+      )
     );
     ctx.lineTo(
-      cell.position.leftTop.x! +
-        textAlignOffsetX -
-        scrollX -
-        underlineOffset +
-        wordWidth,
-      cell.position.leftTop.y! + height! / 2 - scrollY + wordHeight / 2
+      Math.round(
+        cell.position.leftTop.x! +
+          textAlignOffsetX -
+          scrollX -
+          underlineOffset +
+          wordWidth
+      ),
+      Math.round(
+        cell.position.leftTop.y! + height! / 2 - scrollY + wordHeight / 2
+      )
     );
     ctx.closePath();
     ctx.stroke();
@@ -257,8 +265,8 @@ class CellMergence extends Element<null> {
       ctx.beginPath();
       ctx.strokeStyle = DEFAULT_CELL_DIAGONAL_LINE_COLOR;
       ctx.lineWidth = DEFAULT_CELL_DIAGONAL_LINE_WIDTH;
-      ctx.moveTo(cellX - scrollX, cellY - scrollY);
-      ctx.lineTo(x - scrollX, y - scrollY);
+      ctx.moveTo(Math.round(cellX - scrollX), Math.round(cellY - scrollY));
+      ctx.lineTo(Math.round(x - scrollX), Math.round(y - scrollY));
       ctx.closePath();
       ctx.stroke();
       ctx.restore();
@@ -343,8 +351,8 @@ class CellMergence extends Element<null> {
             ctx.lineWidth = 1;
           }
           ctx.beginPath();
-          ctx.moveTo(leftX, topY);
-          ctx.lineTo(rightX, topY);
+          ctx.moveTo(Math.round(leftX), Math.round(topY));
+          ctx.lineTo(Math.round(rightX), Math.round(topY));
           ctx.closePath();
           ctx.stroke();
           ctx.restore();
@@ -362,8 +370,8 @@ class CellMergence extends Element<null> {
             ctx.lineWidth = 1;
           }
           ctx.beginPath();
-          ctx.moveTo(rightX, topY);
-          ctx.lineTo(rightX, bottomY);
+          ctx.moveTo(Math.round(rightX), Math.round(topY));
+          ctx.lineTo(Math.round(rightX), Math.round(bottomY));
           ctx.closePath();
           ctx.stroke();
           ctx.restore();
@@ -381,8 +389,8 @@ class CellMergence extends Element<null> {
             ctx.lineWidth = 1;
           }
           ctx.beginPath();
-          ctx.moveTo(rightX, bottomY);
-          ctx.lineTo(leftX, bottomY);
+          ctx.moveTo(Math.round(rightX), Math.round(bottomY));
+          ctx.lineTo(Math.round(leftX), Math.round(bottomY));
           ctx.closePath();
           ctx.stroke();
           ctx.restore();
@@ -400,8 +408,8 @@ class CellMergence extends Element<null> {
             ctx.lineWidth = 1;
           }
           ctx.beginPath();
-          ctx.moveTo(leftX, topY);
-          ctx.lineTo(leftX, bottomY);
+          ctx.moveTo(Math.round(leftX), Math.round(topY));
+          ctx.lineTo(Math.round(leftX), Math.round(bottomY));
           ctx.closePath();
           ctx.stroke();
           ctx.restore();

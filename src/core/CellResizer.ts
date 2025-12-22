@@ -25,19 +25,23 @@ class CellResizer extends Element<null> {
     if (resizeInfo.x) {
       ctx.beginPath();
       ctx.moveTo(
-        cellInfo.position.rightTop.x + resizeInfo.value! - scrollInfo.x,
+        Math.round(
+          cellInfo.position.rightTop.x + resizeInfo.value! - scrollInfo.x
+        ),
         0
       );
       ctx.lineTo(
-        cellInfo.position.rightTop.x + resizeInfo.value! - scrollInfo.x,
+        Math.round(
+          cellInfo.position.rightTop.x + resizeInfo.value! - scrollInfo.x
+        ),
         this.layout.height
       );
       ctx.closePath();
       ctx.stroke();
       ctx.beginPath();
-      ctx.moveTo(cellInfo.position.leftTop.x - scrollInfo.x, 0);
+      ctx.moveTo(Math.round(cellInfo.position.leftTop.x - scrollInfo.x), 0);
       ctx.lineTo(
-        cellInfo.position.leftTop.x - scrollInfo.x,
+        Math.round(cellInfo.position.leftTop.x - scrollInfo.x),
         this.layout.height
       );
       ctx.closePath();
@@ -47,17 +51,24 @@ class CellResizer extends Element<null> {
       ctx.beginPath();
       ctx.moveTo(
         0,
-        cellInfo.position.leftBottom.y + resizeInfo.value! - scrollInfo.y
+        Math.round(
+          cellInfo.position.leftBottom.y + resizeInfo.value! - scrollInfo.y
+        )
       );
       ctx.lineTo(
         this.layout.width,
-        cellInfo.position.leftBottom.y + resizeInfo.value! - scrollInfo.y
+        Math.round(
+          cellInfo.position.leftBottom.y + resizeInfo.value! - scrollInfo.y
+        )
       );
       ctx.closePath();
       ctx.stroke();
       ctx.beginPath();
-      ctx.moveTo(0, cellInfo.position.leftTop.y - scrollInfo.y);
-      ctx.lineTo(this.layout.width, cellInfo.position.leftTop.y - scrollInfo.y);
+      ctx.moveTo(0, Math.round(cellInfo.position.leftTop.y - scrollInfo.y));
+      ctx.lineTo(
+        this.layout.width,
+        Math.round(cellInfo.position.leftTop.y - scrollInfo.y)
+      );
       ctx.closePath();
       ctx.stroke();
     }

@@ -15,8 +15,8 @@ export default (
     ctx.setLineDash(lineDashOffset);
   }
   ctx.beginPath();
-  ctx.moveTo(startX, startY);
-  ctx.lineTo(endX, endY);
+  ctx.moveTo(Math.round(startX), Math.round(startY));
+  ctx.lineTo(Math.round(endX), Math.round(endY));
   ctx.closePath();
   ctx.stroke();
   ctx.restore();
