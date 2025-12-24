@@ -43,6 +43,7 @@ class Sheet
   cells: Excel.Cell.CellInstance[][] = [];
   width = 0;
   height = 0;
+  mode: Excel.Sheet.Mode = "edit";
   scroll: Excel.PositionPoint = { x: 0, y: 0 };
   horizontalScrollBar: HorizontalScrollbar | null = null;
   verticalScrollBar: VerticalScrollbar | null = null;
@@ -91,6 +92,7 @@ class Sheet
   constructor(name: string, config: Excel.Sheet.Configuration) {
     super("canvas");
     this.name = name;
+    this.mode = config.mode || "edit";
     this.fixedRowIndex = config.fixedRowIndex;
     this.fixedColIndex = config.fixedColIndex;
     this.rowCount = config.rowCount;
@@ -139,15 +141,10 @@ class Sheet
     mergedCells: Excel.Sheet.CellRange[],
     selectedCells: Excel.Sheet.CellRange
   ) {
-    // 创建合并单元格的副本，避免修改原数组
     const mergedCellsCopy = [...mergedCells];
-
-    // 标记已处理的索引，避免重复处理
     const processedIndices = new Set<number>();
-
     let i = 0;
     while (i < mergedCellsCopy.length) {
-      // 如果当前索引已处理，跳过
       if (processedIndices.has(i)) {
         i++;
         continue;
@@ -163,8 +160,6 @@ class Sheet
 
       const [minRowIndex, maxRowIndex, minColIndex, maxColIndex] =
         selectedCells;
-
-      // 检查两个单元格范围是否重叠
       const isOverlap =
         minRowIndex <= maxRowIndexMerged &&
         maxRowIndex >= minRowIndexMerged &&
@@ -172,21 +167,15 @@ class Sheet
         maxColIndex >= minColIndexMerged;
 
       if (isOverlap) {
-        // 更新选中范围为合并后的更大范围
         selectedCells = [
           Math.min(minRowIndex, minRowIndexMerged),
           Math.max(maxRowIndex, maxRowIndexMerged),
           Math.min(minColIndex, minColIndexMerged),
           Math.max(maxColIndex, maxColIndexMerged),
         ];
-
-        // 标记当前索引为已处理
         processedIndices.add(i);
-
-        // 重置索引，重新检查所有未处理的合并单元格
         i = 0;
       } else {
-        // 没有重叠，继续检查下一个合并单元格
         i++;
       }
     }
@@ -350,7 +339,6 @@ class Sheet
           this.mergedCells,
           this.selectedCells!
         );
-        console.log(this.selectedCells);
         this.draw();
       }
     }
@@ -803,6 +791,8 @@ class Sheet
     if (ignoreFixedY) {
       rowIndex = Math.max(rowIndex, this.fixedRowIndex);
     }
+    colIndex = Math.max(colIndex, 0);
+    rowIndex = Math.max(rowIndex, 0);
     cell = this.cells[rowIndex][colIndex];
     return cell;
   }
@@ -1080,39 +1070,39 @@ class Sheet
     }
     if (cellStyle.border) {
       cell.border.top = {
-        ...cell.border.top,
+        ...cell.border.top!,
         ...cellStyle.border,
       };
       cell.border.left = {
-        ...cell.border.left,
+        ...cell.border.left!,
         ...cellStyle.border,
       };
       cell.border.right = {
-        ...cell.border.right,
+        ...cell.border.right!,
         ...cellStyle.border,
       };
       cell.border.bottom = {
-        ...cell.border.bottom,
+        ...cell.border.bottom!,
         ...cellStyle.border,
       };
       const leftSiblingCell = this.getCell(cell.rowIndex!, cell.colIndex! - 1);
       if (leftSiblingCell && !leftSiblingCell.fixed.x) {
         leftSiblingCell.border.right = {
-          ...leftSiblingCell.border.right,
+          ...leftSiblingCell.border.right!,
           ...cellStyle.border,
         };
       }
       const topSiblingCell = this.getCell(cell.rowIndex! - 1, cell.colIndex!);
       if (topSiblingCell && !topSiblingCell.fixed.y) {
         topSiblingCell.border.bottom = {
-          ...topSiblingCell.border.bottom,
+          ...topSiblingCell.border.bottom!,
           ...cellStyle.border,
         };
       }
       const rightSiblingCell = this.getCell(cell.rowIndex!, cell.colIndex! + 1);
       if (rightSiblingCell && !rightSiblingCell.fixed.x) {
         rightSiblingCell.border.left = {
-          ...rightSiblingCell.border.left,
+          ...rightSiblingCell.border.left!,
           ...cellStyle.border,
         };
       }
@@ -1122,7 +1112,7 @@ class Sheet
       );
       if (bottomSiblingCell && !bottomSiblingCell.fixed.y) {
         bottomSiblingCell.border.top = {
-          ...bottomSiblingCell.border.top,
+          ...bottomSiblingCell.border.top!,
           ...cellStyle.border,
         };
       }
@@ -1265,46 +1255,95 @@ class Sheet
       this.fixedRowHeight = 0;
       let cellXIndex = 0;
       let cellYIndex = 0;
-      for (let i = 0; i < this.rowCount + 1; i++) {
+      for (
+        let i = 0;
+        i < this.rowCount + 1 + (this.mode === "view" ? 1 : 0);
+        i++
+      ) {
         let row: Excel.Cell.CellInstance[] = [];
         let fixedColRows: Excel.Cell.CellInstance[] = [];
         let fixedRows: Excel.Cell.CellInstance[] = [];
         cellYIndex = i === 0 ? 0 : i - 1;
-        for (let j = 0; j < this.colCount + 1; j++) {
+        if (i === this.rowCount + 1 && this.mode === "view") {
+          cellYIndex--;
+        }
+        for (
+          let j = 0;
+          j < this.colCount + 1 + (this.mode === "view" ? 1 : 0);
+          j++
+        ) {
           cellXIndex = j === 0 ? 0 : j - 1;
           const cell = new Cell(this.sheetEventsObserver);
-          cell.rowIndex = i;
-          cell.colIndex = j;
-          if (i > 0 && j > 0) {
-            Object.assign(cell, cells[cellYIndex]?.[cellXIndex]!);
-            cell.x =
-              cells[cellYIndex]?.[cellXIndex]!.x! + DEFAULT_INDEX_CELL_WIDTH;
-            cell.y = cells[cellYIndex]?.[cellXIndex]!.y! + DEFAULT_CELL_HEIGHT;
+          if (this.mode === "edit") {
+            cell.rowIndex = i;
+            cell.colIndex = j;
           } else {
-            if (j === 0) {
-              cell.x = 0;
-              cell.y =
-                i === 0
-                  ? 0
-                  : cells[cellYIndex]?.[cellXIndex]!.y! + DEFAULT_CELL_HEIGHT;
-              cell.width = DEFAULT_INDEX_CELL_WIDTH;
-              cell.height =
-                i === 0
-                  ? DEFAULT_CELL_HEIGHT
-                  : cells[cellYIndex]?.[cellXIndex]!.height!;
-            }
-            if (i === 0) {
+            cell.rowIndex = cellYIndex;
+            cell.colIndex = cellXIndex;
+          }
+          if (i > 0 && j > 0) {
+            if (j === this.colCount + 1 && this.mode === "view") {
               cell.x =
-                j === 0
-                  ? 0
-                  : cells[cellYIndex]?.[cellXIndex]!.x! +
-                    DEFAULT_INDEX_CELL_WIDTH;
-              cell.y = 0;
-              cell.width =
-                j === 0
-                  ? DEFAULT_INDEX_CELL_WIDTH
-                  : cells[cellYIndex]?.[cellXIndex]!.width!;
+                cells[i - 1]?.[j - 2]!.x! + cells[i - 1]?.[j - 2]!.width!;
+              cell.y = cells[i - 1]?.[j - 2]!.y!;
+              cell.width = DEFAULT_CELL_WIDTH;
+              cell.height = cells[i - 1]?.[j - 2]!.height!;
+              cell.border = {
+                top: null,
+                bottom: null,
+                left: null,
+                right: null,
+              };
+              cell.textStyle.backgroundColor = "";
+            } else if (i === this.rowCount + 1 && this.mode === "view") {
+              cell.x = cells[i - 2]?.[j - 1]!.x!;
+              cell.y =
+                cells[i - 2]?.[j - 1]!.y! + cells[i - 2]?.[j - 1]!.height!;
+              cell.width = cells[i - 2]?.[j - 1]!.width!;
               cell.height = DEFAULT_CELL_HEIGHT;
+              cell.border = {
+                top: null,
+                bottom: null,
+                left: null,
+                right: null,
+              };
+              cell.textStyle.backgroundColor = "";
+            } else {
+              Object.assign(cell, cells[cellYIndex]?.[cellXIndex]!);
+              cell.x =
+                cells[cellYIndex]?.[cellXIndex]!.x! +
+                (this.mode === "edit" ? DEFAULT_INDEX_CELL_WIDTH : 0);
+              cell.y =
+                cells[cellYIndex]?.[cellXIndex]!.y! +
+                (this.mode === "edit" ? DEFAULT_CELL_HEIGHT : 0);
+            }
+          } else {
+            if (this.mode === "edit") {
+              if (j === 0) {
+                cell.x = 0;
+                cell.y =
+                  i === 0
+                    ? 0
+                    : cells[cellYIndex]?.[cellXIndex]!.y! + DEFAULT_CELL_HEIGHT;
+                cell.width = DEFAULT_INDEX_CELL_WIDTH;
+                cell.height =
+                  i === 0
+                    ? DEFAULT_CELL_HEIGHT
+                    : cells[cellYIndex]?.[cellXIndex]!.height!;
+              }
+              if (i === 0) {
+                cell.x =
+                  j === 0
+                    ? 0
+                    : cells[cellYIndex]?.[cellXIndex]!.x! +
+                      DEFAULT_INDEX_CELL_WIDTH;
+                cell.y = 0;
+                cell.width =
+                  j === 0
+                    ? DEFAULT_INDEX_CELL_WIDTH
+                    : cells[cellYIndex]?.[cellXIndex]!.width!;
+                cell.height = DEFAULT_CELL_HEIGHT;
+              }
             }
           }
           cell.cellName = $10226(j - 1);
@@ -1362,7 +1401,12 @@ class Sheet
               },
             });
           }
-          row.push(cell);
+          if (
+            this.mode === "edit" ||
+            (i > 0 && j > 0 && this.mode === "view")
+          ) {
+            row.push(cell);
+          }
         }
         this.fixedColCells.push(fixedColRows);
         if (i < this.fixedRowIndex) {
@@ -1370,7 +1414,9 @@ class Sheet
           this.fixedRowCells.push(row);
           this.fixedRowHeight += row[0].height!;
         }
-        this.cells.push(row);
+        if (row.length > 0) {
+          this.cells.push(row);
+        }
       }
     } else {
       this.cells = [];
@@ -1841,6 +1887,7 @@ class Sheet
     ignoreXIndex: number | null,
     ignoreYIndex: number | null
   ) {
+    if (cells.length === 0 || cells[0]?.length === 0) return;
     this.clearCells(fixedInX, fixedInY);
     const scrollX = fixedInX ? 0 : this.scroll.x || 0;
     const scrollY = fixedInY ? 0 : this.scroll.y || 0;
@@ -1929,15 +1976,10 @@ class Sheet
   }
 
   drawShadow() {
-    if (
-      this.fixedRowCells.length > 0 &&
-      this.verticalScrollBar!.show &&
-      this.verticalScrollBar!.percent > 0
-    ) {
+    if (this.verticalScrollBar!.show && this.verticalScrollBar!.percent > 0) {
       this.horizontalScrollBarShadow!.render(this._ctx!);
     }
     if (
-      this.fixedColCells.length > 0 &&
       this.horizontalScrollBar!.show &&
       this.horizontalScrollBar!.percent > 0
     ) {

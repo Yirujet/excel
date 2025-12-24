@@ -99,13 +99,13 @@ class Cell extends Element<null> implements Excel.Cell.CellInstance {
   init() {}
 
   setBorderStyle(ctx: CanvasRenderingContext2D, side: Excel.Cell.BorderSide) {
-    if (!this.border[side].solid) {
+    if (!this.border[side]!.solid) {
       ctx.setLineDash(DEFAULT_CELL_LINE_DASH);
     } else {
       ctx.setLineDash([]);
     }
-    ctx.strokeStyle = this.border[side].color;
-    if (this.border[side].bold) {
+    ctx.strokeStyle = this.border[side]!.color;
+    if (this.border[side]!.bold) {
       ctx.lineWidth = 2;
     } else {
       ctx.lineWidth = 1;
@@ -201,65 +201,73 @@ class Cell extends Element<null> implements Excel.Cell.CellInstance {
 
   drawCellBorder(ctx: CanvasRenderingContext2D) {
     // 上边框
-    ctx.save();
-    this.setBorderStyle(ctx, "top");
-    ctx.beginPath();
-    ctx.moveTo(
-      Math.round(this.position.leftTop.x - this.scrollX),
-      Math.round(this.position.leftTop.y - this.scrollY)
-    );
-    ctx.lineTo(
-      Math.round(this.position.rightTop.x - this.scrollX),
-      Math.round(this.position.rightTop.y - this.scrollY)
-    );
-    ctx.closePath();
-    ctx.stroke();
-    ctx.restore();
+    if (this.border.top) {
+      ctx.save();
+      this.setBorderStyle(ctx, "top");
+      ctx.beginPath();
+      ctx.moveTo(
+        Math.round(this.position.leftTop.x - this.scrollX),
+        Math.round(this.position.leftTop.y - this.scrollY)
+      );
+      ctx.lineTo(
+        Math.round(this.position.rightTop.x - this.scrollX),
+        Math.round(this.position.rightTop.y - this.scrollY)
+      );
+      ctx.closePath();
+      ctx.stroke();
+      ctx.restore();
+    }
 
     // 左边框
-    ctx.save();
-    this.setBorderStyle(ctx, "left");
-    ctx.beginPath();
-    ctx.moveTo(
-      Math.round(this.position.leftBottom.x - this.scrollX),
-      Math.round(this.position.leftBottom.y - this.scrollY)
-    );
-    ctx.lineTo(
-      Math.round(this.position.leftTop.x - this.scrollX),
-      Math.round(this.position.leftTop.y - this.scrollY)
-    );
-    ctx.closePath();
-    ctx.stroke();
-    ctx.restore();
+    if (this.border.left) {
+      ctx.save();
+      this.setBorderStyle(ctx, "left");
+      ctx.beginPath();
+      ctx.moveTo(
+        Math.round(this.position.leftBottom.x - this.scrollX),
+        Math.round(this.position.leftBottom.y - this.scrollY)
+      );
+      ctx.lineTo(
+        Math.round(this.position.leftTop.x - this.scrollX),
+        Math.round(this.position.leftTop.y - this.scrollY)
+      );
+      ctx.closePath();
+      ctx.stroke();
+      ctx.restore();
+    }
 
     // 右边框
-    ctx.save();
-    this.setBorderStyle(ctx, "right");
-    ctx.beginPath();
-    const rightX = Math.round(this.position.rightTop.x - this.scrollX);
-    const topY = Math.round(this.position.rightTop.y - this.scrollY);
-    const bottomY = Math.round(this.position.rightBottom.y - this.scrollY);
-    ctx.moveTo(rightX, topY);
-    ctx.lineTo(rightX, bottomY);
-    ctx.closePath();
-    ctx.stroke();
-    ctx.restore();
+    if (this.border.right) {
+      ctx.save();
+      this.setBorderStyle(ctx, "right");
+      ctx.beginPath();
+      const rightX = Math.round(this.position.rightTop.x - this.scrollX);
+      const topY = Math.round(this.position.rightTop.y - this.scrollY);
+      const bottomY = Math.round(this.position.rightBottom.y - this.scrollY);
+      ctx.moveTo(rightX, topY);
+      ctx.lineTo(rightX, bottomY);
+      ctx.closePath();
+      ctx.stroke();
+      ctx.restore();
+    }
 
     // 下边框
-    ctx.save();
-    this.setBorderStyle(ctx, "bottom");
-    ctx.beginPath();
-    ctx.moveTo(
-      Math.round(this.position.rightBottom.x - this.scrollX),
-      Math.round(this.position.rightBottom.y - this.scrollY)
-    );
-    ctx.lineTo(
-      Math.round(this.position.leftBottom.x - this.scrollX),
-      Math.round(this.position.leftBottom.y - this.scrollY)
-    );
-    ctx.closePath();
-    ctx.stroke();
-    ctx.restore();
+    if (this.border.bottom) {
+      ctx.save();
+      this.setBorderStyle(ctx, "bottom");
+      ctx.beginPath();
+      ctx.moveTo(
+        Math.round(this.position.rightBottom.x - this.scrollX),
+        Math.round(this.position.rightBottom.y - this.scrollY)
+      );
+      ctx.lineTo(
+        Math.round(this.position.leftBottom.x - this.scrollX),
+        Math.round(this.position.leftBottom.y - this.scrollY)
+      );
+      ctx.closePath();
+      ctx.stroke();
+      ctx.restore();
+    }
   }
 
   drawDataCell(ctx: CanvasRenderingContext2D) {

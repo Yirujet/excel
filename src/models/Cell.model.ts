@@ -29,7 +29,7 @@ namespace Excel {
 
     export type BorderSide = "top" | "bottom" | "left" | "right";
 
-    export type Border = Record<BorderSide, BorderStyle>;
+    export type Border = Record<BorderSide, BorderStyle | null>;
 
     export type Action = "select" | "resize";
 

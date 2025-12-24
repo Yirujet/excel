@@ -237,7 +237,6 @@ class CellMergence extends Element<null> {
     ctx.font = `${DEFAULT_CELL_DIAGONAL_TEXT_FONT_SIZE}px sans-serif`;
     ctx.textBaseline = "middle";
 
-    // 修复文字居中问题：计算文字宽度并调整x坐标
     const textWidth = getTextMetrics(
       text,
       DEFAULT_CELL_DIAGONAL_TEXT_FONT_SIZE
@@ -279,7 +278,6 @@ class CellMergence extends Element<null> {
       endPoints.splice(times, 0, [cellX + cellWidth, cellY + cellHeight]);
     }
 
-    // 优化1: 减少save/restore操作，合并路径
     ctx.save();
     ctx.strokeStyle = DEFAULT_CELL_DIAGONAL_LINE_COLOR;
     ctx.lineWidth = DEFAULT_CELL_DIAGONAL_LINE_WIDTH;
@@ -288,17 +286,14 @@ class CellMergence extends Element<null> {
     const startX = Math.round(cellX - scrollX);
     const startY = Math.round(cellY - scrollY);
 
-    // 绘制所有对角线
     endPoints.forEach(([x, y]) => {
       ctx.moveTo(startX, startY);
       ctx.lineTo(Math.round(x - scrollX), Math.round(y - scrollY));
     });
 
-    // 一次性stroke所有路径
     ctx.stroke();
     ctx.restore();
 
-    // 绘制文本
     endPoints.forEach(([x, y], i) => {
       const prePoint: [number, number] =
         i > 0 ? endPoints[i - 1] : [cellX + cellWidth, cellY];

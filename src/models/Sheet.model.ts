@@ -7,9 +7,12 @@ namespace Excel {
       colCount: number;
       cells?: Cell.CellInstance[][];
       mergedCells?: CellRange[];
+      mode?: Mode;
     }
 
     export type CellRange = [number, number, number, number];
+
+    export type Mode = "edit" | "view";
 
     export interface SheetInstance extends Required<Configuration> {
       $el: HTMLCanvasElement | null;

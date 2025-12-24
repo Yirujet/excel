@@ -25,8 +25,8 @@
   <script src="./mock.js"></script>
   <script>
     const { colWidth, rowHeight, mergeCell, configData } = data;
-    const colCount = colWidth.length;
-    const rowCount = rowHeight.length;
+    const colCount = configData[0].length;
+    const rowCount = configData.length;
     const cells = [];
     let cellX = 0;
     let cellY = 0;
@@ -48,7 +48,9 @@
         };
         const cellData = configData[i]?.[j];
         if (cellData && cellData.cellValue) {
-          if (["datasets", "static"].includes(cellData.cellTypeDict)) {
+          if (
+            ["datasets", "static", "function"].includes(cellData.cellTypeDict)
+          ) {
             cell.meta = {
               type: "text",
               data: cellData.cellValue,
@@ -112,11 +114,17 @@
       cells.push(row);
     }
     const mergedCells = mergeCell.map((item) => [
-      item.row + 1,
-      item.row + item.rowspan,
-      item.col + 1,
-      item.col + item.colspan,
+      item.row,
+      item.row - 1 + item.rowspan,
+      item.col,
+      item.col - 1 + item.colspan,
     ]);
+    // const mergedCells = mergeCell.map((item) => [
+    //   item.row + 1,
+    //   item.row + item.rowspan,
+    //   item.col + 1,
+    //   item.col + item.colspan,
+    // ]);
     const app = document.querySelector("#app");
     const { width, height, x, y } = app.getBoundingClientRect();
     const excel = new Excel({
@@ -124,12 +132,13 @@
       sheets: [
         {
           name: "sheet1",
-          fixedRowIndex: 1,
-          fixedColIndex: 1,
+          fixedRowIndex: 0,
+          fixedColIndex: 0,
           rowCount,
           colCount,
           cells,
           mergedCells,
+          mode: "view",
         },
       ],
     });
