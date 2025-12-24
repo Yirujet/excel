@@ -342,6 +342,11 @@ class CellMergence extends Element<null> {
         const bottomY = Math.min(maxY - scrollY, this.layout!.height);
         const leftTopCell = this.cells[minRowIndex][minColIndex];
         const rightBottomCell = this.cells[maxRowIndex][maxColIndex];
+        const showTopBorder =
+          (minY - scrollY > this.fixedRowHeight && scrollY > 0) ||
+          scrollY === 0;
+        const showLeftBorder =
+          (minX - scrollX > this.fixedColWidth && scrollX > 0) || scrollX === 0;
         const w =
           rightBottomCell.position.rightBottom.x! -
           leftTopCell.position.leftTop.x!;
@@ -360,7 +365,7 @@ class CellMergence extends Element<null> {
           ctx.fill();
           ctx.restore();
 
-          if (leftTopCell.border.top) {
+          if (leftTopCell.border.top && showTopBorder) {
             ctx.save();
             if (!leftTopCell.border.top.solid) {
               ctx.setLineDash(DEFAULT_CELL_LINE_DASH);
@@ -423,7 +428,7 @@ class CellMergence extends Element<null> {
             ctx.restore();
           }
 
-          if (leftTopCell.border.left) {
+          if (leftTopCell.border.left && showLeftBorder) {
             ctx.save();
             if (!leftTopCell.border.left.solid) {
               ctx.setLineDash(DEFAULT_CELL_LINE_DASH);
