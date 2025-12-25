@@ -8,6 +8,10 @@ namespace Excel {
       cells?: Cell.CellInstance[][];
       mergedCells?: CellRange[];
       mode?: Mode;
+      margin?: {
+        right: number;
+        bottom: number;
+      };
     }
 
     export type CellRange = [number, number, number, number];

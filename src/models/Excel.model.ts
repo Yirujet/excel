@@ -5,12 +5,10 @@
 namespace Excel {
   export interface Configuration {
     name: string;
-    cssPrefix?: string;
     sheets?: Sheet.SheetInstance[];
   }
 
-  export interface ExcelInstance
-    extends Required<Omit<Configuration, "cssPrefix">> {
+  export interface ExcelInstance extends Required<Configuration> {
     $el: HTMLElement | null;
     $target: HTMLElement | null;
     configuration: Configuration;

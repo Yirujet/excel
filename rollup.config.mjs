@@ -30,15 +30,15 @@ export default [
       //     include: 'node_modules/**',
       //   }
       // ),
-      postcss({
-        extract: true,
-        extract: 'excel.css',
-        minimize: true,
-        plugins: [
-          autoprefixer(),
-          cssnano()
-        ]
-      }),
+      // postcss({
+      //   extract: true,
+      //   extract: 'excel.css',
+      //   minimize: true,
+      //   plugins: [
+      //     autoprefixer(),
+      //     cssnano()
+      //   ]
+      // }),
       babel({
         exclude: 'node_modules/**',
         presets: ['@babel/preset-env']

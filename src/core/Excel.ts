@@ -2,14 +2,12 @@
 
 import Sheet from "./Sheet";
 import Element from "../components/Element";
-import "../styles/index.less";
 import {
   DEFAULT_CELL_COL_COUNT,
   DEFAULT_CELL_ROW_COUNT,
 } from "../config/index";
 
 class Excel extends Element<HTMLDivElement> implements Excel.ExcelInstance {
-  static CSS_PREFIX = "excel";
   private _sequence = 0;
   $target: HTMLElement | null = null;
   name = "";
@@ -21,10 +19,9 @@ class Excel extends Element<HTMLDivElement> implements Excel.ExcelInstance {
     super("div");
     this.configuration = config;
     this.name = config.name || `Excel-${Date.now()}`;
-    this.addClass(`${Excel.CSS_PREFIX}-wrapper`);
-    if (config.cssPrefix) {
-      Excel.CSS_PREFIX = config.cssPrefix;
-    }
+    this.$el!.style.display = "flex";
+    this.$el!.style.flexDirection = "column";
+    this.$el!.style.height = "100%";
   }
 
   mount(target: HTMLElement) {
@@ -43,6 +40,7 @@ class Excel extends Element<HTMLDivElement> implements Excel.ExcelInstance {
     } else {
       this.configuration.sheets.forEach((item) => {
         const sheet = new Sheet(item.name, item);
+        sheet.$el!.style.overflow = "hidden";
         sheet.x = x;
         sheet.y = y;
         sheet.width = width;
@@ -80,6 +78,7 @@ class Excel extends Element<HTMLDivElement> implements Excel.ExcelInstance {
       colCount: DEFAULT_CELL_COL_COUNT,
     };
     const sheet = new Sheet(sheesName, sheetConfig);
+    sheet.$el!.style.overflow = "hidden";
     sheet.x = x;
     sheet.y = y;
     sheet.width = width;
@@ -93,7 +92,7 @@ class Excel extends Element<HTMLDivElement> implements Excel.ExcelInstance {
 
   createSheetRender() {
     const sheetRender = new Element<HTMLDivElement>("div");
-    sheetRender.addClass(`${Excel.CSS_PREFIX}-sheet-render`);
+    sheetRender.$el!.style.flex = "1";
     const sheet = this.sheets[this.sheetIndex];
     sheet.render();
     sheetRender.add(sheet.$el!);

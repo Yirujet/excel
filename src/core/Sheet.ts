@@ -44,6 +44,10 @@ class Sheet
   width = 0;
   height = 0;
   mode: Excel.Sheet.Mode = "edit";
+  margin: Exclude<Excel.Sheet.Configuration["margin"], undefined> = {
+    right: 0,
+    bottom: 0,
+  };
   scroll: Excel.PositionPoint = { x: 0, y: 0 };
   horizontalScrollBar: HorizontalScrollbar | null = null;
   verticalScrollBar: VerticalScrollbar | null = null;
@@ -98,6 +102,10 @@ class Sheet
     this.rowCount = config.rowCount;
     this.colCount = config.colCount;
     this.mergedCells = config.mergedCells || [];
+    this.margin = config.margin || {
+      right: DEFAULT_CELL_WIDTH,
+      bottom: DEFAULT_CELL_HEIGHT,
+    };
     this.initCells(config?.cells);
   }
 
@@ -973,6 +981,7 @@ class Sheet
   }
 
   private updateCursor(e: MouseEvent) {
+    if (this.mode === "view") return;
     if (globalObj.EVENT_LOCKED) return;
     if (!this.pointInCellRange(e)) {
       if (this.pointInScrollbar(e)) {
@@ -1177,6 +1186,7 @@ class Sheet
   initEvents() {
     const globalEventListeners = {
       mousedown: (e: MouseEvent) => {
+        if (this.mode === "view") return;
         this.fill.call(this, e);
         this.selectCellRange.call(this, e);
         this.resizeCell.call(this, e);
@@ -1184,11 +1194,13 @@ class Sheet
         this.endEditingCell.call(this, e);
       },
       dblclick: (e: MouseEvent) => {
+        if (this.mode === "view") return;
         this.editCell.call(this, e);
       },
       mousemove: debounce(this.updateCursor.bind(this), 30),
       wheel: this.preventGlobalWheel.bind(this),
       keydown: (e: KeyboardEvent) => {
+        if (this.mode === "view") return;
         this.clearCellsMeta.call(this, e);
       },
     };
@@ -1286,7 +1298,7 @@ class Sheet
               cell.x =
                 cells[i - 1]?.[j - 2]!.x! + cells[i - 1]?.[j - 2]!.width!;
               cell.y = cells[i - 1]?.[j - 2]!.y!;
-              cell.width = DEFAULT_CELL_WIDTH;
+              cell.width = this.margin.right;
               cell.height = cells[i - 1]?.[j - 2]!.height!;
               cell.border = {
                 top: null,
@@ -1300,7 +1312,7 @@ class Sheet
               cell.y =
                 cells[i - 2]?.[j - 1]!.y! + cells[i - 2]?.[j - 1]!.height!;
               cell.width = cells[i - 2]?.[j - 1]!.width!;
-              cell.height = DEFAULT_CELL_HEIGHT;
+              cell.height = this.margin.bottom;
               cell.border = {
                 top: null,
                 bottom: null,
