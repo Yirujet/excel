@@ -13,7 +13,9 @@ import {
   DEFAULT_CELL_COL_COUNT,
   DEFAULT_CELL_HEIGHT,
   DEFAULT_CELL_LINE_COLOR,
+  DEFAULT_CELL_PADDING,
   DEFAULT_CELL_ROW_COUNT,
+  DEFAULT_CELL_TEXT_FONT_SIZE,
   DEFAULT_CELL_WIDTH,
   DEFAULT_FIXED_CELL_BACKGROUND_COLOR,
   DEFAULT_FIXED_CELL_COLOR,
@@ -32,6 +34,7 @@ import Scrollbar from "./Scrollbar/Scrollbar";
 import Filling from "./Filling";
 import debounce from "../utils/debounce";
 import CellInput from "./CellInput";
+import getTextMetrics from "../utils/getTextMetrics";
 
 class Sheet
   extends Element<HTMLCanvasElement>
@@ -92,6 +95,7 @@ class Sheet
   isFilling = false;
   fillingCells: Excel.Sheet.CellRange | null = null;
   editingCell: Excel.Cell.CellInstance | null = null;
+  fixedWidths: Array<number | undefined> = [];
 
   constructor(name: string, config: Excel.Sheet.Configuration) {
     super("canvas");
@@ -1026,6 +1030,168 @@ class Sheet
     }
   }
 
+  private checkCellInMergedCells(rowIndex: number, colIndex: number): boolean {
+    return this.mergedCells.some((item) => {
+      const [startRowIndex, endRowIndex, startColIndex, endColIndex] = item;
+      return (
+        rowIndex! >= startRowIndex &&
+        rowIndex! <= endRowIndex &&
+        colIndex! >= startColIndex &&
+        colIndex! <= endColIndex
+      );
+    });
+  }
+
+  private truncateContent(
+    content: string,
+    width: number,
+    fontSize: number
+  ): string[] {
+    const value = String(content || "");
+
+    if (!value) return [];
+
+    const availableWidth = width - DEFAULT_CELL_PADDING * 2;
+
+    if (availableWidth <= 0) return [];
+
+    let currentWidth = 0;
+    let result: string[] = [];
+    let currentLine = "";
+
+    for (let i = 0; i < value.length; i++) {
+      const char = value[i];
+      const { width: charWidth } = getTextMetrics(char, fontSize);
+
+      if (currentWidth + charWidth > availableWidth) {
+        if (currentLine) {
+          result.push(currentLine);
+        }
+
+        if (charWidth > availableWidth) {
+          result.push(char);
+          currentLine = "";
+          currentWidth = 0;
+        } else {
+          currentLine = char;
+          currentWidth = charWidth;
+        }
+      } else {
+        currentLine += char;
+        currentWidth += charWidth;
+      }
+    }
+
+    if (currentLine) {
+      result.push(currentLine);
+    }
+
+    return result;
+  }
+
+  private transformCells(
+    cells: Excel.Cell.CellInstance[][]
+  ): Excel.Cell.CellInstance[][] {
+    const transformedCells = cells.map((row) =>
+      row.map((cell) => JSON.parse(JSON.stringify(cell)))
+    );
+
+    for (let rowIndex = 0; rowIndex < transformedCells.length; rowIndex++) {
+      const row = transformedCells[rowIndex];
+      let currentX = 0;
+
+      for (let colIndex = 0; colIndex < row.length; colIndex++) {
+        const cell = row[colIndex];
+
+        cell.x = currentX;
+        cell.y =
+          rowIndex === 0
+            ? 0
+            : transformedCells[rowIndex - 1][0].y +
+              (transformedCells[rowIndex - 1][0].height || 0);
+        const cellInMergedCells = this.checkCellInMergedCells(
+          rowIndex,
+          colIndex
+        );
+        if (
+          cell.meta?.type === "text" &&
+          cell.value &&
+          cell.width &&
+          !cellInMergedCells
+        ) {
+          const { width: textWidth } = getTextMetrics(
+            cell.value,
+            cell.textStyle.fontSize
+          );
+
+          if (textWidth > cell.width) {
+            if (cell.wrap === "no-wrap") {
+              const widthIncrease =
+                textWidth - cell.width + DEFAULT_CELL_PADDING * 2;
+              cell.width += widthIncrease;
+
+              for (
+                let adjustRowIndex = 0;
+                adjustRowIndex < transformedCells.length;
+                adjustRowIndex++
+              ) {
+                const adjustRow = transformedCells[adjustRowIndex];
+                adjustRow[colIndex].width = cell.width;
+                for (
+                  let adjustColIndex = colIndex + 1;
+                  adjustColIndex < adjustRow.length;
+                  adjustColIndex++
+                ) {
+                  const adjustCell = adjustRow[adjustColIndex];
+                  adjustCell.x = (adjustCell.x || 0) + widthIncrease;
+                }
+              }
+            } else if (cell.wrap === "wrap") {
+              console.log(
+                rowIndex,
+                colIndex,
+                cell.width,
+                cell.value,
+                cell.value
+                  .split("\n")
+                  .map((item: string) =>
+                    this.truncateContent(
+                      item,
+                      cell.width,
+                      cell.textStyle.fontSize || DEFAULT_CELL_TEXT_FONT_SIZE
+                    )
+                  )
+              );
+              const heightIncrease =
+                cell.textStyle?.fontSize || DEFAULT_CELL_TEXT_FONT_SIZE;
+              transformedCells[rowIndex].forEach((item) => {
+                item.height += heightIncrease;
+              });
+              for (
+                let adjustRowIndex = rowIndex + 1;
+                adjustRowIndex < transformedCells.length;
+                adjustRowIndex++
+              ) {
+                const adjustRow = transformedCells[adjustRowIndex];
+                for (
+                  let adjustColIndex = 0;
+                  adjustColIndex < adjustRow.length;
+                  adjustColIndex++
+                ) {
+                  const adjustCell = adjustRow[adjustColIndex];
+                  adjustCell.y = (adjustCell.y || 0) + heightIncrease;
+                }
+              }
+            }
+          }
+        }
+        currentX += cell.width || 0;
+      }
+    }
+
+    return transformedCells;
+  }
+
   clearSelectCells() {
     if (this.selectedCells) {
       this.selectedCells = null;
@@ -1262,6 +1428,7 @@ class Sheet
 
   initCells(cells: Excel.Cell.CellInstance[][] | undefined) {
     if (cells) {
+      cells = this.transformCells(cells);
       this.cells = [];
       this.fixedColWidth = 0;
       this.fixedRowHeight = 0;

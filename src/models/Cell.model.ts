@@ -52,6 +52,8 @@ namespace Excel {
 
     export type CellImageMetaFill = "fill" | "contain" | "cover" | "none";
 
+    export type CellWrap = "normal" | "wrap" | "no-wrap";
+
     export type CellImageMetaData = {
       img: CanvasImageSource;
       width: number;
@@ -94,6 +96,7 @@ namespace Excel {
       fixed: CellFixed;
       hidden?: boolean;
       mouseEntered?: boolean;
+      wrap?: CellWrap;
       scrollX: number;
       scrollY: number;
       events: Record<string, Array<Excel.Event.FnType>>;
