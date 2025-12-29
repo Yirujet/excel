@@ -80,6 +80,7 @@ class Cell extends Element<null> implements Excel.Cell.CellInstance {
   };
   meta: Excel.Cell.Meta = null;
   value = "";
+  valueSlices = [];
   fn = null;
   fixed = {
     x: false,
@@ -273,11 +274,22 @@ class Cell extends Element<null> implements Excel.Cell.CellInstance {
   drawDataCell(ctx: CanvasRenderingContext2D) {
     switch (this.meta?.type) {
       case "text":
-        const textAlignOffsetX = this.getTextAlignOffsetX(this.width!);
-        this.drawDataCellText(ctx, textAlignOffsetX);
-        if (this.textStyle.underline) {
-          this.drawDataCellUnderline(ctx, textAlignOffsetX);
-        }
+        let textList: string[] =
+          this.valueSlices.length > 0 ? this.valueSlices : [this.value];
+        textList.forEach((text, i: number) => {
+          const textAlignOffsetX = this.getTextAlignOffsetX(this.width!);
+          this.drawDataCellText(
+            ctx,
+            text,
+            textAlignOffsetX,
+            this.y! +
+              (this.height! / (textList.length + 1)) * (i + 1) -
+              this.scrollY
+          );
+          if (this.textStyle.underline) {
+            this.drawDataCellUnderline(ctx, textAlignOffsetX);
+          }
+        });
         break;
       case "image":
         this.drawDataCellImage(ctx);
@@ -288,14 +300,15 @@ class Cell extends Element<null> implements Excel.Cell.CellInstance {
     }
   }
 
-  drawDataCellText(ctx: CanvasRenderingContext2D, textAlignOffsetX: number) {
+  drawDataCellText(
+    ctx: CanvasRenderingContext2D,
+    text: string,
+    textAlignOffsetX: number,
+    y: number
+  ) {
     ctx.save();
     this.setTextStyle(ctx);
-    ctx.fillText(
-      this.value,
-      this.x! + textAlignOffsetX - this.scrollX,
-      this.y! + this.height! / 2 - this.scrollY
-    );
+    ctx.fillText(text, this.x! + textAlignOffsetX - this.scrollX, y);
     ctx.restore();
   }
 

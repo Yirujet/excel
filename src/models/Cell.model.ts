@@ -92,6 +92,7 @@ namespace Excel {
       border: Border;
       meta: Meta;
       value: any;
+      valueSlices?: string[];
       fn: string | null;
       fixed: CellFixed;
       hidden?: boolean;

@@ -1095,7 +1095,7 @@ class Sheet
     const transformedCells = cells.map((row) =>
       row.map((cell) => JSON.parse(JSON.stringify(cell)))
     );
-
+    const rowAdjust: Record<number, number> = {};
     for (let rowIndex = 0; rowIndex < transformedCells.length; rowIndex++) {
       const row = transformedCells[rowIndex];
       let currentX = 0;
@@ -1123,7 +1123,6 @@ class Sheet
             cell.value,
             cell.textStyle.fontSize
           );
-
           if (textWidth > cell.width) {
             if (cell.wrap === "no-wrap") {
               const widthIncrease =
@@ -1147,39 +1146,43 @@ class Sheet
                 }
               }
             } else if (cell.wrap === "wrap") {
-              console.log(
-                rowIndex,
-                colIndex,
-                cell.width,
-                cell.value,
-                cell.value
-                  .split("\n")
-                  .map((item: string) =>
-                    this.truncateContent(
-                      item,
-                      cell.width,
-                      cell.textStyle.fontSize || DEFAULT_CELL_TEXT_FONT_SIZE
-                    )
-                  )
-              );
-              const heightIncrease =
+              const fontSize =
                 cell.textStyle?.fontSize || DEFAULT_CELL_TEXT_FONT_SIZE;
-              transformedCells[rowIndex].forEach((item) => {
-                item.height += heightIncrease;
-              });
-              for (
-                let adjustRowIndex = rowIndex + 1;
-                adjustRowIndex < transformedCells.length;
-                adjustRowIndex++
+              const valueSlices = cell.value
+                .split("\n")
+                .map((item: string) =>
+                  this.truncateContent(item, cell.width, fontSize)
+                );
+              cell.valueSlices = valueSlices.flat();
+              const heightIncrease = fontSize * cell.valueSlices.length;
+              if (
+                !rowAdjust[rowIndex] ||
+                rowAdjust[rowIndex] < heightIncrease
               ) {
-                const adjustRow = transformedCells[adjustRowIndex];
+                let offset = 0;
+                if (!rowAdjust[rowIndex]) {
+                  offset = heightIncrease;
+                } else {
+                  offset = heightIncrease - rowAdjust[rowIndex];
+                }
+                rowAdjust[rowIndex] = heightIncrease;
+                transformedCells[rowIndex].forEach((item) => {
+                  item.height += offset;
+                });
                 for (
-                  let adjustColIndex = 0;
-                  adjustColIndex < adjustRow.length;
-                  adjustColIndex++
+                  let adjustRowIndex = rowIndex + 1;
+                  adjustRowIndex < transformedCells.length;
+                  adjustRowIndex++
                 ) {
-                  const adjustCell = adjustRow[adjustColIndex];
-                  adjustCell.y = (adjustCell.y || 0) + heightIncrease;
+                  const adjustRow = transformedCells[adjustRowIndex];
+                  for (
+                    let adjustColIndex = 0;
+                    adjustColIndex < adjustRow.length;
+                    adjustColIndex++
+                  ) {
+                    const adjustCell = adjustRow[adjustColIndex];
+                    adjustCell.y = (adjustCell.y || 0) + offset;
+                  }
                 }
               }
             }
@@ -1188,7 +1191,6 @@ class Sheet
         currentX += cell.width || 0;
       }
     }
-
     return transformedCells;
   }
 

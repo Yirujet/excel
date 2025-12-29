@@ -1,3 +1,5 @@
+import isChineseSpecialChar from "./isChineseSpecialChar";
+
 export default (
   text: string,
   fontSize: number,
@@ -17,10 +19,14 @@ export default (
     for (let i = 0; i < textLength; i++) {
       // 根据字符编码判断是中文字符还是英文字符
       // 中文字符编码范围：\u4e00-\u9fa5
+      const char = text[i];
       const charCode = text.charCodeAt(i);
-      // 中文字符宽度为fontSize，英文字符为fontSize/2
+
+      // 中文字符和中文特殊字符宽度为fontSize，英文字符为fontSize/2
       width +=
-        charCode >= 0x4e00 && charCode <= 0x9fa5 ? fontSize : fontSize / 2;
+        (charCode >= 0x4e00 && charCode <= 0x9fa5) || isChineseSpecialChar(char)
+          ? fontSize
+          : fontSize / 2;
     }
 
     // 高度直接使用fontSize
