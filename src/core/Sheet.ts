@@ -1194,6 +1194,94 @@ class Sheet
     return transformedCells;
   }
 
+  private transformMergedCells() {
+    const rowAdjust: Record<number, number> = {};
+    return this.mergedCells.map((range) => {
+      const [minRowIndex, maxRowIndex, minColIndex, maxColIndex] = range;
+      const leftTopCell = this.getCell(minRowIndex, minColIndex);
+      const rightBottomCell = this.getCell(maxRowIndex, maxColIndex);
+      const w =
+        rightBottomCell.position.rightBottom.x! -
+        leftTopCell.position.leftTop.x!;
+      if (
+        leftTopCell.meta?.type === "text" &&
+        leftTopCell.value &&
+        leftTopCell.width
+      ) {
+        const { width: textWidth } = getTextMetrics(
+          leftTopCell.value,
+          leftTopCell.textStyle.fontSize
+        );
+        if (textWidth > w) {
+          if (leftTopCell.wrap === "no-wrap") {
+            const widthIncrease = textWidth - w + DEFAULT_CELL_PADDING * 2;
+            leftTopCell.width += widthIncrease;
+            leftTopCell.updatePosition();
+
+            for (
+              let adjustRowIndex = 0;
+              adjustRowIndex < this.cells.length;
+              adjustRowIndex++
+            ) {
+              const adjustRow = this.cells[adjustRowIndex];
+              adjustRow[minColIndex].width = leftTopCell.width;
+              adjustRow[minColIndex].updatePosition();
+              for (
+                let adjustColIndex = minColIndex + 1;
+                adjustColIndex < adjustRow.length;
+                adjustColIndex++
+              ) {
+                const adjustCell = adjustRow[adjustColIndex];
+                adjustCell.x = (adjustCell.x || 0) + widthIncrease;
+                adjustCell.updatePosition();
+              }
+            }
+          } else if (leftTopCell.wrap === "wrap") {
+            const fontSize =
+              leftTopCell.textStyle?.fontSize || DEFAULT_CELL_TEXT_FONT_SIZE;
+            const valueSlices = leftTopCell.value
+              .split("\n")
+              .map((item: string) => this.truncateContent(item, w, fontSize));
+            leftTopCell.valueSlices = valueSlices.flat();
+            const heightIncrease = fontSize * leftTopCell.valueSlices!.length;
+            if (
+              !rowAdjust[minRowIndex] ||
+              rowAdjust[minRowIndex] < heightIncrease
+            ) {
+              let offset = 0;
+              if (!rowAdjust[minRowIndex]) {
+                offset = heightIncrease;
+              } else {
+                offset = heightIncrease - rowAdjust[minRowIndex];
+              }
+              rowAdjust[minRowIndex] = heightIncrease;
+              this.cells[minRowIndex].forEach((item) => {
+                item.height! += offset;
+                item.updatePosition();
+              });
+              for (
+                let adjustRowIndex = minRowIndex + 1;
+                adjustRowIndex < this.cells.length;
+                adjustRowIndex++
+              ) {
+                const adjustRow = this.cells[adjustRowIndex];
+                for (
+                  let adjustColIndex = 0;
+                  adjustColIndex < adjustRow.length;
+                  adjustColIndex++
+                ) {
+                  const adjustCell = adjustRow[adjustColIndex];
+                  adjustCell.y = (adjustCell.y || 0) + offset;
+                  adjustCell.updatePosition();
+                }
+              }
+            }
+          }
+        }
+      }
+    });
+  }
+
   clearSelectCells() {
     if (this.selectedCells) {
       this.selectedCells = null;
@@ -1430,279 +1518,281 @@ class Sheet
 
   initCells(cells: Excel.Cell.CellInstance[][] | undefined) {
     if (cells) {
-      cells = this.transformCells(cells);
-      this.cells = [];
-      this.fixedColWidth = 0;
-      this.fixedRowHeight = 0;
-      let cellXIndex = 0;
-      let cellYIndex = 0;
-      for (
-        let i = 0;
-        i < this.rowCount + 1 + (this.mode === "view" ? 1 : 0);
-        i++
-      ) {
-        let row: Excel.Cell.CellInstance[] = [];
-        let fixedColRows: Excel.Cell.CellInstance[] = [];
-        let fixedRows: Excel.Cell.CellInstance[] = [];
-        cellYIndex = i === 0 ? 0 : i - 1;
-        if (i === this.rowCount + 1 && this.mode === "view") {
-          cellYIndex--;
-        }
-        for (
-          let j = 0;
-          j < this.colCount + 1 + (this.mode === "view" ? 1 : 0);
-          j++
-        ) {
-          cellXIndex = j === 0 ? 0 : j - 1;
-          const cell = new Cell(this.sheetEventsObserver);
-          if (this.mode === "edit") {
-            cell.rowIndex = i;
-            cell.colIndex = j;
-          } else {
-            cell.rowIndex = cellYIndex;
-            cell.colIndex = cellXIndex;
-          }
-          if (i > 0 && j > 0) {
-            if (j === this.colCount + 1 && this.mode === "view") {
-              cell.x =
-                cells[i - 1]?.[j - 2]!.x! + cells[i - 1]?.[j - 2]!.width!;
-              cell.y = cells[i - 1]?.[j - 2]!.y!;
-              cell.width = this.margin.right;
-              cell.height = cells[i - 1]?.[j - 2]!.height!;
-              cell.border = {
-                top: null,
-                bottom: null,
-                left: null,
-                right: null,
-              };
-              cell.textStyle.backgroundColor = "";
-            } else if (i === this.rowCount + 1 && this.mode === "view") {
-              cell.x = cells[i - 2]?.[j - 1]!.x!;
-              cell.y =
-                cells[i - 2]?.[j - 1]!.y! + cells[i - 2]?.[j - 1]!.height!;
-              cell.width = cells[i - 2]?.[j - 1]!.width!;
-              cell.height = this.margin.bottom;
-              cell.border = {
-                top: null,
-                bottom: null,
-                left: null,
-                right: null,
-              };
-              cell.textStyle.backgroundColor = "";
-            } else {
-              Object.assign(cell, cells[cellYIndex]?.[cellXIndex]!);
-              cell.x =
-                cells[cellYIndex]?.[cellXIndex]!.x! +
-                (this.mode === "edit" ? DEFAULT_INDEX_CELL_WIDTH : 0);
-              cell.y =
-                cells[cellYIndex]?.[cellXIndex]!.y! +
-                (this.mode === "edit" ? DEFAULT_CELL_HEIGHT : 0);
-            }
-          } else {
-            if (this.mode === "edit") {
-              if (j === 0) {
-                cell.x = 0;
-                cell.y =
-                  i === 0
-                    ? 0
-                    : cells[cellYIndex]?.[cellXIndex]!.y! + DEFAULT_CELL_HEIGHT;
-                cell.width = DEFAULT_INDEX_CELL_WIDTH;
-                cell.height =
-                  i === 0
-                    ? DEFAULT_CELL_HEIGHT
-                    : cells[cellYIndex]?.[cellXIndex]!.height!;
-              }
-              if (i === 0) {
-                cell.x =
-                  j === 0
-                    ? 0
-                    : cells[cellYIndex]?.[cellXIndex]!.x! +
-                      DEFAULT_INDEX_CELL_WIDTH;
-                cell.y = 0;
-                cell.width =
-                  j === 0
-                    ? DEFAULT_INDEX_CELL_WIDTH
-                    : cells[cellYIndex]?.[cellXIndex]!.width!;
-                cell.height = DEFAULT_CELL_HEIGHT;
-              }
-            }
-          }
-          cell.cellName = $10226(j - 1);
-          cell.updatePosition();
-          if (i === 0) {
-            this.setCellMeta(
-              cell,
-              {
-                type: "text",
-                data: cell.cellName,
-              },
-              false
-            );
-          }
-          if (j === 0) {
-            this.setCellMeta(
-              cell,
-              {
-                type: "text",
-                data: i.toString(),
-              },
-              false
-            );
-          }
-          if (i === 0 && j === 0) {
-            cell.hidden = true;
-          }
-          if (j < this.fixedColIndex) {
-            fixedColRows.push(cell);
-            if (i < this.fixedRowIndex) {
-              fixedRows.push(cell);
-            }
-            if (i === 0) {
-              this.fixedColWidth += cell.width!;
-            }
-          }
-          if (i < this.fixedRowIndex || j < this.fixedColIndex) {
-            if (i < this.fixedRowIndex) {
-              cell.fixed.y = true;
-            }
-            if (j < this.fixedColIndex) {
-              cell.fixed.x = true;
-            }
-            this.setCellStyle(cell, {
-              border: {
-                solid: true,
-                color: DEFAULT_CELL_LINE_COLOR,
-                bold: false,
-              },
-              text: {
-                color: DEFAULT_FIXED_CELL_COLOR,
-                backgroundColor: DEFAULT_FIXED_CELL_BACKGROUND_COLOR,
-                fontSize: 13,
-                align: "center",
-              },
-            });
-          }
-          if (
-            this.mode === "edit" ||
-            (i > 0 && j > 0 && this.mode === "view")
-          ) {
-            row.push(cell);
-          }
-        }
-        this.fixedColCells.push(fixedColRows);
-        if (i < this.fixedRowIndex) {
-          this.fixedCells.push(fixedRows);
-          this.fixedRowCells.push(row);
-          this.fixedRowHeight += row[0].height!;
-        }
-        if (row.length > 0) {
-          this.cells.push(row);
-        }
-      }
+      this.initConfigCells(cells);
     } else {
-      this.cells = [];
-      this.fixedColWidth = 0;
-      this.fixedRowHeight = 0;
-      let x = 0;
-      let y = 0;
-      for (let i = 0; i < this.rowCount + 1; i++) {
-        let row: Excel.Cell.CellInstance[] = [];
-        y = i * DEFAULT_CELL_HEIGHT;
-        x = 0;
-        let fixedColRows: Excel.Cell.CellInstance[] = [];
-        let fixedRows: Excel.Cell.CellInstance[] = [];
-        for (let j = 0; j < this.colCount + 1; j++) {
-          x =
-            j === 0
-              ? 0
-              : (j - 1) * DEFAULT_CELL_WIDTH + DEFAULT_INDEX_CELL_WIDTH;
-          const cell = new Cell(this.sheetEventsObserver);
-          cell.x = x;
-          cell.y = y;
-          cell.width = j === 0 ? DEFAULT_INDEX_CELL_WIDTH : DEFAULT_CELL_WIDTH;
-          cell.height = DEFAULT_CELL_HEIGHT;
+      this.initDefaultCells();
+    }
+    if (this.cells.length > 0) {
+      this.transformMergedCells();
+      this.realWidth = this.cells[0].reduce((p, c) => p + c.width!, 0);
+      this.realHeight = this.cells.reduce((p, c) => p + c[0].height!, 0);
+    }
+  }
+
+  initConfigCells(cells: Excel.Cell.CellInstance[][]) {
+    cells = this.transformCells(cells);
+    this.cells = [];
+    this.fixedColWidth = 0;
+    this.fixedRowHeight = 0;
+    let cellXIndex = 0;
+    let cellYIndex = 0;
+    for (
+      let i = 0;
+      i < this.rowCount + 1 + (this.mode === "view" ? 1 : 0);
+      i++
+    ) {
+      let row: Excel.Cell.CellInstance[] = [];
+      let fixedColRows: Excel.Cell.CellInstance[] = [];
+      let fixedRows: Excel.Cell.CellInstance[] = [];
+      cellYIndex = i === 0 ? 0 : i - 1;
+      if (i === this.rowCount + 1 && this.mode === "view") {
+        cellYIndex--;
+      }
+      for (
+        let j = 0;
+        j < this.colCount + 1 + (this.mode === "view" ? 1 : 0);
+        j++
+      ) {
+        cellXIndex = j === 0 ? 0 : j - 1;
+        const cell = new Cell(this.sheetEventsObserver);
+        if (this.mode === "edit") {
           cell.rowIndex = i;
           cell.colIndex = j;
-          cell.cellName = $10226(j - 1);
-          cell.updatePosition();
-          if (i === 0) {
-            this.setCellMeta(
-              cell,
-              {
-                type: "text",
-                data: cell.cellName,
-              },
-              false
-            );
+        } else {
+          cell.rowIndex = cellYIndex;
+          cell.colIndex = cellXIndex;
+        }
+        if (i > 0 && j > 0) {
+          if (j === this.colCount + 1 && this.mode === "view") {
+            cell.x = cells[i - 1]?.[j - 2]!.x! + cells[i - 1]?.[j - 2]!.width!;
+            cell.y = cells[i - 1]?.[j - 2]!.y!;
+            cell.width = this.margin.right;
+            cell.height = cells[i - 1]?.[j - 2]!.height!;
+            cell.border = {
+              top: null,
+              bottom: null,
+              left: null,
+              right: null,
+            };
+            cell.textStyle.backgroundColor = "";
+          } else if (i === this.rowCount + 1 && this.mode === "view") {
+            cell.x = cells[i - 2]?.[j - 1]!.x!;
+            cell.y = cells[i - 2]?.[j - 1]!.y! + cells[i - 2]?.[j - 1]!.height!;
+            cell.width = cells[i - 2]?.[j - 1]!.width!;
+            cell.height = this.margin.bottom;
+            cell.border = {
+              top: null,
+              bottom: null,
+              left: null,
+              right: null,
+            };
+            cell.textStyle.backgroundColor = "";
+          } else {
+            Object.assign(cell, cells[cellYIndex]?.[cellXIndex]!);
+            cell.x =
+              cells[cellYIndex]?.[cellXIndex]!.x! +
+              (this.mode === "edit" ? DEFAULT_INDEX_CELL_WIDTH : 0);
+            cell.y =
+              cells[cellYIndex]?.[cellXIndex]!.y! +
+              (this.mode === "edit" ? DEFAULT_CELL_HEIGHT : 0);
           }
-          if (j === 0) {
-            this.setCellMeta(
-              cell,
-              {
-                type: "text",
-                data: i.toString(),
-              },
-              false
-            );
-          }
-          if (i === 0 && j === 0) {
-            cell.hidden = true;
-          }
-          if (j < this.fixedColIndex) {
-            fixedColRows.push(cell);
-            if (i < this.fixedRowIndex) {
-              fixedRows.push(cell);
+        } else {
+          if (this.mode === "edit") {
+            if (j === 0) {
+              cell.x = 0;
+              cell.y =
+                i === 0
+                  ? 0
+                  : cells[cellYIndex]?.[cellXIndex]!.y! + DEFAULT_CELL_HEIGHT;
+              cell.width = DEFAULT_INDEX_CELL_WIDTH;
+              cell.height =
+                i === 0
+                  ? DEFAULT_CELL_HEIGHT
+                  : cells[cellYIndex]?.[cellXIndex]!.height!;
             }
             if (i === 0) {
-              this.fixedColWidth += cell.width!;
+              cell.x =
+                j === 0
+                  ? 0
+                  : cells[cellYIndex]?.[cellXIndex]!.x! +
+                    DEFAULT_INDEX_CELL_WIDTH;
+              cell.y = 0;
+              cell.width =
+                j === 0
+                  ? DEFAULT_INDEX_CELL_WIDTH
+                  : cells[cellYIndex]?.[cellXIndex]!.width!;
+              cell.height = DEFAULT_CELL_HEIGHT;
             }
           }
-          if (i < this.fixedRowIndex || j < this.fixedColIndex) {
-            if (i < this.fixedRowIndex) {
-              cell.fixed.y = true;
-            }
-            if (j < this.fixedColIndex) {
-              cell.fixed.x = true;
-            }
-            this.setCellStyle(cell, {
-              border: {
-                solid: true,
-                color: DEFAULT_CELL_LINE_COLOR,
-                bold: false,
-              },
-              text: {
-                color: DEFAULT_FIXED_CELL_COLOR,
-                backgroundColor: DEFAULT_FIXED_CELL_BACKGROUND_COLOR,
-                fontSize: 13,
-                align: "center",
-              },
-            });
-          } else {
-            this.setCellStyle(cell, {
-              border: {
-                solid: false,
-                color: DEFAULT_CELL_LINE_COLOR,
-                bold: false,
-              },
-              text: {
-                align: "center",
-              },
-            });
+        }
+        cell.cellName = $10226(j - 1);
+        cell.updatePosition();
+        if (i === 0) {
+          this.setCellMeta(
+            cell,
+            {
+              type: "text",
+              data: cell.cellName,
+            },
+            false
+          );
+        }
+        if (j === 0) {
+          this.setCellMeta(
+            cell,
+            {
+              type: "text",
+              data: i.toString(),
+            },
+            false
+          );
+        }
+        if (i === 0 && j === 0) {
+          cell.hidden = true;
+        }
+        if (j < this.fixedColIndex) {
+          fixedColRows.push(cell);
+          if (i < this.fixedRowIndex) {
+            fixedRows.push(cell);
           }
+          if (i === 0) {
+            this.fixedColWidth += cell.width!;
+          }
+        }
+        if (i < this.fixedRowIndex || j < this.fixedColIndex) {
+          if (i < this.fixedRowIndex) {
+            cell.fixed.y = true;
+          }
+          if (j < this.fixedColIndex) {
+            cell.fixed.x = true;
+          }
+          this.setCellStyle(cell, {
+            border: {
+              solid: true,
+              color: DEFAULT_CELL_LINE_COLOR,
+              bold: false,
+            },
+            text: {
+              color: DEFAULT_FIXED_CELL_COLOR,
+              backgroundColor: DEFAULT_FIXED_CELL_BACKGROUND_COLOR,
+              fontSize: 13,
+              align: "center",
+            },
+          });
+        }
+        if (this.mode === "edit" || (i > 0 && j > 0 && this.mode === "view")) {
           row.push(cell);
         }
-        this.fixedColCells.push(fixedColRows);
-        if (i < this.fixedRowIndex) {
-          this.fixedCells.push(fixedRows);
-          this.fixedRowCells.push(row);
-          this.fixedRowHeight += row[0].height!;
-        }
+      }
+      this.fixedColCells.push(fixedColRows);
+      if (i < this.fixedRowIndex) {
+        this.fixedCells.push(fixedRows);
+        this.fixedRowCells.push(row);
+        this.fixedRowHeight += row[0].height!;
+      }
+      if (row.length > 0) {
         this.cells.push(row);
       }
     }
-    if (this.cells.length > 0) {
-      this.realWidth = this.cells[0].reduce((p, c) => p + c.width!, 0);
-      this.realHeight = this.cells.reduce((p, c) => p + c[0].height!, 0);
+  }
+
+  initDefaultCells() {
+    this.cells = [];
+    this.fixedColWidth = 0;
+    this.fixedRowHeight = 0;
+    let x = 0;
+    let y = 0;
+    for (let i = 0; i < this.rowCount + 1; i++) {
+      let row: Excel.Cell.CellInstance[] = [];
+      y = i * DEFAULT_CELL_HEIGHT;
+      x = 0;
+      let fixedColRows: Excel.Cell.CellInstance[] = [];
+      let fixedRows: Excel.Cell.CellInstance[] = [];
+      for (let j = 0; j < this.colCount + 1; j++) {
+        x =
+          j === 0 ? 0 : (j - 1) * DEFAULT_CELL_WIDTH + DEFAULT_INDEX_CELL_WIDTH;
+        const cell = new Cell(this.sheetEventsObserver);
+        cell.x = x;
+        cell.y = y;
+        cell.width = j === 0 ? DEFAULT_INDEX_CELL_WIDTH : DEFAULT_CELL_WIDTH;
+        cell.height = DEFAULT_CELL_HEIGHT;
+        cell.rowIndex = i;
+        cell.colIndex = j;
+        cell.cellName = $10226(j - 1);
+        cell.updatePosition();
+        if (i === 0) {
+          this.setCellMeta(
+            cell,
+            {
+              type: "text",
+              data: cell.cellName,
+            },
+            false
+          );
+        }
+        if (j === 0) {
+          this.setCellMeta(
+            cell,
+            {
+              type: "text",
+              data: i.toString(),
+            },
+            false
+          );
+        }
+        if (i === 0 && j === 0) {
+          cell.hidden = true;
+        }
+        if (j < this.fixedColIndex) {
+          fixedColRows.push(cell);
+          if (i < this.fixedRowIndex) {
+            fixedRows.push(cell);
+          }
+          if (i === 0) {
+            this.fixedColWidth += cell.width!;
+          }
+        }
+        if (i < this.fixedRowIndex || j < this.fixedColIndex) {
+          if (i < this.fixedRowIndex) {
+            cell.fixed.y = true;
+          }
+          if (j < this.fixedColIndex) {
+            cell.fixed.x = true;
+          }
+          this.setCellStyle(cell, {
+            border: {
+              solid: true,
+              color: DEFAULT_CELL_LINE_COLOR,
+              bold: false,
+            },
+            text: {
+              color: DEFAULT_FIXED_CELL_COLOR,
+              backgroundColor: DEFAULT_FIXED_CELL_BACKGROUND_COLOR,
+              fontSize: 13,
+              align: "center",
+            },
+          });
+        } else {
+          this.setCellStyle(cell, {
+            border: {
+              solid: false,
+              color: DEFAULT_CELL_LINE_COLOR,
+              bold: false,
+            },
+            text: {
+              align: "center",
+            },
+          });
+        }
+        row.push(cell);
+      }
+      this.fixedColCells.push(fixedColRows);
+      if (i < this.fixedRowIndex) {
+        this.fixedCells.push(fixedRows);
+        this.fixedRowCells.push(row);
+        this.fixedRowHeight += row[0].height!;
+      }
+      this.cells.push(row);
     }
   }
 

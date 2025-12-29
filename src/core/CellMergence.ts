@@ -41,33 +41,44 @@ class CellMergence extends Element<null> {
   ) {
     switch (cell.meta?.type) {
       case "text":
-        const textAlignOffsetX = cell.getTextAlignOffsetX(width);
-        this.drawDataCellText(
-          ctx,
-          cell,
-          textAlignOffsetX,
-          x,
-          y,
-          width,
-          height,
-          cellWidth,
-          cellHeight,
-          scrollX,
-          scrollY
-        );
-        if (cell.textStyle.underline) {
-          this.drawDataCellUnderline(
+        let textList: string[] =
+          cell.valueSlices!.length > 0
+            ? cell.valueSlices!
+            : [cell.value as string];
+        textList.forEach((text, i) => {
+          const textAlignOffsetX = cell.getTextAlignOffsetX(width);
+          this.drawDataCellText(
             ctx,
             cell,
+            text,
             textAlignOffsetX,
             x,
             y,
             width,
             height,
+            cellWidth,
+            cellHeight,
             scrollX,
-            scrollY
+            scrollY,
+            cell.position.leftTop.y! +
+              (cell.height! / (textList.length + 1)) * (i + 1) -
+              scrollY
           );
-        }
+          if (cell.textStyle.underline) {
+            this.drawDataCellUnderline(
+              ctx,
+              cell,
+              textAlignOffsetX,
+              x,
+              y,
+              width,
+              height,
+              scrollX,
+              scrollY
+            );
+          }
+        });
+
         break;
       case "image":
         this.drawDataCellImage(
@@ -100,6 +111,7 @@ class CellMergence extends Element<null> {
   drawDataCellText(
     ctx: CanvasRenderingContext2D,
     cell: Excel.Cell.CellInstance,
+    text: string,
     textAlignOffsetX: number,
     x: number,
     y: number,
@@ -108,7 +120,8 @@ class CellMergence extends Element<null> {
     viewWidth: number,
     viewHeight: number,
     scrollX: number,
-    scrollY: number
+    scrollY: number,
+    textY: number
   ) {
     ctx.save();
     const path = new Path2D();
@@ -116,9 +129,9 @@ class CellMergence extends Element<null> {
     ctx.clip(path);
     cell.setTextStyle(ctx);
     ctx.fillText(
-      cell.value,
+      text,
       cell.position.leftTop.x! + textAlignOffsetX - scrollX,
-      cell.position.leftTop.y! + height! / 2 - scrollY
+      textY
     );
     ctx.restore();
   }
@@ -364,6 +377,8 @@ class CellMergence extends Element<null> {
           ctx.closePath();
           ctx.fill();
           ctx.restore();
+
+          console.log(leftTopCell);
 
           if (leftTopCell.border.top && showTopBorder) {
             ctx.save();

@@ -411,7 +411,6 @@ class Cell extends Element<null> implements Excel.Cell.CellInstance {
     const times =
       value.length & 1 ? Math.floor(value.length / 2) : value.length / 2 - 1;
 
-    // 预计算所有端点，避免重复计算
     let endPoints: [number, number][] = [];
     for (let i = 1; i <= times; i++) {
       endPoints.push([
@@ -432,7 +431,6 @@ class Cell extends Element<null> implements Excel.Cell.CellInstance {
       ]);
     }
 
-    // 优化1: 减少save/restore操作，合并路径
     ctx.save();
     ctx.strokeStyle = DEFAULT_CELL_DIAGONAL_LINE_COLOR;
     ctx.lineWidth = DEFAULT_CELL_DIAGONAL_LINE_WIDTH;

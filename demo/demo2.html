@@ -108,7 +108,21 @@
                 color: borderColor,
               },
             };
+          } else {
+            cell.border = {
+              top: null,
+              bottom: null,
+              left: null,
+              right: null,
+            };
           }
+        } else {
+          cell.border = {
+            top: null,
+            bottom: null,
+            left: null,
+            right: null,
+          };
         }
         row.push(cell);
       }
