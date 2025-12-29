@@ -61,7 +61,7 @@ class CellMergence extends Element<null> {
             scrollX,
             scrollY,
             cell.position.leftTop.y! +
-              (cell.height! / (textList.length + 1)) * (i + 1) -
+              (height / (textList.length + 1)) * (i + 1) -
               scrollY
           );
           if (cell.textStyle.underline) {
@@ -377,8 +377,6 @@ class CellMergence extends Element<null> {
           ctx.closePath();
           ctx.fill();
           ctx.restore();
-
-          console.log(leftTopCell);
 
           if (leftTopCell.border.top && showTopBorder) {
             ctx.save();
