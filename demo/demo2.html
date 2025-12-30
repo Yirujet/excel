@@ -74,7 +74,7 @@
             align:
               cellData.cellConfig.basicStyle.alignTypeDict !== "none"
                 ? cellData.cellConfig.basicStyle.alignTypeDict
-                : "center",
+                : "left",
             color: cellData.cellConfig.basicStyle.fontColor || "#000000",
             backgroundColor:
               cellData.cellConfig.basicStyle.colorFill || "#ffffff",
@@ -128,18 +128,18 @@
       }
       cells.push(row);
     }
-    const mergedCells = mergeCell.map((item) => [
-      item.row,
-      item.row - 1 + item.rowspan,
-      item.col,
-      item.col - 1 + item.colspan,
-    ]);
     // const mergedCells = mergeCell.map((item) => [
-    //   item.row + 1,
-    //   item.row + item.rowspan,
-    //   item.col + 1,
-    //   item.col + item.colspan,
+    //   item.row,
+    //   item.row - 1 + item.rowspan,
+    //   item.col,
+    //   item.col - 1 + item.colspan,
     // ]);
+    const mergedCells = mergeCell.map((item) => [
+      item.row + 1,
+      item.row + item.rowspan,
+      item.col + 1,
+      item.col + item.colspan,
+    ]);
     const app = document.querySelector("#app");
     const { width, height, x, y } = app.getBoundingClientRect();
     const excel = new Excel({
@@ -147,8 +147,10 @@
       sheets: [
         {
           name: "sheet1",
-          fixedRowIndex: 0,
-          fixedColIndex: 0,
+          // fixedRowIndex: 0,
+          // fixedColIndex: 0,
+          fixedRowIndex: 1,
+          fixedColIndex: 1,
           rowCount,
           colCount,
           cells,
@@ -157,7 +159,7 @@
             right: 10,
             bottom: 10,
           },
-          mode: "view",
+          mode: "edit",
         },
       ],
     });

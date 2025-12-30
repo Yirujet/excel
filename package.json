@@ -1,6 +1,6 @@
 {
   "name": "tiny-excel",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "tiny-excel is a simple web Excel implemented by JavaScript, cross-framework, and supports React, Angular and Vue.",
   "repository": {
     "type": "git",

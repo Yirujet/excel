@@ -1110,8 +1110,8 @@ class Sheet
             : transformedCells[rowIndex - 1][0].y +
               (transformedCells[rowIndex - 1][0].height || 0);
         const cellInMergedCells = this.checkCellInMergedCells(
-          rowIndex,
-          colIndex
+          this.mode === "view" ? rowIndex : rowIndex + 1,
+          this.mode === "view" ? colIndex : colIndex + 1
         );
         if (
           cell.meta?.type === "text" &&
