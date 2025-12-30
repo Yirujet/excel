@@ -95,7 +95,6 @@ class Sheet
   isFilling = false;
   fillingCells: Excel.Sheet.CellRange | null = null;
   editingCell: Excel.Cell.CellInstance | null = null;
-  fixedWidths: Array<number | undefined> = [];
 
   constructor(name: string, config: Excel.Sheet.Configuration) {
     super("canvas");
@@ -1089,13 +1088,91 @@ class Sheet
     return result;
   }
 
+  private adjustCellPosition(
+    cell: Excel.Cell.CellInstance,
+    cells: Excel.Cell.CellInstance[][],
+    rowIndex: number,
+    colIndex: number,
+    width: number,
+    rowAdjust: Record<number, number>
+  ) {
+    const { width: textWidth } = getTextMetrics(
+      cell.value,
+      cell.textStyle.fontSize
+    );
+    if (textWidth > width) {
+      if (cell.wrap === "no-wrap") {
+        const widthIncrease = textWidth - width + DEFAULT_CELL_PADDING * 2;
+        cell.width! += widthIncrease;
+        cell.updatePosition?.();
+
+        for (
+          let adjustRowIndex = 0;
+          adjustRowIndex < cells.length;
+          adjustRowIndex++
+        ) {
+          const adjustRow = cells[adjustRowIndex];
+          adjustRow[colIndex].width = cell.width;
+          adjustRow[colIndex].updatePosition?.();
+          for (
+            let adjustColIndex = colIndex + 1;
+            adjustColIndex < adjustRow.length;
+            adjustColIndex++
+          ) {
+            const adjustCell = adjustRow[adjustColIndex];
+            adjustCell.x = (adjustCell.x || 0) + widthIncrease;
+            adjustCell.updatePosition?.();
+          }
+        }
+      } else if (cell.wrap === "wrap") {
+        const fontSize =
+          cell.textStyle?.fontSize || DEFAULT_CELL_TEXT_FONT_SIZE;
+        const valueSlices: string[] = cell.value
+          .split("\n")
+          .map((item: string) => this.truncateContent(item, width, fontSize));
+        cell.valueSlices = valueSlices.flat();
+        const heightIncrease = fontSize * cell.valueSlices.length;
+        if (!rowAdjust[rowIndex] || rowAdjust[rowIndex] < heightIncrease) {
+          let offset = 0;
+          if (!rowAdjust[rowIndex]) {
+            offset = heightIncrease;
+          } else {
+            offset = heightIncrease - rowAdjust[rowIndex];
+          }
+          rowAdjust[rowIndex] = heightIncrease;
+          cells[rowIndex].forEach((item) => {
+            item.height! += offset;
+            item.updatePosition?.();
+          });
+          for (
+            let adjustRowIndex = rowIndex + 1;
+            adjustRowIndex < cells.length;
+            adjustRowIndex++
+          ) {
+            const adjustRow = cells[adjustRowIndex];
+            for (
+              let adjustColIndex = 0;
+              adjustColIndex < adjustRow.length;
+              adjustColIndex++
+            ) {
+              const adjustCell = adjustRow[adjustColIndex];
+              adjustCell.y = (adjustCell.y || 0) + offset;
+              adjustCell.updatePosition?.();
+            }
+          }
+        }
+      }
+    }
+    return rowAdjust;
+  }
+
   private transformCells(
     cells: Excel.Cell.CellInstance[][]
   ): Excel.Cell.CellInstance[][] {
     const transformedCells = cells.map((row) =>
       row.map((cell) => JSON.parse(JSON.stringify(cell)))
     );
-    const rowAdjust: Record<number, number> = {};
+    let rowAdjust: Record<number, number> = {};
     for (let rowIndex = 0; rowIndex < transformedCells.length; rowIndex++) {
       const row = transformedCells[rowIndex];
       let currentX = 0;
@@ -1119,74 +1196,14 @@ class Sheet
           cell.width &&
           !cellInMergedCells
         ) {
-          const { width: textWidth } = getTextMetrics(
-            cell.value,
-            cell.textStyle.fontSize
+          rowAdjust = this.adjustCellPosition(
+            cell,
+            transformedCells,
+            rowIndex,
+            colIndex,
+            cell.width!,
+            rowAdjust
           );
-          if (textWidth > cell.width) {
-            if (cell.wrap === "no-wrap") {
-              const widthIncrease =
-                textWidth - cell.width + DEFAULT_CELL_PADDING * 2;
-              cell.width += widthIncrease;
-
-              for (
-                let adjustRowIndex = 0;
-                adjustRowIndex < transformedCells.length;
-                adjustRowIndex++
-              ) {
-                const adjustRow = transformedCells[adjustRowIndex];
-                adjustRow[colIndex].width = cell.width;
-                for (
-                  let adjustColIndex = colIndex + 1;
-                  adjustColIndex < adjustRow.length;
-                  adjustColIndex++
-                ) {
-                  const adjustCell = adjustRow[adjustColIndex];
-                  adjustCell.x = (adjustCell.x || 0) + widthIncrease;
-                }
-              }
-            } else if (cell.wrap === "wrap") {
-              const fontSize =
-                cell.textStyle?.fontSize || DEFAULT_CELL_TEXT_FONT_SIZE;
-              const valueSlices = cell.value
-                .split("\n")
-                .map((item: string) =>
-                  this.truncateContent(item, cell.width, fontSize)
-                );
-              cell.valueSlices = valueSlices.flat();
-              const heightIncrease = fontSize * cell.valueSlices.length;
-              if (
-                !rowAdjust[rowIndex] ||
-                rowAdjust[rowIndex] < heightIncrease
-              ) {
-                let offset = 0;
-                if (!rowAdjust[rowIndex]) {
-                  offset = heightIncrease;
-                } else {
-                  offset = heightIncrease - rowAdjust[rowIndex];
-                }
-                rowAdjust[rowIndex] = heightIncrease;
-                transformedCells[rowIndex].forEach((item) => {
-                  item.height += offset;
-                });
-                for (
-                  let adjustRowIndex = rowIndex + 1;
-                  adjustRowIndex < transformedCells.length;
-                  adjustRowIndex++
-                ) {
-                  const adjustRow = transformedCells[adjustRowIndex];
-                  for (
-                    let adjustColIndex = 0;
-                    adjustColIndex < adjustRow.length;
-                    adjustColIndex++
-                  ) {
-                    const adjustCell = adjustRow[adjustColIndex];
-                    adjustCell.y = (adjustCell.y || 0) + offset;
-                  }
-                }
-              }
-            }
-          }
         }
         currentX += cell.width || 0;
       }
@@ -1195,7 +1212,7 @@ class Sheet
   }
 
   private transformMergedCells() {
-    const rowAdjust: Record<number, number> = {};
+    let rowAdjust: Record<number, number> = {};
     return this.mergedCells.map((range) => {
       const [minRowIndex, maxRowIndex, minColIndex, maxColIndex] = range;
       const leftTopCell = this.getCell(minRowIndex, minColIndex);
@@ -1208,76 +1225,14 @@ class Sheet
         leftTopCell.value &&
         leftTopCell.width
       ) {
-        const { width: textWidth } = getTextMetrics(
-          leftTopCell.value,
-          leftTopCell.textStyle.fontSize
+        rowAdjust = this.adjustCellPosition(
+          leftTopCell,
+          this.cells,
+          minRowIndex,
+          minColIndex,
+          w,
+          rowAdjust
         );
-        if (textWidth > w) {
-          if (leftTopCell.wrap === "no-wrap") {
-            const widthIncrease = textWidth - w + DEFAULT_CELL_PADDING * 2;
-            leftTopCell.width += widthIncrease;
-            leftTopCell.updatePosition();
-
-            for (
-              let adjustRowIndex = 0;
-              adjustRowIndex < this.cells.length;
-              adjustRowIndex++
-            ) {
-              const adjustRow = this.cells[adjustRowIndex];
-              adjustRow[minColIndex].width = leftTopCell.width;
-              adjustRow[minColIndex].updatePosition();
-              for (
-                let adjustColIndex = minColIndex + 1;
-                adjustColIndex < adjustRow.length;
-                adjustColIndex++
-              ) {
-                const adjustCell = adjustRow[adjustColIndex];
-                adjustCell.x = (adjustCell.x || 0) + widthIncrease;
-                adjustCell.updatePosition();
-              }
-            }
-          } else if (leftTopCell.wrap === "wrap") {
-            const fontSize =
-              leftTopCell.textStyle?.fontSize || DEFAULT_CELL_TEXT_FONT_SIZE;
-            const valueSlices = leftTopCell.value
-              .split("\n")
-              .map((item: string) => this.truncateContent(item, w, fontSize));
-            leftTopCell.valueSlices = valueSlices.flat();
-            const heightIncrease = fontSize * leftTopCell.valueSlices!.length;
-            if (
-              !rowAdjust[minRowIndex] ||
-              rowAdjust[minRowIndex] < heightIncrease
-            ) {
-              let offset = 0;
-              if (!rowAdjust[minRowIndex]) {
-                offset = heightIncrease;
-              } else {
-                offset = heightIncrease - rowAdjust[minRowIndex];
-              }
-              rowAdjust[minRowIndex] = heightIncrease;
-              this.cells[minRowIndex].forEach((item) => {
-                item.height! += offset;
-                item.updatePosition();
-              });
-              for (
-                let adjustRowIndex = minRowIndex + 1;
-                adjustRowIndex < this.cells.length;
-                adjustRowIndex++
-              ) {
-                const adjustRow = this.cells[adjustRowIndex];
-                for (
-                  let adjustColIndex = 0;
-                  adjustColIndex < adjustRow.length;
-                  adjustColIndex++
-                ) {
-                  const adjustCell = adjustRow[adjustColIndex];
-                  adjustCell.y = (adjustCell.y || 0) + offset;
-                  adjustCell.updatePosition();
-                }
-              }
-            }
-          }
-        }
       }
     });
   }
@@ -1407,6 +1362,7 @@ class Sheet
   clearCellMeta(cell: Excel.Cell.CellInstance) {
     cell.meta = null;
     cell.value = "";
+    cell.valueSlices = [];
   }
 
   setCellMeta(

@@ -26,7 +26,7 @@ export default (
       width +=
         (charCode >= 0x4e00 && charCode <= 0x9fa5) || isChineseSpecialChar(char)
           ? fontSize
-          : fontSize / 2;
+          : (fontSize / 2) * 1.2;
     }
 
     // 高度直接使用fontSize

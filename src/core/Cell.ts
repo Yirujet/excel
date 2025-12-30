@@ -20,6 +20,7 @@ import {
   DEFAULT_CELL_TEXT_UNDERLINE,
 } from "../config/index";
 import getImgDrawInfoByFillMode from "../utils/getImgDrawInfoByFillMode";
+import drawBorder from "../utils/drawBorder";
 
 class Cell extends Element<null> implements Excel.Cell.CellInstance {
   width: number | null = null;
@@ -203,71 +204,58 @@ class Cell extends Element<null> implements Excel.Cell.CellInstance {
   drawCellBorder(ctx: CanvasRenderingContext2D) {
     // 上边框
     if (this.border.top) {
-      ctx.save();
-      this.setBorderStyle(ctx, "top");
-      ctx.beginPath();
-      ctx.moveTo(
+      drawBorder(
+        ctx,
         Math.round(this.position.leftTop.x - this.scrollX),
-        Math.round(this.position.leftTop.y - this.scrollY)
-      );
-      ctx.lineTo(
+        Math.round(this.position.leftTop.y - this.scrollY),
         Math.round(this.position.rightTop.x - this.scrollX),
-        Math.round(this.position.rightTop.y - this.scrollY)
+        Math.round(this.position.rightTop.y - this.scrollY),
+        this.border.top!.color,
+        this.border.top!.bold ? 2 : 1,
+        !this.border.top!.solid ? DEFAULT_CELL_LINE_DASH : []
       );
-      ctx.closePath();
-      ctx.stroke();
-      ctx.restore();
     }
 
     // 左边框
     if (this.border.left) {
-      ctx.save();
-      this.setBorderStyle(ctx, "left");
-      ctx.beginPath();
-      ctx.moveTo(
+      drawBorder(
+        ctx,
         Math.round(this.position.leftBottom.x - this.scrollX),
-        Math.round(this.position.leftBottom.y - this.scrollY)
-      );
-      ctx.lineTo(
+        Math.round(this.position.leftBottom.y - this.scrollY),
         Math.round(this.position.leftTop.x - this.scrollX),
-        Math.round(this.position.leftTop.y - this.scrollY)
+        Math.round(this.position.leftTop.y - this.scrollY),
+        this.border.left!.color,
+        this.border.left!.bold ? 2 : 1,
+        !this.border.left!.solid ? DEFAULT_CELL_LINE_DASH : []
       );
-      ctx.closePath();
-      ctx.stroke();
-      ctx.restore();
     }
 
     // 右边框
     if (this.border.right) {
-      ctx.save();
-      this.setBorderStyle(ctx, "right");
-      ctx.beginPath();
-      const rightX = Math.round(this.position.rightTop.x - this.scrollX);
-      const topY = Math.round(this.position.rightTop.y - this.scrollY);
-      const bottomY = Math.round(this.position.rightBottom.y - this.scrollY);
-      ctx.moveTo(rightX, topY);
-      ctx.lineTo(rightX, bottomY);
-      ctx.closePath();
-      ctx.stroke();
-      ctx.restore();
+      drawBorder(
+        ctx,
+        Math.round(this.position.rightTop.x - this.scrollX),
+        Math.round(this.position.rightTop.y - this.scrollY),
+        Math.round(this.position.rightTop.x - this.scrollX),
+        Math.round(this.position.rightBottom.y - this.scrollY),
+        this.border.right!.color,
+        this.border.right!.bold ? 2 : 1,
+        !this.border.right!.solid ? DEFAULT_CELL_LINE_DASH : []
+      );
     }
 
     // 下边框
     if (this.border.bottom) {
-      ctx.save();
-      this.setBorderStyle(ctx, "bottom");
-      ctx.beginPath();
-      ctx.moveTo(
+      drawBorder(
+        ctx,
         Math.round(this.position.rightBottom.x - this.scrollX),
-        Math.round(this.position.rightBottom.y - this.scrollY)
-      );
-      ctx.lineTo(
+        Math.round(this.position.rightBottom.y - this.scrollY),
         Math.round(this.position.leftBottom.x - this.scrollX),
-        Math.round(this.position.leftBottom.y - this.scrollY)
+        Math.round(this.position.leftBottom.y - this.scrollY),
+        this.border.bottom!.color,
+        this.border.bottom!.bold ? 2 : 1,
+        !this.border.bottom!.solid ? DEFAULT_CELL_LINE_DASH : []
       );
-      ctx.closePath();
-      ctx.stroke();
-      ctx.restore();
     }
   }
 
@@ -323,21 +311,17 @@ class Cell extends Element<null> implements Excel.Cell.CellInstance {
     const underlineOffset = this.getTextAlignOffsetX(wordWidth);
     ctx.save();
     ctx.translate(0, 0.5);
-    ctx.lineWidth = 0.5;
-    ctx.strokeStyle = this.textStyle.color;
-    ctx.beginPath();
-    ctx.moveTo(
+    drawBorder(
+      ctx,
       Math.round(this.x! + textAlignOffsetX - this.scrollX - underlineOffset),
-      Math.round(this.y! + this.height! / 2 - this.scrollY + wordHeight / 2)
-    );
-    ctx.lineTo(
+      Math.round(this.y! + this.height! / 2 - this.scrollY + wordHeight / 2),
       Math.round(
         this.x! + textAlignOffsetX - this.scrollX - underlineOffset + wordWidth
       ),
-      Math.round(this.y! + this.height! / 2 - this.scrollY + wordHeight / 2)
+      Math.round(this.y! + this.height! / 2 - this.scrollY + wordHeight / 2),
+      this.textStyle.color,
+      0.5
     );
-    ctx.closePath();
-    ctx.stroke();
     ctx.restore();
   }
 
@@ -395,7 +379,6 @@ class Cell extends Element<null> implements Excel.Cell.CellInstance {
     ctx.font = `${DEFAULT_CELL_DIAGONAL_TEXT_FONT_SIZE}px sans-serif`;
     ctx.textBaseline = "middle";
 
-    // 修复文字居中问题：计算文字宽度并调整x坐标
     const textWidth = getTextMetrics(
       text,
       DEFAULT_CELL_DIAGONAL_TEXT_FONT_SIZE
@@ -439,17 +422,14 @@ class Cell extends Element<null> implements Excel.Cell.CellInstance {
     const startX = Math.round(this.position.leftTop.x - this.scrollX);
     const startY = Math.round(this.position.leftTop.y - this.scrollY);
 
-    // 绘制所有对角线
     endPoints.forEach(([x, y]) => {
       ctx.moveTo(startX, startY);
       ctx.lineTo(Math.round(x - this.scrollX), Math.round(y - this.scrollY));
     });
 
-    // 一次性stroke所有路径
     ctx.stroke();
     ctx.restore();
 
-    // 绘制文本
     endPoints.forEach(([x, y], i) => {
       const prePoint: [number, number] =
         i > 0

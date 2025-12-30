@@ -7,6 +7,7 @@ import {
   DEFAULT_CELL_LINE_DASH,
   DEFAULT_CELL_PADDING,
 } from "../config/index";
+import drawBorder from "../utils/drawBorder";
 import getImgDrawInfoByFillMode from "../utils/getImgDrawInfoByFillMode";
 import getTextMetrics from "../utils/getTextMetrics";
 
@@ -45,6 +46,7 @@ class CellMergence extends Element<null> {
           cell.valueSlices!.length > 0
             ? cell.valueSlices!
             : [cell.value as string];
+        console.log(textList);
         textList.forEach((text, i) => {
           const textAlignOffsetX = cell.getTextAlignOffsetX(width);
           this.drawDataCellText(
@@ -154,18 +156,14 @@ class CellMergence extends Element<null> {
     const underlineOffset = cell.getTextAlignOffsetX(wordWidth);
     ctx.save();
     ctx.translate(0, 0.5);
-    ctx.lineWidth = 0.5;
-    ctx.strokeStyle = cell.textStyle.color;
-    ctx.beginPath();
-    ctx.moveTo(
+    drawBorder(
+      ctx,
       Math.round(
         cell.position.leftTop.x! + textAlignOffsetX - scrollX - underlineOffset
       ),
       Math.round(
         cell.position.leftTop.y! + height! / 2 - scrollY + wordHeight / 2
-      )
-    );
-    ctx.lineTo(
+      ),
       Math.round(
         cell.position.leftTop.x! +
           textAlignOffsetX -
@@ -175,10 +173,10 @@ class CellMergence extends Element<null> {
       ),
       Math.round(
         cell.position.leftTop.y! + height! / 2 - scrollY + wordHeight / 2
-      )
+      ),
+      cell.textStyle.color,
+      0.5
     );
-    ctx.closePath();
-    ctx.stroke();
     ctx.restore();
   }
 
@@ -379,87 +377,55 @@ class CellMergence extends Element<null> {
           ctx.restore();
 
           if (leftTopCell.border.top && showTopBorder) {
-            ctx.save();
-            if (!leftTopCell.border.top.solid) {
-              ctx.setLineDash(DEFAULT_CELL_LINE_DASH);
-            } else {
-              ctx.setLineDash([]);
-            }
-            ctx.strokeStyle = leftTopCell.border.top.color;
-            if (leftTopCell.border.top.bold) {
-              ctx.lineWidth = 2;
-            } else {
-              ctx.lineWidth = 1;
-            }
-            ctx.beginPath();
-            ctx.moveTo(Math.round(leftX), Math.round(topY));
-            ctx.lineTo(Math.round(rightX), Math.round(topY));
-            ctx.closePath();
-            ctx.stroke();
-            ctx.restore();
+            drawBorder(
+              ctx,
+              Math.round(leftX),
+              Math.round(topY),
+              Math.round(rightX),
+              Math.round(topY),
+              leftTopCell.border.top.color,
+              leftTopCell.border.top.bold ? 2 : 1,
+              !leftTopCell.border.top.solid ? DEFAULT_CELL_LINE_DASH : []
+            );
           }
 
           if (leftTopCell.border.right) {
-            ctx.save();
-            if (!leftTopCell.border.right.solid) {
-              ctx.setLineDash(DEFAULT_CELL_LINE_DASH);
-            } else {
-              ctx.setLineDash([]);
-            }
-            ctx.strokeStyle = leftTopCell.border.right.color;
-            if (leftTopCell.border.right.bold) {
-              ctx.lineWidth = 2;
-            } else {
-              ctx.lineWidth = 1;
-            }
-            ctx.beginPath();
-            ctx.moveTo(Math.round(rightX), Math.round(topY));
-            ctx.lineTo(Math.round(rightX), Math.round(bottomY));
-            ctx.closePath();
-            ctx.stroke();
-            ctx.restore();
+            drawBorder(
+              ctx,
+              Math.round(rightX),
+              Math.round(topY),
+              Math.round(rightX),
+              Math.round(bottomY),
+              leftTopCell.border.right.color,
+              leftTopCell.border.right.bold ? 2 : 1,
+              !leftTopCell.border.right.solid ? DEFAULT_CELL_LINE_DASH : []
+            );
           }
 
           if (leftTopCell.border.bottom) {
-            ctx.save();
-            if (!leftTopCell.border.bottom.solid) {
-              ctx.setLineDash(DEFAULT_CELL_LINE_DASH);
-            } else {
-              ctx.setLineDash([]);
-            }
-            ctx.strokeStyle = leftTopCell.border.bottom.color;
-            if (leftTopCell.border.bottom.bold) {
-              ctx.lineWidth = 2;
-            } else {
-              ctx.lineWidth = 1;
-            }
-            ctx.beginPath();
-            ctx.moveTo(Math.round(rightX), Math.round(bottomY));
-            ctx.lineTo(Math.round(leftX), Math.round(bottomY));
-            ctx.closePath();
-            ctx.stroke();
-            ctx.restore();
+            drawBorder(
+              ctx,
+              Math.round(leftX),
+              Math.round(bottomY),
+              Math.round(rightX),
+              Math.round(bottomY),
+              leftTopCell.border.bottom.color,
+              leftTopCell.border.bottom.bold ? 2 : 1,
+              !leftTopCell.border.bottom.solid ? DEFAULT_CELL_LINE_DASH : []
+            );
           }
 
           if (leftTopCell.border.left && showLeftBorder) {
-            ctx.save();
-            if (!leftTopCell.border.left.solid) {
-              ctx.setLineDash(DEFAULT_CELL_LINE_DASH);
-            } else {
-              ctx.setLineDash([]);
-            }
-            ctx.strokeStyle = leftTopCell.border.left.color;
-            if (leftTopCell.border.left.bold) {
-              ctx.lineWidth = 2;
-            } else {
-              ctx.lineWidth = 1;
-            }
-            ctx.beginPath();
-            ctx.moveTo(Math.round(leftX), Math.round(topY));
-            ctx.lineTo(Math.round(leftX), Math.round(bottomY));
-            ctx.closePath();
-            ctx.stroke();
-            ctx.restore();
+            drawBorder(
+              ctx,
+              Math.round(leftX),
+              Math.round(topY),
+              Math.round(leftX),
+              Math.round(bottomY),
+              leftTopCell.border.left.color,
+              leftTopCell.border.left.bold ? 2 : 1,
+              !leftTopCell.border.left.solid ? DEFAULT_CELL_LINE_DASH : []
+            );
           }
 
           this.drawDataCell(
