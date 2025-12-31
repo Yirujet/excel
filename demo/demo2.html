@@ -21,6 +21,7 @@
   <body>
     <div id="app"></div>
   </body>
+  <script src="https://cdn.staticfile.org/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="../lib/excel.umd.js"></script>
   <script src="./mock.js"></script>
   <script>
@@ -30,6 +31,7 @@
     const cells = [];
     let cellX = 0;
     let cellY = 0;
+    const richCells = [];
     for (let i = 0; i < rowCount; i++) {
       let row = [];
       cellX = 0;
@@ -51,12 +53,31 @@
           if (
             ["datasets", "static", "function"].includes(cellData.cellTypeDict)
           ) {
-            cell.meta = {
-              type: "text",
-              data: cellData.cellValue,
-            };
-            cell.value = cellData.cellValue;
-            cell.wrap = "wrap";
+            if (cellData.displayType === "plainText") {
+              cell.meta = {
+                type: "text",
+                data: cellData.cellValue,
+              };
+              cell.value = cellData.cellValue.toString();
+              cell.wrap = "wrap";
+            }
+            if (cellData.displayType === "richText") {
+              cell.meta = {
+                type: "image",
+                data: {
+                  img: null,
+                  width: 0,
+                  height: 0,
+                  fit: "fill",
+                },
+              };
+              richCells.push({
+                rowIndex: i,
+                colIndex: j,
+                cellValue: cellData.cellValue,
+                cellConfig: cellData.cellConfig,
+              });
+            }
           }
           if (cellData.cellTypeDict === "oblique_line") {
             cell.meta = {
@@ -65,7 +86,7 @@
                 value: JSON.parse(cellData.cellValue).biasText.split("|"),
               },
             };
-            cell.value = cellData.cellValue;
+            cell.value = cellData.cellValue.toString();
           }
         }
         if (cellData && cellData.cellConfig && cellData.cellConfig.basicStyle) {
@@ -165,5 +186,66 @@
       ],
     });
     excel.mount(app);
+    const richCellsImgs = richCells.map((cell) => {
+      return new Promise((resolve) => {
+        const richText = cell.cellValue;
+        const div = document.createElement("div");
+        div.innerHTML = richText;
+        div.style.width = colWidth[cell.colIndex] + "px";
+        div.style.position = "fixed";
+        div.style.pointerEvents = "none";
+        div.style.bottom = 9999 + "px";
+        if (cell && cell.cellConfig && cell.cellConfig.basicStyle) {
+          div.style.textAlign =
+            cell.cellConfig.basicStyle.alignTypeDict !== "none"
+              ? cell.cellConfig.basicStyle.alignTypeDict
+              : "left";
+          div.style.color = cell.cellConfig.basicStyle.fontColor || "#000000";
+          div.style.backgroundColor =
+            cell.cellConfig.basicStyle.colorFill || "#ffffff";
+          div.style.fontSize = cell.cellConfig.basicStyle.fontSize || 12;
+          div.style.fontFamily = cell.cellConfig.basicStyle.font || "宋体";
+          div.style.bold =
+            cell.cellConfig.basicStyle.fontBold || false ? "bold" : "normal";
+          div.style.italic =
+            cell.cellConfig.basicStyle.italic || false ? "italic" : "normal";
+        }
+        div.id = `richText-${cell.rowIndex}-${cell.colIndex}`;
+        document.body.appendChild(div);
+        setTimeout(() => {
+          const height = div.offsetHeight;
+          html2canvas(div).then((canvas) => {
+            const img = new Image();
+            img.src = canvas.toDataURL();
+            img.onload = () => {
+              resolve({
+                rowIndex: cell.rowIndex,
+                colIndex: cell.colIndex,
+                img,
+                width: img.width,
+                height: img.height,
+                fit: "none",
+              });
+              document.body.removeChild(div);
+            };
+          });
+        });
+      });
+    });
+    Promise.all(richCellsImgs).then((imgs) => {
+      imgs.forEach((item) => {
+        const { rowIndex, colIndex, img, width, height } = item;
+        excel.sheets[0].cells[rowIndex][colIndex].meta = {
+          type: "image",
+          data: {
+            img: img,
+            width: item.width,
+            height: height,
+            fit: "fill",
+          },
+        };
+      });
+      excel.sheets[0].adjust();
+    });
   </script>
 </html>

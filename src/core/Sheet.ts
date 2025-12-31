@@ -1169,9 +1169,7 @@ class Sheet
   private transformCells(
     cells: Excel.Cell.CellInstance[][]
   ): Excel.Cell.CellInstance[][] {
-    const transformedCells = cells.map((row) =>
-      row.map((cell) => JSON.parse(JSON.stringify(cell)))
-    );
+    const transformedCells = [...cells];
     let rowAdjust: Record<number, number> = {};
     for (let rowIndex = 0; rowIndex < transformedCells.length; rowIndex++) {
       const row = transformedCells[rowIndex];
@@ -1184,7 +1182,7 @@ class Sheet
         cell.y =
           rowIndex === 0
             ? 0
-            : transformedCells[rowIndex - 1][0].y +
+            : transformedCells[rowIndex - 1][0].y! +
               (transformedCells[rowIndex - 1][0].height || 0);
         const cellInMergedCells = this.checkCellInMergedCells(
           this.mode === "view" ? rowIndex : rowIndex + 1,
@@ -1204,6 +1202,40 @@ class Sheet
             cell.width!,
             rowAdjust
           );
+        }
+        if (cell.meta?.type === "image") {
+          if (cell.height !== cell.meta.data.height && cell.meta.data.height) {
+            const heightIncrease = cell.meta.data.height! - (cell.height || 0);
+            if (!rowAdjust[rowIndex] || rowAdjust[rowIndex] < heightIncrease) {
+              let offset = 0;
+              if (!rowAdjust[rowIndex]) {
+                offset = heightIncrease;
+              } else {
+                offset = heightIncrease - rowAdjust[rowIndex];
+              }
+              rowAdjust[rowIndex] = heightIncrease;
+              transformedCells[rowIndex].forEach((item) => {
+                item.height! += offset;
+                item.updatePosition?.();
+              });
+              for (
+                let adjustRowIndex = rowIndex + 1;
+                adjustRowIndex < transformedCells.length;
+                adjustRowIndex++
+              ) {
+                const adjustRow = transformedCells[adjustRowIndex];
+                for (
+                  let adjustColIndex = 0;
+                  adjustColIndex < adjustRow.length;
+                  adjustColIndex++
+                ) {
+                  const adjustCell = adjustRow[adjustColIndex];
+                  adjustCell.y = (adjustCell.y || 0) + offset;
+                  adjustCell.updatePosition?.();
+                }
+              }
+            }
+          }
         }
         currentX += cell.width || 0;
       }
@@ -1275,6 +1307,13 @@ class Sheet
         )
     );
     this.draw();
+  }
+
+  adjust() {
+    this.clear();
+    this.destroy();
+    this.initCells(this.cells);
+    this.render();
   }
 
   getCell(rowIndex: number, colIndex: number) {
@@ -1844,6 +1883,19 @@ class Sheet
         this.cellInput!.hide();
       }
     );
+  }
+
+  destroy() {
+    this.horizontalScrollBar = null;
+    this.verticalScrollBar = null;
+    this.horizontalScrollBarShadow = null;
+    this.verticalScrollBarShadow = null;
+    this.fillHandle = null;
+    this.filling = null;
+    this.cellResizer = null;
+    this.cellSelector = null;
+    this.cellMergence = null;
+    this.cellInput = null;
   }
 
   clear() {

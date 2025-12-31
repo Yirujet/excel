@@ -326,22 +326,24 @@ class Cell extends Element<null> implements Excel.Cell.CellInstance {
   }
 
   drawDataCellImage(ctx: CanvasRenderingContext2D) {
-    const { x, y, width, height } = getImgDrawInfoByFillMode(
-      this.meta!.data as Excel.Cell.CellImageMetaData,
-      {
-        x: this.position.leftTop.x - this.scrollX + DEFAULT_CELL_PADDING,
-        y: this.position.leftTop.y - this.scrollY + DEFAULT_CELL_PADDING,
-        width: this.width! - DEFAULT_CELL_PADDING * 2,
-        height: this.height! - DEFAULT_CELL_PADDING * 2,
-      }
-    )!;
-    ctx.drawImage(
-      (this.meta!.data as Excel.Cell.CellImageMetaData).img,
-      x,
-      y,
-      width,
-      height
-    );
+    if ((this.meta!.data as Excel.Cell.CellImageMetaData).img) {
+      const { x, y, width, height } = getImgDrawInfoByFillMode(
+        this.meta!.data as Excel.Cell.CellImageMetaData,
+        {
+          x: this.position.leftTop.x - this.scrollX + DEFAULT_CELL_PADDING,
+          y: this.position.leftTop.y - this.scrollY + DEFAULT_CELL_PADDING,
+          width: this.width! - DEFAULT_CELL_PADDING * 2,
+          height: this.height! - DEFAULT_CELL_PADDING * 2,
+        }
+      )!;
+      ctx.drawImage(
+        (this.meta!.data as Excel.Cell.CellImageMetaData).img,
+        x,
+        y,
+        width,
+        height
+      );
+    }
   }
 
   drawDiagonalText(

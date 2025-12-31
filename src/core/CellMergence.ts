@@ -46,7 +46,6 @@ class CellMergence extends Element<null> {
           cell.valueSlices!.length > 0
             ? cell.valueSlices!
             : [cell.value as string];
-        console.log(textList);
         textList.forEach((text, i) => {
           const textAlignOffsetX = cell.getTextAlignOffsetX(width);
           this.drawDataCellText(
