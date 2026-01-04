@@ -1320,7 +1320,7 @@ class Sheet
       this.colCount = contentCells[0].length;
       this.initCells(contentCells);
     }
-    this.render();
+    this.render(false);
   }
 
   getCell(rowIndex: number, colIndex: number) {
@@ -1470,7 +1470,7 @@ class Sheet
     );
   }
 
-  render() {
+  render(autoRegisteEvents: boolean = true) {
     this.initSheet();
     this.initScrollbar();
     this.initShadow();
@@ -1480,9 +1480,11 @@ class Sheet
     this.initFillHandle();
     this.initFilling();
     this.initCellEditor();
-    this.initEvents();
-    this.sheetEventsObserver.observe(this.$el!);
-    this.globalEventsObserver.observe(window as any);
+    if (autoRegisteEvents) {
+      this.initEvents();
+      this.sheetEventsObserver.observe(this.$el!);
+      this.globalEventsObserver.observe(window as any);
+    }
     this.draw();
   }
 
@@ -1903,8 +1905,6 @@ class Sheet
     this.cellSelector = null;
     this.cellMergence = null;
     this.cellInput = null;
-    this.sheetEventsObserver.clearAll();
-    this.globalEventsObserver.clearAll();
   }
 
   clear() {
