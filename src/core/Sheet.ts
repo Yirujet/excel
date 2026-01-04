@@ -2196,7 +2196,9 @@ class Sheet
         } = cell;
         if (
           leftTop.x - scrollX > this.width ||
-          leftBottom.y - scrollY > this.height
+          leftTop.y - scrollY > this.height ||
+          rightBottom.x - scrollX < 0 ||
+          rightBottom.y - scrollY < 0
         ) {
           break;
         }
