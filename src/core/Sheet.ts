@@ -1312,7 +1312,14 @@ class Sheet
   adjust() {
     this.clear();
     this.destroy();
-    this.initCells(this.cells);
+    if (this.mode === "view") {
+      this.initCells(this.cells);
+    } else {
+      const contentCells = this.cells.slice(1).map((row) => row.slice(1));
+      this.rowCount = contentCells.length;
+      this.colCount = contentCells[0].length;
+      this.initCells(contentCells);
+    }
     this.render();
   }
 
@@ -1539,7 +1546,7 @@ class Sheet
       let row: Excel.Cell.CellInstance[] = [];
       let fixedColRows: Excel.Cell.CellInstance[] = [];
       let fixedRows: Excel.Cell.CellInstance[] = [];
-      cellYIndex = i === 0 ? 0 : i - 1;
+      cellYIndex = i > 0 ? i - 1 : 0;
       if (i === this.rowCount + 1 && this.mode === "view") {
         cellYIndex--;
       }
@@ -1548,7 +1555,7 @@ class Sheet
         j < this.colCount + 1 + (this.mode === "view" ? 1 : 0);
         j++
       ) {
-        cellXIndex = j === 0 ? 0 : j - 1;
+        cellXIndex = j > 0 ? j - 1 : 0;
         const cell = new Cell(this.sheetEventsObserver);
         if (this.mode === "edit") {
           cell.rowIndex = i;
@@ -1896,6 +1903,8 @@ class Sheet
     this.cellSelector = null;
     this.cellMergence = null;
     this.cellInput = null;
+    this.sheetEventsObserver.clearAll();
+    this.globalEventsObserver.clearAll();
   }
 
   clear() {
