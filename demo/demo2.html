@@ -49,7 +49,11 @@
           height: rowHeight[i],
         };
         const cellData = configData[i]?.[j];
-        if (cellData && cellData.cellValue !== "") {
+        if (
+          cellData &&
+          cellData.cellValue !== "" &&
+          cellData.cellValue !== null
+        ) {
           if (
             ["datasets", "static", "function"].includes(cellData.cellTypeDict)
           ) {
@@ -149,18 +153,18 @@
       }
       cells.push(row);
     }
-    // const mergedCells = mergeCell.map((item) => [
-    //   item.row,
-    //   item.row - 1 + item.rowspan,
-    //   item.col,
-    //   item.col - 1 + item.colspan,
-    // ]);
     const mergedCells = mergeCell.map((item) => [
-      item.row + 1,
-      item.row + item.rowspan,
-      item.col + 1,
-      item.col + item.colspan,
+      item.row,
+      item.row - 1 + item.rowspan,
+      item.col,
+      item.col - 1 + item.colspan,
     ]);
+    // const mergedCells = mergeCell.map((item) => [
+    //   item.row + 1,
+    //   item.row + item.rowspan,
+    //   item.col + 1,
+    //   item.col + item.colspan,
+    // ]);
     const app = document.querySelector("#app");
     const { width, height, x, y } = app.getBoundingClientRect();
     const excel = new Excel({
@@ -168,10 +172,10 @@
       sheets: [
         {
           name: "sheet1",
-          // fixedRowIndex: 0,
-          // fixedColIndex: 0,
-          fixedRowIndex: 1,
-          fixedColIndex: 1,
+          fixedRowIndex: 0,
+          fixedColIndex: 0,
+          // fixedRowIndex: 1,
+          // fixedColIndex: 1,
           rowCount,
           colCount,
           cells,
@@ -180,18 +184,30 @@
             right: 10,
             bottom: 10,
           },
-          // mode: "view",
-          mode: "edit",
+          mode: "view",
+          // mode: "edit",
         },
       ],
     });
     excel.mount(app);
     const richCellsImgs = richCells.map((cell) => {
       return new Promise((resolve) => {
+        console.log(cell.rowIndex, cell.colIndex, mergeCell);
         const richText = cell.cellValue;
         const div = document.createElement("div");
         div.innerHTML = richText;
-        div.style.width = colWidth[cell.colIndex] + "px";
+        const mergedCell = mergeCell.find(
+          (item) => item.row === cell.rowIndex && item.col === cell.colIndex
+        );
+        if (mergedCell) {
+          const width = Array.from({ length: mergedCell.colspan }).reduce(
+            (acc, cur, index) => acc + colWidth[cell.colIndex + index],
+            0
+          );
+          div.style.width = width + "px";
+        } else {
+          div.style.width = colWidth[cell.colIndex] + "px";
+        }
         div.style.position = "fixed";
         div.style.pointerEvents = "none";
         div.style.bottom = 9999 + "px";
@@ -219,14 +235,14 @@
             img.src = canvas.toDataURL();
             img.onload = () => {
               resolve({
-                // rowIndex: cell.rowIndex,
-                // colIndex: cell.colIndex,
-                rowIndex: cell.rowIndex + 1,
-                colIndex: cell.colIndex + 1,
+                rowIndex: cell.rowIndex,
+                colIndex: cell.colIndex,
+                // rowIndex: cell.rowIndex + 1,
+                // colIndex: cell.colIndex + 1,
                 img,
                 width: img.width,
                 height: img.height,
-                fit: "none",
+                fit: "contain",
               });
               document.body.removeChild(div);
             };
@@ -243,7 +259,7 @@
             img: img,
             width: item.width,
             height: height,
-            fit: "fill",
+            fit: "contain",
           },
         };
       });
