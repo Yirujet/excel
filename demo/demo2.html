@@ -192,7 +192,6 @@
     excel.mount(app);
     const richCellsImgs = richCells.map((cell) => {
       return new Promise((resolve) => {
-        console.log(cell.rowIndex, cell.colIndex, mergeCell);
         const richText = cell.cellValue;
         const div = document.createElement("div");
         div.innerHTML = richText;
@@ -263,7 +262,9 @@
           },
         };
       });
-      excel.sheets[0].adjust();
+      if (imgs.length > 0) {
+        excel.sheets[0].adjust();
+      }
     });
   </script>
 </html>

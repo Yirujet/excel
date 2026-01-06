@@ -1135,7 +1135,7 @@ class Sheet
         if (!rowAdjust[rowIndex] || rowAdjust[rowIndex] < heightIncrease) {
           let offset = 0;
           if (!rowAdjust[rowIndex]) {
-            offset = heightIncrease;
+            offset = heightIncrease - fontSize;
           } else {
             offset = heightIncrease - rowAdjust[rowIndex];
           }
