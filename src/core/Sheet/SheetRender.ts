@@ -65,6 +65,7 @@ export default abstract class SheetRender {
   declare fillingCells: Excel.Sheet.CellRange | null;
   declare editingCell: Excel.Cell.CellInstance | null;
   declare margin: Exclude<Excel.Sheet.Configuration["margin"], undefined>;
+  private declare _animationFrameId: number | null;
   declare initEvents: () => void;
   declare setCellMeta: (
     cell: Excel.Cell.CellInstance,
@@ -643,14 +644,20 @@ export default abstract class SheetRender {
   }
 
   draw() {
-    this.drawSheetCells();
-    this.drawMergedCells();
-    this.drawShadow();
-    this.drawScrollbar();
-    this.drawCellSelector();
-    this.drawCellResizer();
-    this.drawFillHandle();
-    this.drawFilling();
+    if (this._animationFrameId) {
+      cancelAnimationFrame(this._animationFrameId);
+    }
+    this._animationFrameId = requestAnimationFrame(() => {
+      console.log("draw");
+      this.drawSheetCells();
+      this.drawMergedCells();
+      this.drawShadow();
+      this.drawScrollbar();
+      this.drawCellSelector();
+      this.drawCellResizer();
+      this.drawFillHandle();
+      this.drawFilling();
+    });
   }
 
   drawSheetCells() {
