@@ -1,6 +1,6 @@
 /// <reference path="../models/Excel.model.ts" />
 
-import Sheet from "./Sheet";
+import Sheet from "./Sheet/SheetCore";
 import Element from "../components/Element";
 import {
   DEFAULT_CELL_COL_COUNT,
@@ -94,7 +94,7 @@ class Excel extends Element<HTMLDivElement> implements Excel.ExcelInstance {
     const sheetRender = new Element<HTMLDivElement>("div");
     sheetRender.$el!.style.flex = "1";
     const sheet = this.sheets[this.sheetIndex];
-    sheet.render();
+    sheet.render(true);
     sheetRender.add(sheet.$el!);
     return sheetRender;
   }

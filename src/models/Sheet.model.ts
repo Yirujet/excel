@@ -28,7 +28,7 @@ namespace Excel {
       fixedColCells: Cell.CellInstance[][];
       fixedCells: Cell.CellInstance[][];
       selectedCells: CellRange | null;
-      render: () => void;
+      render: (autoRegisteEvents: boolean) => void;
     }
   }
 }

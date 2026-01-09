@@ -13,7 +13,8 @@
     "esModuleInterop": false,
     "rootDir": "./",
     "allowJs": true,
-    "noImplicitAny": true
+    "noImplicitAny": true,
+    "moduleResolution": "node"
   },
   "include": [
     "./src/**/*.ts"
