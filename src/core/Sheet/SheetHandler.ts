@@ -254,6 +254,7 @@ export default abstract class SheetHandler {
   ): Excel.Cell.CellInstance[][] {
     const transformedCells = [...cells];
     let rowAdjust: Record<number, number> = {};
+
     for (let rowIndex = 0; rowIndex < transformedCells.length; rowIndex++) {
       const row = transformedCells[rowIndex];
       let currentX = 0;
@@ -261,22 +262,20 @@ export default abstract class SheetHandler {
       for (let colIndex = 0; colIndex < row.length; colIndex++) {
         const cell = row[colIndex];
 
-        cell.x = currentX;
-        cell.y =
-          rowIndex === 0
-            ? 0
-            : transformedCells[rowIndex - 1][0].y! +
-              (transformedCells[rowIndex - 1][0].height || 0);
+        this.setCellPosition(
+          cell,
+          rowIndex,
+          colIndex,
+          transformedCells,
+          currentX
+        );
+
         const cellInMergedCells = this.checkCellInMergedCells(
           this.mode === "view" ? rowIndex : rowIndex + 1,
           this.mode === "view" ? colIndex : colIndex + 1
         );
-        if (
-          cell.meta?.type === "text" &&
-          cell.value &&
-          cell.width &&
-          !cellInMergedCells
-        ) {
+
+        if (this.shouldProcessTextCell(cell, cellInMergedCells)) {
           rowAdjust = this.adjustCellPosition(
             cell,
             transformedCells,
@@ -286,46 +285,119 @@ export default abstract class SheetHandler {
             rowAdjust
           );
         }
+
         if (cell.meta?.type === "image") {
-          if (cell.height !== cell.meta.data.height && cell.meta.data.height) {
-            const heightIncrease = cell.meta.data.height! - (cell.height || 0);
-            if (!rowAdjust[rowIndex] || rowAdjust[rowIndex] < heightIncrease) {
-              let offset = 0;
-              if (!rowAdjust[rowIndex]) {
-                offset = heightIncrease;
-              } else {
-                offset = heightIncrease - rowAdjust[rowIndex];
-              }
-              rowAdjust[rowIndex] = heightIncrease;
-              transformedCells[rowIndex].forEach((item) => {
-                item.height! += offset;
-                item.updatePosition?.();
-              });
-              for (
-                let adjustRowIndex = rowIndex + 1;
-                adjustRowIndex < transformedCells.length;
-                adjustRowIndex++
-              ) {
-                const adjustRow = transformedCells[adjustRowIndex];
-                for (
-                  let adjustColIndex = 0;
-                  adjustColIndex < adjustRow.length;
-                  adjustColIndex++
-                ) {
-                  const adjustCell = adjustRow[adjustColIndex];
-                  adjustCell.y = (adjustCell.y || 0) + offset;
-                  adjustCell.updatePosition?.();
-                }
-              }
-            }
-          }
+          this.processImageCell(cell, rowIndex, transformedCells, rowAdjust);
         }
+
         currentX += cell.width || 0;
       }
     }
     return transformedCells;
   }
 
+  private setCellPosition(
+    cell: Excel.Cell.CellInstance,
+    rowIndex: number,
+    colIndex: number,
+    transformedCells: Excel.Cell.CellInstance[][],
+    currentX: number
+  ): void {
+    cell.x = currentX;
+
+    if (rowIndex === 0) {
+      cell.y = 0;
+    } else {
+      const previousRow = transformedCells[rowIndex - 1];
+      if (previousRow && previousRow.length > 0) {
+        const previousCell = previousRow[0];
+        cell.y = previousCell.y! + (previousCell.height || 0);
+      } else {
+        cell.y = 0;
+      }
+    }
+  }
+
+  private shouldProcessTextCell(
+    cell: Excel.Cell.CellInstance,
+    cellInMergedCells: boolean
+  ): boolean {
+    return (
+      cell.meta?.type === "text" &&
+      cell.value &&
+      cell.width &&
+      !cellInMergedCells
+    );
+  }
+
+  private processImageCell(
+    cell: Excel.Cell.CellInstance,
+    rowIndex: number,
+    transformedCells: Excel.Cell.CellInstance[][],
+    rowAdjust: Record<number, number>
+  ): void {
+    if (
+      !(cell.meta?.data as Excel.Cell.CellImageMetaData)?.height ||
+      cell.height === (cell.meta?.data as Excel.Cell.CellImageMetaData).height
+    ) {
+      return;
+    }
+
+    const heightIncrease =
+      (cell.meta?.data as Excel.Cell.CellImageMetaData).height -
+      (cell.height || 0);
+
+    if (heightIncrease <= 0) {
+      return;
+    }
+
+    if (!rowAdjust[rowIndex] || rowAdjust[rowIndex] < heightIncrease) {
+      const offset = this.calculateHeightOffset(
+        rowAdjust,
+        rowIndex,
+        heightIncrease
+      );
+      rowAdjust[rowIndex] = heightIncrease;
+
+      this.adjustRowHeight(transformedCells, rowIndex, offset);
+    }
+  }
+
+  private calculateHeightOffset(
+    rowAdjust: Record<number, number>,
+    rowIndex: number,
+    heightIncrease: number
+  ): number {
+    if (!rowAdjust[rowIndex]) {
+      return heightIncrease;
+    } else {
+      return heightIncrease - rowAdjust[rowIndex];
+    }
+  }
+
+  private adjustRowHeight(
+    cells: Excel.Cell.CellInstance[][],
+    rowIndex: number,
+    offset: number
+  ): void {
+    const currentRow = cells[rowIndex];
+    currentRow.forEach((cell) => {
+      cell.height! += offset;
+      cell.updatePosition?.();
+    });
+
+    for (
+      let adjustRowIndex = rowIndex + 1;
+      adjustRowIndex < cells.length;
+      adjustRowIndex++
+    ) {
+      const adjustRow = cells[adjustRowIndex];
+      adjustRow.forEach((cell) => {
+        cell.y = (cell.y || 0) + offset;
+        cell.updatePosition?.();
+      });
+    }
+  }
   private truncateContent(
     content: string,
     width: number,
