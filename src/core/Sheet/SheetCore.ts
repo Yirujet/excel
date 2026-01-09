@@ -31,6 +31,7 @@ class Sheet
   private _ctx: CanvasRenderingContext2D | null = null;
   private _startCell: Excel.Cell.CellInstance | null = null;
   private _animationFrameId: number | null = null;
+  private _redrawTimeout: number | null = null;
   name = "";
   cells: Excel.Cell.CellInstance[][] = [];
   width = 0;

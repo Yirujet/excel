@@ -66,6 +66,7 @@ export default abstract class SheetRender {
   declare editingCell: Excel.Cell.CellInstance | null;
   declare margin: Exclude<Excel.Sheet.Configuration["margin"], undefined>;
   private declare _animationFrameId: number | null;
+  private declare _redrawTimeout: number | null;
   declare initEvents: () => void;
   declare setCellMeta: (
     cell: Excel.Cell.CellInstance,
@@ -640,7 +641,15 @@ export default abstract class SheetRender {
 
   redraw(percent: number, type: Excel.Scrollbar.Type) {
     this.updateScroll(percent, type);
-    this.draw();
+
+    if (this._redrawTimeout) {
+      clearTimeout(this._redrawTimeout);
+    }
+
+    this._redrawTimeout = window.setTimeout(() => {
+      this.draw();
+      this._redrawTimeout = null;
+    }, 16);
   }
 
   draw() {
@@ -648,7 +657,6 @@ export default abstract class SheetRender {
       cancelAnimationFrame(this._animationFrameId);
     }
     this._animationFrameId = requestAnimationFrame(() => {
-      console.log("draw");
       this.drawSheetCells();
       this.drawMergedCells();
       this.drawShadow();
