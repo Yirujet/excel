@@ -12,11 +12,14 @@ namespace Excel {
         right: number;
         bottom: number;
       };
+      plugins?: PluginType[];
     }
 
     export type CellRange = [number, number, number, number];
 
     export type Mode = "edit" | "view";
+
+    export type PluginType = "hotkeys";
 
     export interface SheetInstance extends Required<Configuration> {
       $el: HTMLCanvasElement | null;

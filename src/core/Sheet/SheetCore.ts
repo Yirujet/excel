@@ -20,6 +20,8 @@ import SheetApi from "./SheetApi";
 import SheetHandler from "./SheetHandler";
 import SheetRender from "./SheetRender";
 import SheetEvent from "./SheetEvent";
+import { HotKeys } from "../../plugins/HotKeys";
+import SheetPlugin from "./SheetPlugin";
 
 class Sheet
   extends Element<HTMLCanvasElement>
@@ -31,7 +33,7 @@ class Sheet
   private _ctx: CanvasRenderingContext2D | null = null;
   private _startCell: Excel.Cell.CellInstance | null = null;
   private _animationFrameId: number | null = null;
-  private _redrawTimeout: number | null = null;
+  private _redrawTimer: number | null = null;
   name = "";
   cells: Excel.Cell.CellInstance[][] = [];
   width = 0;
@@ -52,6 +54,7 @@ class Sheet
   fillHandle: FillHandle | null = null;
   filling: Filling | null = null;
   cellInput: CellInput | null = null;
+  hotKeys: HotKeys | null = null;
   sheetEventsObserver: Excel.Event.ObserverInstance = new EventObserver();
   globalEventsObserver: Excel.Event.ObserverInstance = new EventObserver();
   realWidth = 0;
@@ -85,6 +88,7 @@ class Sheet
   isFilling = false;
   fillingCells: Excel.Sheet.CellRange | null = null;
   editingCell: Excel.Cell.CellInstance | null = null;
+  plugins: Excel.Sheet.PluginType[] = [];
 
   constructor(name: string, config: Excel.Sheet.Configuration) {
     super("canvas");
@@ -99,6 +103,7 @@ class Sheet
       right: DEFAULT_CELL_WIDTH,
       bottom: DEFAULT_CELL_HEIGHT,
     };
+    this.plugins = config.plugins || [];
     this.initCells(config?.cells);
   }
 }
@@ -108,6 +113,7 @@ mixin(Sheet, [
   { ctor: SheetEvent },
   { ctor: SheetApi },
   { ctor: SheetHandler, private: true },
+  { ctor: SheetPlugin },
 ]);
 
 export default Sheet;

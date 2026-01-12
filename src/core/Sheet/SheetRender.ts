@@ -65,8 +65,9 @@ export default abstract class SheetRender {
   declare fillingCells: Excel.Sheet.CellRange | null;
   declare editingCell: Excel.Cell.CellInstance | null;
   declare margin: Exclude<Excel.Sheet.Configuration["margin"], undefined>;
+  declare plugins: Excel.Sheet.PluginType[];
   private declare _animationFrameId: number | null;
-  private declare _redrawTimeout: number | null;
+  private declare _redrawTimer: number | null;
   declare initEvents: () => void;
   declare setCellMeta: (
     cell: Excel.Cell.CellInstance,
@@ -82,6 +83,7 @@ export default abstract class SheetRender {
   private declare transformCells: (
     cells: Excel.Cell.CellInstance[][]
   ) => Excel.Cell.CellInstance[][];
+  declare initPlugins: (plugins: Excel.Sheet.PluginType[]) => void;
 
   render(autoRegisteEvents: boolean = true) {
     this.initSheet();
@@ -94,6 +96,7 @@ export default abstract class SheetRender {
     this.initFilling();
     this.initCellEditor();
     if (autoRegisteEvents) {
+      this.initPlugin();
       this.initEvents();
       this.sheetEventsObserver.observe(this.$el!);
       this.globalEventsObserver.observe(window as any);
@@ -147,6 +150,26 @@ export default abstract class SheetRender {
     );
     this.horizontalScrollBar.addEvent("percent", this.redraw.bind(this));
     this.verticalScrollBar.addEvent("percent", this.redraw.bind(this));
+    this.autoScrollToCurrentView();
+  }
+
+  autoScrollToCurrentView() {
+    if (this.scroll) {
+      const horizontablePercent =
+        this.scroll.x /
+        (this.realWidth -
+          this.width +
+          (this.verticalScrollBar?.show ? DEFAULT_SCROLLBAR_TRACK_SIZE : 0));
+      const verticalPercent =
+        this.scroll.y /
+        (this.realHeight -
+          this.height +
+          (this.horizontalScrollBar?.show ? DEFAULT_SCROLLBAR_TRACK_SIZE : 0));
+      this.updateScroll(horizontablePercent, "horizontal");
+      this.updateScroll(verticalPercent, "vertical");
+      this.horizontalScrollBar?.scrollTo(horizontablePercent);
+      this.verticalScrollBar?.scrollTo(verticalPercent);
+    }
   }
 
   initShadow() {
@@ -225,6 +248,10 @@ export default abstract class SheetRender {
         this.cellInput!.hide();
       }
     );
+  }
+
+  initPlugin() {
+    this.initPlugins(this.plugins);
   }
 
   initCells(cells: Excel.Cell.CellInstance[][] | undefined) {
@@ -642,13 +669,13 @@ export default abstract class SheetRender {
   redraw(percent: number, type: Excel.Scrollbar.Type) {
     this.updateScroll(percent, type);
 
-    if (this._redrawTimeout) {
-      clearTimeout(this._redrawTimeout);
+    if (this._redrawTimer) {
+      clearTimeout(this._redrawTimer);
     }
 
-    this._redrawTimeout = window.setTimeout(() => {
+    this._redrawTimer = window.setTimeout(() => {
       this.draw();
-      this._redrawTimeout = null;
+      this._redrawTimer = null;
     }, 16);
   }
 

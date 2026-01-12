@@ -22,6 +22,9 @@ export default class HorizontalScrollbar extends Scrollbar {
     this.updatePosition();
     this.initEvents();
   }
+  scrollTo(percent: number) {
+    this.value = percent * (this.thumb.width - this.track.width);
+  }
   updateScrollbarInfo() {
     if (
       this.layout!.bodyRealWidth >

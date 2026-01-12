@@ -22,6 +22,9 @@ export default class VerticalScrollbar extends Scrollbar {
     this.updatePosition();
     this.initEvents();
   }
+  scrollTo(percent: number) {
+    this.value = percent * (this.thumb.height - this.track.height);
+  }
   updateScrollbarInfo() {
     if (this.layout!.bodyHeight < this.layout!.bodyRealHeight) {
       this.show = true;
