@@ -34,7 +34,7 @@ export default [
         presets: ['@babel/preset-env']
       }),
       typescript({ tsconfig: 'tsconfig.json', declaration: true }),
-      // terser(), // 如果需要压缩可以取消注释
+      terser(), // 如果需要压缩可以取消注释
     ]
   },
 ];
