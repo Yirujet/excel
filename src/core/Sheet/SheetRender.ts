@@ -14,7 +14,7 @@ import {
 import Cell from "../Cell";
 import CellInput from "../CellInput";
 import CellMergence from "../CellMergence";
-import CellResizer from "../CellResizer";
+import CellResizer from "../../plugins/CellResizer";
 import CellSelector from "../CellSelector";
 import FillHandle from "../FillHandle";
 import Filling from "../Filling";
@@ -89,7 +89,6 @@ export default abstract class SheetRender {
     this.initSheet();
     this.initScrollbar();
     this.initShadow();
-    this.initCellResizer();
     this.initCellSelector();
     this.initCellMergence();
     this.initFillHandle();
@@ -191,9 +190,9 @@ export default abstract class SheetRender {
     );
   }
 
-  initCellResizer() {
-    this.cellResizer = new CellResizer(this.layout!);
-  }
+  // initCellResizer() {
+  //   this.cellResizer = new CellResizer(this.layout!);
+  // }
 
   initCellSelector() {
     this.cellSelector = new CellSelector(
@@ -774,6 +773,7 @@ export default abstract class SheetRender {
   }
 
   drawCellResizer() {
+    if (!this.cellResizer) return;
     if (this.resizeInfo.x || this.resizeInfo.y) {
       let cellInfo: Excel.Cell.CellInstance =
         this.cells[this.resizeInfo.rowIndex!][this.resizeInfo.colIndex!];

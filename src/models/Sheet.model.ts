@@ -19,7 +19,7 @@ namespace Excel {
 
     export type Mode = "edit" | "view";
 
-    export type PluginType = "hotkeys";
+    export type PluginType = "hotkeys" | "resize";
 
     export interface SheetInstance extends Required<Configuration> {
       $el: HTMLCanvasElement | null;

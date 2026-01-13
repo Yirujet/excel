@@ -1,6 +1,6 @@
 import CellInput from "../CellInput";
 import CellMergence from "../CellMergence";
-import CellResizer from "../CellResizer";
+import CellResizer from "../../plugins/CellResizer";
 import CellSelector from "../CellSelector";
 import FillHandle from "../FillHandle";
 import Filling from "../Filling";
@@ -286,7 +286,7 @@ export default abstract class SheetApi {
     this.verticalScrollBarShadow = null;
     this.fillHandle = null;
     this.filling = null;
-    this.cellResizer = null;
+    // this.cellResizer = null;
     this.cellSelector = null;
     this.cellMergence = null;
     this.cellInput = null;

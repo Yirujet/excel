@@ -1,3 +1,4 @@
+import CellResizer from "../../plugins/CellResizer";
 import debounce from "../../utils/debounce";
 import throttle from "../../utils/throttle";
 import globalObj from "../globalObj";
@@ -29,6 +30,7 @@ export default abstract class SheetEvent {
   declare realHeight: number;
   declare editingCell: Excel.Cell.CellInstance | null;
   declare globalEventsObserver: Excel.Event.ObserverInstance;
+  declare cellResizer: CellResizer | null;
   private declare _startCell: Excel.Cell.CellInstance | null;
   private declare pointInFillHandle: (e: MouseEvent) => boolean;
   declare getMergedRangesInSelectedCells: () => Excel.Sheet.CellRange[];
@@ -565,71 +567,6 @@ export default abstract class SheetEvent {
     window.addEventListener("mouseup", onEnd);
   }
 
-  handleCellResize(resize: Excel.Cell.CellAction["resize"], isEnd = false) {
-    if (resize.value) {
-      this.resizeInfo = resize;
-    }
-    if (isEnd) {
-      if (this.resizeInfo.x) {
-        this.cells.forEach((row) => {
-          row.forEach((cell, colIndex) => {
-            if (colIndex === this.resizeInfo.colIndex!) {
-              cell.width = cell.width! + this.resizeInfo.value!;
-              cell.updatePosition();
-            }
-            if (colIndex > this.resizeInfo.colIndex!) {
-              cell.x = cell.x! + this.resizeInfo.value!;
-              cell.updatePosition();
-            }
-          });
-        });
-        this.layout!.bodyRealWidth += this.resizeInfo.value!;
-        this.realWidth += this.resizeInfo.value!;
-        this.horizontalScrollBar?.updateScrollbarInfo();
-        this.horizontalScrollBar?.updatePosition();
-      }
-      if (this.resizeInfo.y) {
-        this.cells.forEach((row, rowIndex) => {
-          row.forEach((cell) => {
-            if (rowIndex === this.resizeInfo.rowIndex!) {
-              cell.height = cell.height! + this.resizeInfo.value!;
-              cell.updatePosition();
-            }
-            if (rowIndex > this.resizeInfo.rowIndex!) {
-              cell.y = cell.y! + this.resizeInfo.value!;
-              cell.updatePosition();
-            }
-          });
-        });
-        this.layout!.bodyRealHeight += this.resizeInfo.value!;
-        this.realHeight += this.resizeInfo.value!;
-        this.verticalScrollBar?.updateScrollbarInfo();
-        this.verticalScrollBar?.updatePosition();
-      }
-      this.resizeInfo = {
-        x: false,
-        y: false,
-        rowIndex: null,
-        colIndex: null,
-        value: null,
-      };
-    }
-    this.draw();
-  }
-
-  private resizeCell(e: MouseEvent) {
-    const isInAbsFixedCell = this.pointInAbsFixedCell(e);
-    const isInColResize = this.pointInColResize(e);
-    const isInRowResize = this.pointInRowResize(e);
-    if (isInAbsFixedCell) return;
-    this.handleCellAction(
-      e,
-      isInColResize,
-      isInRowResize,
-      this.handleCellResize
-    );
-  }
-
   handleCellSelect(select: Excel.Cell.CellAction["select"], isEnd = false) {
     if (this.selectInfo.value === null) {
       if (select.x) {
@@ -787,9 +724,11 @@ export default abstract class SheetEvent {
         globalObj.SET_CURSOR("crosshair");
       }
       if (this.pointInRowResize(e)) {
+        if (!this.cellResizer) return;
         globalObj.SET_CURSOR("row-resize");
       }
       if (this.pointInColResize(e)) {
+        if (!this.cellResizer) return;
         globalObj.SET_CURSOR("col-resize");
       }
       if (this.pointInAbsFixedCell(e)) {
@@ -830,7 +769,7 @@ export default abstract class SheetEvent {
         if (this.mode === "view") return;
         this.fill.call(this, e);
         this.selectCellRange.call(this, e);
-        this.resizeCell.call(this, e);
+        this.cellResizer?.resize.call(this, e);
         this.selectFullCell.call(this, e);
         this.endEditingCell.call(this, e);
       },

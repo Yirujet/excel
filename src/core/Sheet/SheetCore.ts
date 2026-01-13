@@ -1,6 +1,6 @@
 import Element from "../../components/Element";
 import EventObserver from "../../utils/EventObserver";
-import CellResizer from "../CellResizer";
+import CellResizer from "../../plugins/CellResizer";
 import HorizontalScrollbar from "../Scrollbar/HorizontalScrollbar";
 import VerticalScrollbar from "../Scrollbar/VerticalScrollbar";
 import CellSelector from "../CellSelector";
