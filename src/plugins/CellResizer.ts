@@ -6,10 +6,11 @@ import {
 } from "../config/index";
 import HorizontalScrollbar from "../core/Scrollbar/HorizontalScrollbar";
 import VerticalScrollbar from "../core/Scrollbar/VerticalScrollbar";
+import drawBorder from "../utils/drawBorder";
 
 class CellResizer extends Element<null> {
   declare cellResizer: CellResizer | null;
-  declare resizeInfo: Excel.Cell.CellAction["resize"];
+  // declare resizeInfo: Excel.Cell.CellAction["resize"];
   declare cells: Excel.Cell.CellInstance[][];
   declare realWidth: number;
   declare realHeight: number;
@@ -29,6 +30,13 @@ class CellResizer extends Element<null> {
   ) => void;
   declare draw: () => void;
   layout: Excel.LayoutInfo;
+  resizeInfo: Excel.Cell.CellAction["resize"] = {
+    x: false,
+    y: false,
+    rowIndex: null,
+    colIndex: null,
+    value: null,
+  };
 
   constructor(layout: Excel.LayoutInfo) {
     super("");
@@ -37,46 +45,46 @@ class CellResizer extends Element<null> {
 
   handleCellResize(resize: Excel.Cell.CellAction["resize"], isEnd = false) {
     if (resize.value) {
-      this.resizeInfo = resize;
+      this.cellResizer!.resizeInfo = resize;
     }
     if (isEnd) {
-      if (this.resizeInfo.x) {
+      if (this.cellResizer!.resizeInfo.x) {
         this.cells.forEach((row) => {
           row.forEach((cell, colIndex) => {
-            if (colIndex === this.resizeInfo.colIndex!) {
-              cell.width = cell.width! + this.resizeInfo.value!;
+            if (colIndex === this.cellResizer!.resizeInfo.colIndex!) {
+              cell.width = cell.width! + this.cellResizer!.resizeInfo.value!;
               cell.updatePosition();
             }
-            if (colIndex > this.resizeInfo.colIndex!) {
-              cell.x = cell.x! + this.resizeInfo.value!;
+            if (colIndex > this.cellResizer!.resizeInfo.colIndex!) {
+              cell.x = cell.x! + this.cellResizer!.resizeInfo.value!;
               cell.updatePosition();
             }
           });
         });
-        this.layout!.bodyRealWidth += this.resizeInfo.value!;
-        this.realWidth += this.resizeInfo.value!;
+        this.layout!.bodyRealWidth += this.cellResizer!.resizeInfo.value!;
+        this.realWidth += this.cellResizer!.resizeInfo.value!;
         this.horizontalScrollBar?.updateScrollbarInfo();
         this.horizontalScrollBar?.updatePosition();
       }
-      if (this.resizeInfo.y) {
+      if (this.cellResizer!.resizeInfo.y) {
         this.cells.forEach((row, rowIndex) => {
           row.forEach((cell) => {
-            if (rowIndex === this.resizeInfo.rowIndex!) {
-              cell.height = cell.height! + this.resizeInfo.value!;
+            if (rowIndex === this.cellResizer!.resizeInfo.rowIndex!) {
+              cell.height = cell.height! + this.cellResizer!.resizeInfo.value!;
               cell.updatePosition();
             }
-            if (rowIndex > this.resizeInfo.rowIndex!) {
-              cell.y = cell.y! + this.resizeInfo.value!;
+            if (rowIndex > this.cellResizer!.resizeInfo.rowIndex!) {
+              cell.y = cell.y! + this.cellResizer!.resizeInfo.value!;
               cell.updatePosition();
             }
           });
         });
-        this.layout!.bodyRealHeight += this.resizeInfo.value!;
-        this.realHeight += this.resizeInfo.value!;
+        this.layout!.bodyRealHeight += this.cellResizer!.resizeInfo.value!;
+        this.realHeight += this.cellResizer!.resizeInfo.value!;
         this.verticalScrollBar?.updateScrollbarInfo();
         this.verticalScrollBar?.updatePosition();
       }
-      this.resizeInfo = {
+      this.cellResizer!.resizeInfo = {
         x: false,
         y: false,
         rowIndex: null,
@@ -104,64 +112,60 @@ class CellResizer extends Element<null> {
   render(
     ctx: CanvasRenderingContext2D,
     cellInfo: Excel.Cell.CellInstance,
-    resizeInfo: Excel.Cell.CellAction["resize"],
     scrollInfo: Excel.PositionPoint
   ) {
-    ctx.save();
-    ctx.setLineDash(DEFAULT_RESIZER_LINE_DASH);
-    ctx.lineWidth = DEFAULT_RESIZER_LINE_WIDTH;
-    ctx.strokeStyle = DEFAULT_RESIZER_LINE_COLOR;
-    if (resizeInfo.x) {
-      ctx.beginPath();
-      ctx.moveTo(
+    if (this.resizeInfo.x) {
+      drawBorder(
+        ctx,
         Math.round(
-          cellInfo.position.rightTop.x + resizeInfo.value! - scrollInfo.x
+          cellInfo.position.rightTop.x + this.resizeInfo.value! - scrollInfo.x
         ),
-        0
-      );
-      ctx.lineTo(
-        Math.round(
-          cellInfo.position.rightTop.x + resizeInfo.value! - scrollInfo.x
-        ),
-        this.layout.height
-      );
-      ctx.closePath();
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.moveTo(Math.round(cellInfo.position.leftTop.x - scrollInfo.x), 0);
-      ctx.lineTo(
-        Math.round(cellInfo.position.leftTop.x - scrollInfo.x),
-        this.layout.height
-      );
-      ctx.closePath();
-      ctx.stroke();
-    }
-    if (resizeInfo.y) {
-      ctx.beginPath();
-      ctx.moveTo(
         0,
         Math.round(
-          cellInfo.position.leftBottom.y + resizeInfo.value! - scrollInfo.y
-        )
+          cellInfo.position.rightTop.x + this.resizeInfo.value! - scrollInfo.x
+        ),
+        this.layout.height,
+        DEFAULT_RESIZER_LINE_COLOR,
+        DEFAULT_RESIZER_LINE_WIDTH,
+        DEFAULT_RESIZER_LINE_DASH
       );
-      ctx.lineTo(
+      drawBorder(
+        ctx,
+        Math.round(cellInfo.position.leftTop.x - scrollInfo.x),
+        0,
+        Math.round(cellInfo.position.leftTop.x - scrollInfo.x),
+        this.layout.height,
+        DEFAULT_RESIZER_LINE_COLOR,
+        DEFAULT_RESIZER_LINE_WIDTH,
+        DEFAULT_RESIZER_LINE_DASH
+      );
+    }
+    if (this.resizeInfo.y) {
+      drawBorder(
+        ctx,
+        0,
+        Math.round(
+          cellInfo.position.leftBottom.y + this.resizeInfo.value! - scrollInfo.y
+        ),
         this.layout.width,
         Math.round(
-          cellInfo.position.leftBottom.y + resizeInfo.value! - scrollInfo.y
-        )
+          cellInfo.position.leftBottom.y + this.resizeInfo.value! - scrollInfo.y
+        ),
+        DEFAULT_RESIZER_LINE_COLOR,
+        DEFAULT_RESIZER_LINE_WIDTH,
+        DEFAULT_RESIZER_LINE_DASH
       );
-      ctx.closePath();
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.moveTo(0, Math.round(cellInfo.position.leftTop.y - scrollInfo.y));
-      ctx.lineTo(
+      drawBorder(
+        ctx,
+        0,
+        Math.round(cellInfo.position.leftTop.y - scrollInfo.y),
         this.layout.width,
-        Math.round(cellInfo.position.leftTop.y - scrollInfo.y)
+        Math.round(cellInfo.position.leftTop.y - scrollInfo.y),
+        DEFAULT_RESIZER_LINE_COLOR,
+        DEFAULT_RESIZER_LINE_WIDTH,
+        DEFAULT_RESIZER_LINE_DASH
       );
-      ctx.closePath();
-      ctx.stroke();
     }
-    ctx.restore();
   }
 }
 

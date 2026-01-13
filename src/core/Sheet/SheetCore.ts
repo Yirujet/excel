@@ -69,13 +69,6 @@ class Sheet
   fixedRowHeight = 0;
   fixedColWidth = 0;
   layout: Excel.LayoutInfo | null = null;
-  resizeInfo: Excel.Cell.CellAction["resize"] = {
-    x: false,
-    y: false,
-    rowIndex: null,
-    colIndex: null,
-    value: null,
-  };
   selectInfo: Excel.Cell.CellAction["select"] = {
     x: false,
     y: false,

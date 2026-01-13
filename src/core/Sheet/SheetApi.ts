@@ -286,7 +286,6 @@ export default abstract class SheetApi {
     this.verticalScrollBarShadow = null;
     this.fillHandle = null;
     this.filling = null;
-    // this.cellResizer = null;
     this.cellSelector = null;
     this.cellMergence = null;
     this.cellInput = null;

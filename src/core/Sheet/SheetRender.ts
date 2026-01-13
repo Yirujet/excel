@@ -59,7 +59,7 @@ export default abstract class SheetRender {
   declare fixedColCells: Excel.Cell.CellInstance[][];
   declare fixedCells: Excel.Cell.CellInstance[][];
   declare mergedCells: Excel.Sheet.CellRange[];
-  declare resizeInfo: Excel.Cell.CellAction["resize"];
+  // declare resizeInfo: Excel.Cell.CellAction["resize"];
   declare selectedCells: Excel.Sheet.CellRange | null;
   private declare _startCell: Excel.Cell.CellInstance | null;
   declare fillingCells: Excel.Sheet.CellRange | null;
@@ -189,10 +189,6 @@ export default abstract class SheetRender {
       "horizontal"
     );
   }
-
-  // initCellResizer() {
-  //   this.cellResizer = new CellResizer(this.layout!);
-  // }
 
   initCellSelector() {
     this.cellSelector = new CellSelector(
@@ -774,15 +770,12 @@ export default abstract class SheetRender {
 
   drawCellResizer() {
     if (!this.cellResizer) return;
-    if (this.resizeInfo.x || this.resizeInfo.y) {
+    if (this.cellResizer.resizeInfo.x || this.cellResizer.resizeInfo.y) {
       let cellInfo: Excel.Cell.CellInstance =
-        this.cells[this.resizeInfo.rowIndex!][this.resizeInfo.colIndex!];
-      this.cellResizer!.render(
-        this._ctx!,
-        cellInfo,
-        this.resizeInfo,
-        this.scroll
-      );
+        this.cells[this.cellResizer.resizeInfo.rowIndex!][
+          this.cellResizer.resizeInfo.colIndex!
+        ];
+      this.cellResizer!.render(this._ctx!, cellInfo, this.scroll);
     }
   }
 

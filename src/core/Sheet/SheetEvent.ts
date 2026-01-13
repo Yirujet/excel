@@ -24,7 +24,6 @@ export default abstract class SheetEvent {
   declare verticalScrollBar: VerticalScrollbar | null;
   declare fixedColIndex: number;
   declare fixedRowIndex: number;
-  declare resizeInfo: Excel.Cell.CellAction["resize"];
   declare selectInfo: Excel.Cell.CellAction["select"];
   declare realWidth: number;
   declare realHeight: number;
