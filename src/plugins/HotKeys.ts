@@ -34,7 +34,9 @@ export class HotKeys extends Element<null> {
         .slice(minRowIndex, maxRowIndex + 1)
         .map((row) => row.slice(minColIndex, maxColIndex + 1));
       const copyText = selectedCells
-        .map((row) => row.map((cell) => cell.value).join("\t"))
+        .map((row) =>
+          row.map((cell) => cell.value.replaceAll("\n", "")).join("\t")
+        )
         .join("\n");
       navigator.clipboard.writeText(copyText);
     }

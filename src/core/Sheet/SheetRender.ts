@@ -59,7 +59,6 @@ export default abstract class SheetRender {
   declare fixedColCells: Excel.Cell.CellInstance[][];
   declare fixedCells: Excel.Cell.CellInstance[][];
   declare mergedCells: Excel.Sheet.CellRange[];
-  // declare resizeInfo: Excel.Cell.CellAction["resize"];
   declare selectedCells: Excel.Sheet.CellRange | null;
   private declare _startCell: Excel.Cell.CellInstance | null;
   declare fillingCells: Excel.Sheet.CellRange | null;

@@ -10,7 +10,6 @@ import drawBorder from "../utils/drawBorder";
 
 class CellResizer extends Element<null> {
   declare cellResizer: CellResizer | null;
-  // declare resizeInfo: Excel.Cell.CellAction["resize"];
   declare cells: Excel.Cell.CellInstance[][];
   declare realWidth: number;
   declare realHeight: number;
@@ -29,6 +28,7 @@ class CellResizer extends Element<null> {
     ) => void
   ) => void;
   declare draw: () => void;
+  declare adjust: () => void;
   layout: Excel.LayoutInfo;
   resizeInfo: Excel.Cell.CellAction["resize"] = {
     x: false,
@@ -93,6 +93,9 @@ class CellResizer extends Element<null> {
       };
     }
     this.draw();
+    if (isEnd) {
+      this.adjust();
+    }
   }
 
   resize(e: MouseEvent) {
