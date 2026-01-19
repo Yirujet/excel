@@ -20,6 +20,7 @@ export default abstract class SheetPlugin {
 
     this.hotKeys.addEvent("ctrl+c", this.hotKeys.copy.bind(this));
     this.hotKeys.addEvent("ctrl+v", this.hotKeys.paste.bind(this));
+    this.hotKeys.addEvent("ctrl+x", this.hotKeys.cut.bind(this));
   }
 
   initCellResizer() {

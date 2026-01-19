@@ -4,13 +4,15 @@ import Element from "../components/Element";
 export class HotKeys extends Element<null> {
   declare cells: Excel.Cell.CellInstance[][];
   declare selectedCells: Excel.Sheet.CellRange | null;
+  declare hotKeys: HotKeys | null;
   declare clearCellMeta: (cell: Excel.Cell.CellInstance) => void;
   declare setCellMeta: (
     cell: Excel.Cell.CellInstance,
     cellMeta: Excel.Cell.Meta,
-    needDraw: boolean
+    needDraw: boolean,
   ) => void;
   declare adjust: () => void;
+  declare draw: () => void;
   constructor() {
     super("");
     this.init();
@@ -24,6 +26,10 @@ export class HotKeys extends Element<null> {
     hotkeys("ctrl+v", () => {
       this.triggerEvent("ctrl+v");
     });
+
+    hotkeys("ctrl+x", () => {
+      this.triggerEvent("ctrl+x");
+    });
   }
 
   copy() {
@@ -35,7 +41,7 @@ export class HotKeys extends Element<null> {
         .map((row) => row.slice(minColIndex, maxColIndex + 1));
       const copyText = selectedCells
         .map((row) =>
-          row.map((cell) => cell.value.replaceAll("\n", "")).join("\t")
+          row.map((cell) => cell.value.replaceAll("\n", "")).join("\t"),
         )
         .join("\n");
       navigator.clipboard.writeText(copyText);
@@ -59,13 +65,27 @@ export class HotKeys extends Element<null> {
                 type: "text",
                 data: cells[j],
               },
-              false
+              false,
             );
             cell.wrap = "wrap";
           }
         }
-        this.adjust();
       });
+    }
+  }
+
+  cut() {
+    if (this.selectedCells) {
+      this.hotKeys!.copy.call(this);
+      const [minRowIndex, maxRowIndex, minColIndex, maxColIndex] =
+        this.selectedCells;
+      for (let i = 0; i < maxRowIndex - minRowIndex + 1; i++) {
+        for (let j = 0; j < maxColIndex - minColIndex + 1; j++) {
+          const cell = this.cells[minRowIndex + i][minColIndex + j];
+          this.clearCellMeta(cell);
+        }
+      }
+      this.draw();
     }
   }
 }
