@@ -30,8 +30,8 @@ export default abstract class SheetEvent {
   declare editingCell: Excel.Cell.CellInstance | null;
   declare globalEventsObserver: Excel.Event.ObserverInstance;
   declare cellResizer: CellResizer | null;
-  private declare _startCell: Excel.Cell.CellInstance | null;
-  private declare pointInFillHandle: (e: MouseEvent) => boolean;
+  declare private _startCell: Excel.Cell.CellInstance | null;
+  declare private pointInFillHandle: (e: MouseEvent) => boolean;
   declare getMergedRangesInSelectedCells: () => Excel.Sheet.CellRange[];
   declare draw: () => void;
   declare clearFillingCells: () => void;
@@ -39,38 +39,38 @@ export default abstract class SheetEvent {
     x: number,
     y: number,
     ignoreFixedX?: boolean,
-    ignoreFixedY?: boolean
+    ignoreFixedY?: boolean,
   ) => Excel.Cell.CellInstance | null;
   declare clearSelectCells: () => void;
   declare getCellPointByMousePosition: (
     mouseX: number,
-    mouseY: number
+    mouseY: number,
   ) => Excel.PositionPoint;
   declare updateScroll: (percent: number, type: Excel.Scrollbar.Type) => void;
-  private declare pointInAbsFixedCell: (e: MouseEvent) => boolean;
-  private declare pointInColResize: (e: MouseEvent) => boolean;
-  private declare pointInRowResize: (e: MouseEvent) => boolean;
-  private declare pointInFixedCell: (e: MouseEvent) => boolean;
-  private declare pointInFixedXCell: (e: MouseEvent) => boolean;
-  private declare pointInFixedYCell: (e: MouseEvent) => boolean;
+  declare private pointInAbsFixedCell: (e: MouseEvent) => boolean;
+  declare private pointInColResize: (e: MouseEvent) => boolean;
+  declare private pointInRowResize: (e: MouseEvent) => boolean;
+  declare private pointInFixedCell: (e: MouseEvent) => boolean;
+  declare private pointInFixedXCell: (e: MouseEvent) => boolean;
+  declare private pointInFixedYCell: (e: MouseEvent) => boolean;
   declare drawCellEditor: () => void;
-  private declare pointInCellRange: (e: MouseEvent) => boolean;
-  private declare pointInScrollbar: (e: MouseEvent) => boolean;
-  private declare pointInNormalCell: (e: MouseEvent) => boolean;
+  declare private pointInCellRange: (e: MouseEvent) => boolean;
+  declare private pointInScrollbar: (e: MouseEvent) => boolean;
+  declare private pointInNormalCell: (e: MouseEvent) => boolean;
   declare clearCellMeta: (cell: Excel.Cell.CellInstance) => void;
   declare registerListenerFromOnProp: (
     onObj: {
       [k in Excel.Event.Type]?: Excel.Event.FnType;
     },
     eventObserver: Excel.Event.ObserverInstance,
-    obj: Excel.Event.ObserverTypes
+    obj: Excel.Event.ObserverTypes,
   ) => void;
 
   private getFillingRangeByEndCell(
     endCell: Excel.Cell.CellInstance,
     key: "colIndex" | "rowIndex",
     compareMinIndex: (index: number) => boolean,
-    compareMaxIndex: (index: number) => boolean
+    compareMaxIndex: (index: number) => boolean,
   ) {
     let minIndex, maxIndex;
     const [minRowIndex, maxRowIndex, minColIndex, maxColIndex] =
@@ -152,14 +152,14 @@ export default abstract class SheetEvent {
               endCell,
               "rowIndex",
               (index) => index < this.fixedRowIndex,
-              (index) => index > this.cells.length - 1
+              (index) => index > this.cells.length - 1,
             );
           } else {
             this.fillingCells = this.getFillingRangeByEndCell(
               endCell,
               "colIndex",
               (index) => index < this.fixedColIndex,
-              (index) => index > this.cells[0].length - 1
+              (index) => index > this.cells[0].length - 1,
             );
           }
         }
@@ -172,7 +172,7 @@ export default abstract class SheetEvent {
     minIndex: number,
     maxIndex: number,
     times: number,
-    d: number
+    d: number,
   ) {
     const [minRowIndex, maxRowIndex, minColIndex, maxColIndex] =
       this.selectedCells!;
@@ -199,7 +199,7 @@ export default abstract class SheetEvent {
     maxIndex: number,
     mergedCells: Excel.Sheet.CellRange[],
     times: number,
-    d: number
+    d: number,
   ) {
     if (mergedCells.length > 0) {
       for (let i = 0; i < times; i++) {
@@ -234,7 +234,7 @@ export default abstract class SheetEvent {
       (this.fillingCells![maxIndex] - this.fillingCells![minIndex] + 1) /
       (this.selectedCells![maxIndex] - this.selectedCells![minIndex] + 1);
     const d = Math.sign(
-      this.fillingCells![minIndex] - this.selectedCells![minIndex]
+      this.fillingCells![minIndex] - this.selectedCells![minIndex],
     );
     this.repeatByCommonCells(minIndex, maxIndex, times, d);
     this.repeatByMergedCells(
@@ -242,7 +242,7 @@ export default abstract class SheetEvent {
       maxIndex,
       mergedRangesInSelectedCells,
       times,
-      d
+      d,
     );
   }
 
@@ -351,7 +351,7 @@ export default abstract class SheetEvent {
           this.horizontalScrollBar!.track.width);
       this.updateScroll(
         this.horizontalScrollBar!.percent,
-        this.horizontalScrollBar!.type
+        this.horizontalScrollBar!.type,
       );
     }
     if (exceedInfo.y.exceed) {
@@ -378,14 +378,14 @@ export default abstract class SheetEvent {
           this.verticalScrollBar!.track.height);
       this.updateScroll(
         this.verticalScrollBar!.percent,
-        this.verticalScrollBar!.type
+        this.verticalScrollBar!.type,
       );
     }
   }
 
   private mergeIntersectMergedCells(
     mergedCells: Excel.Sheet.CellRange[],
-    selectedCells: Excel.Sheet.CellRange
+    selectedCells: Excel.Sheet.CellRange,
   ) {
     const mergedCellsCopy = [...mergedCells];
     const processedIndices = new Set<number>();
@@ -438,19 +438,19 @@ export default abstract class SheetEvent {
       if (endCell) {
         const minRowIndex = Math.min(
           this._startCell!.rowIndex!,
-          endCell.rowIndex!
+          endCell.rowIndex!,
         );
         const maxRowIndex = Math.max(
           this._startCell!.rowIndex!,
-          endCell.rowIndex!
+          endCell.rowIndex!,
         );
         const minColIndex = Math.min(
           this._startCell!.colIndex!,
-          endCell.colIndex!
+          endCell.colIndex!,
         );
         const maxColIndex = Math.max(
           this._startCell!.colIndex!,
-          endCell.colIndex!
+          endCell.colIndex!,
         );
         this.selectedCells = [
           minRowIndex,
@@ -460,7 +460,7 @@ export default abstract class SheetEvent {
         ];
         this.selectedCells = this.mergeIntersectMergedCells(
           this.mergedCells,
-          this.selectedCells!
+          this.selectedCells!,
         );
         this.draw();
       }
@@ -522,8 +522,8 @@ export default abstract class SheetEvent {
     isInY: boolean,
     triggerEvent: (
       resize: Excel.Cell.CellAction[Excel.Cell.Action],
-      isEnd?: boolean
-    ) => void
+      isEnd?: boolean,
+    ) => void,
   ) {
     if (!(isInX || isInY)) return;
     globalObj.EVENT_LOCKED = true;
@@ -556,7 +556,7 @@ export default abstract class SheetEvent {
           mouseX: e.x,
           mouseY: e.y,
         },
-        true
+        true,
       );
       globalObj.EVENT_LOCKED = false;
       window.removeEventListener("mousemove", onMove);
@@ -589,7 +589,7 @@ export default abstract class SheetEvent {
       this.autoScroll(select.mouseX!, select.mouseY!);
       const { x, y } = this.getCellPointByMousePosition(
         select.mouseX!,
-        select.mouseY!
+        select.mouseY!,
       );
       const endCell = this.findCellByPoint(x, y);
       this.clearSelectCells();
@@ -620,7 +620,7 @@ export default abstract class SheetEvent {
     }
     this.selectedCells = this.mergeIntersectMergedCells(
       this.mergedCells,
-      this.selectedCells!
+      this.selectedCells!,
     );
     this.selectInfo = select;
     if (isEnd) {
@@ -657,7 +657,7 @@ export default abstract class SheetEvent {
       e,
       isInFixedXCell,
       isInFixedYCell,
-      this.handleCellSelect
+      this.handleCellSelect,
     );
   }
 
@@ -787,7 +787,7 @@ export default abstract class SheetEvent {
     this.registerListenerFromOnProp(
       globalEventListeners,
       this.globalEventsObserver,
-      this as any
+      this as any,
     );
   }
 }

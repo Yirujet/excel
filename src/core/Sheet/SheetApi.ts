@@ -34,7 +34,7 @@ export default abstract class SheetApi {
   declare cellSelector: CellSelector | null;
   declare cellMergence: CellMergence | null;
   declare cellInput: CellInput | null;
-  private declare _ctx: CanvasRenderingContext2D | null;
+  declare private _ctx: CanvasRenderingContext2D | null;
   declare width: number;
   declare height: number;
   declare draw: () => void;
@@ -98,7 +98,7 @@ export default abstract class SheetApi {
       }
       const bottomSiblingCell = this.getCell(
         cell.rowIndex! + 1,
-        cell.colIndex!
+        cell.colIndex!,
       );
       if (bottomSiblingCell && !bottomSiblingCell.fixed.y) {
         bottomSiblingCell.border.top = {
@@ -111,7 +111,7 @@ export default abstract class SheetApi {
 
   setSelectionCellsStyle(
     selectedCells: Excel.Sheet.CellRange,
-    cellStyle: Excel.Cell.Style
+    cellStyle: Excel.Cell.Style,
   ) {
     const [minRowIndex, maxRowIndex, minColIndex, maxColIndex] = selectedCells;
     for (let i = minRowIndex; i <= maxRowIndex; i++) {
@@ -128,7 +128,7 @@ export default abstract class SheetApi {
   setCellMeta(
     cell: Excel.Cell.CellInstance,
     cellMeta: Excel.Cell.Meta,
-    needDraw: boolean = true
+    needDraw: boolean = true,
   ) {
     if (cellMeta) {
       cell.meta = cellMeta;
@@ -182,7 +182,7 @@ export default abstract class SheetApi {
           range[1] <= maxRowIndex &&
           range[2] >= minColIndex &&
           range[3] <= maxColIndex
-        )
+        ),
     );
     this.draw();
   }
@@ -204,11 +204,11 @@ export default abstract class SheetApi {
   getCellPointByMousePosition(mouseX: number, mouseY: number) {
     const x = Math.max(
       Math.min(mouseX - this.layout!.x + (this.scroll.x || 0), this.realWidth),
-      0
+      0,
     );
     const y = Math.max(
       Math.min(mouseY - this.layout!.y + (this.scroll.y || 0), this.realHeight),
-      0
+      0,
     );
     return {
       x,
@@ -240,7 +240,7 @@ export default abstract class SheetApi {
     x: number,
     y: number,
     ignoreFixedX = true,
-    ignoreFixedY = true
+    ignoreFixedY = true,
   ) {
     let cell = null;
     if (ignoreFixedX) {
@@ -250,10 +250,10 @@ export default abstract class SheetApi {
       y = Math.max(y, this.fixedRowHeight);
     }
     let rowIndex = this.cells.findIndex(
-      (e) => e[0].position.leftTop.y <= y && e[0].position.leftBottom.y >= y
+      (e) => e[0].position.leftTop.y <= y && e[0].position.leftBottom.y >= y,
     );
     let colIndex = this.cells[0].findIndex(
-      (e) => e.position.leftTop.x <= x && e.position.rightTop.x >= x
+      (e) => e.position.leftTop.x <= x && e.position.rightTop.x >= x,
     );
     if (ignoreFixedX) {
       colIndex = Math.max(colIndex, this.fixedColIndex);

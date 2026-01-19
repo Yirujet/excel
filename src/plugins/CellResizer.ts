@@ -15,17 +15,17 @@ class CellResizer extends Element<null> {
   declare realHeight: number;
   declare horizontalScrollBar: HorizontalScrollbar | null;
   declare verticalScrollBar: VerticalScrollbar | null;
-  private declare pointInAbsFixedCell: (e: MouseEvent) => boolean;
-  private declare pointInColResize: (e: MouseEvent) => boolean;
-  private declare pointInRowResize: (e: MouseEvent) => boolean;
-  private declare handleCellAction: (
+  declare private pointInAbsFixedCell: (e: MouseEvent) => boolean;
+  declare private pointInColResize: (e: MouseEvent) => boolean;
+  declare private pointInRowResize: (e: MouseEvent) => boolean;
+  declare private handleCellAction: (
     e: MouseEvent,
     isInX: boolean,
     isInY: boolean,
     triggerEvent: (
       resize: Excel.Cell.CellAction[Excel.Cell.Action],
-      isEnd?: boolean
-    ) => void
+      isEnd?: boolean,
+    ) => void,
   ) => void;
   declare draw: () => void;
   declare adjust: () => void;
@@ -93,9 +93,6 @@ class CellResizer extends Element<null> {
       };
     }
     this.draw();
-    if (isEnd) {
-      this.adjust();
-    }
   }
 
   resize(e: MouseEvent) {
@@ -108,29 +105,29 @@ class CellResizer extends Element<null> {
       e,
       isInColResize,
       isInRowResize,
-      this.cellResizer.handleCellResize.bind(this)
+      this.cellResizer.handleCellResize.bind(this),
     );
   }
 
   render(
     ctx: CanvasRenderingContext2D,
     cellInfo: Excel.Cell.CellInstance,
-    scrollInfo: Excel.PositionPoint
+    scrollInfo: Excel.PositionPoint,
   ) {
     if (this.resizeInfo.x) {
       drawBorder(
         ctx,
         Math.round(
-          cellInfo.position.rightTop.x + this.resizeInfo.value! - scrollInfo.x
+          cellInfo.position.rightTop.x + this.resizeInfo.value! - scrollInfo.x,
         ),
         0,
         Math.round(
-          cellInfo.position.rightTop.x + this.resizeInfo.value! - scrollInfo.x
+          cellInfo.position.rightTop.x + this.resizeInfo.value! - scrollInfo.x,
         ),
         this.layout.height,
         DEFAULT_RESIZER_LINE_COLOR,
         DEFAULT_RESIZER_LINE_WIDTH,
-        DEFAULT_RESIZER_LINE_DASH
+        DEFAULT_RESIZER_LINE_DASH,
       );
       drawBorder(
         ctx,
@@ -140,7 +137,7 @@ class CellResizer extends Element<null> {
         this.layout.height,
         DEFAULT_RESIZER_LINE_COLOR,
         DEFAULT_RESIZER_LINE_WIDTH,
-        DEFAULT_RESIZER_LINE_DASH
+        DEFAULT_RESIZER_LINE_DASH,
       );
     }
     if (this.resizeInfo.y) {
@@ -148,15 +145,19 @@ class CellResizer extends Element<null> {
         ctx,
         0,
         Math.round(
-          cellInfo.position.leftBottom.y + this.resizeInfo.value! - scrollInfo.y
+          cellInfo.position.leftBottom.y +
+            this.resizeInfo.value! -
+            scrollInfo.y,
         ),
         this.layout.width,
         Math.round(
-          cellInfo.position.leftBottom.y + this.resizeInfo.value! - scrollInfo.y
+          cellInfo.position.leftBottom.y +
+            this.resizeInfo.value! -
+            scrollInfo.y,
         ),
         DEFAULT_RESIZER_LINE_COLOR,
         DEFAULT_RESIZER_LINE_WIDTH,
-        DEFAULT_RESIZER_LINE_DASH
+        DEFAULT_RESIZER_LINE_DASH,
       );
       drawBorder(
         ctx,
@@ -166,7 +167,7 @@ class CellResizer extends Element<null> {
         Math.round(cellInfo.position.leftTop.y - scrollInfo.y),
         DEFAULT_RESIZER_LINE_COLOR,
         DEFAULT_RESIZER_LINE_WIDTH,
-        DEFAULT_RESIZER_LINE_DASH
+        DEFAULT_RESIZER_LINE_DASH,
       );
     }
   }

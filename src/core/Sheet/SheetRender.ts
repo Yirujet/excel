@@ -25,7 +25,7 @@ import Shadow from "../Shadow";
 import $10226 from "../../utils/10226";
 
 export default abstract class SheetRender {
-  private declare _ctx: CanvasRenderingContext2D | null;
+  declare private _ctx: CanvasRenderingContext2D | null;
   declare sheetEventsObserver: Excel.Event.ObserverInstance;
   declare globalEventsObserver: Excel.Event.ObserverInstance;
   declare $el: HTMLCanvasElement | null;
@@ -60,27 +60,27 @@ export default abstract class SheetRender {
   declare fixedCells: Excel.Cell.CellInstance[][];
   declare mergedCells: Excel.Sheet.CellRange[];
   declare selectedCells: Excel.Sheet.CellRange | null;
-  private declare _startCell: Excel.Cell.CellInstance | null;
+  declare private _startCell: Excel.Cell.CellInstance | null;
   declare fillingCells: Excel.Sheet.CellRange | null;
   declare editingCell: Excel.Cell.CellInstance | null;
   declare margin: Exclude<Excel.Sheet.Configuration["margin"], undefined>;
   declare plugins: Excel.Sheet.PluginType[];
-  private declare _animationFrameId: number | null;
-  private declare _redrawTimer: number | null;
+  declare private _animationFrameId: number | null;
+  declare private _redrawTimer: number | null;
   declare initEvents: () => void;
   declare setCellMeta: (
     cell: Excel.Cell.CellInstance,
     cellMeta: Excel.Cell.Meta,
-    needDraw: boolean
+    needDraw: boolean,
   ) => void;
   declare clearCells: (fixedInX: boolean, fixedInY: boolean) => void;
   declare setCellStyle: (
     cell: Excel.Cell.CellInstance,
-    cellStyle: Excel.Cell.Style
+    cellStyle: Excel.Cell.Style,
   ) => void;
-  private declare transformMergedCells: () => void;
-  private declare transformCells: (
-    cells: Excel.Cell.CellInstance[][]
+  declare private transformMergedCells: () => void;
+  declare private transformCells: (
+    cells: Excel.Cell.CellInstance[][],
   ) => Excel.Cell.CellInstance[][];
   declare initPlugins: (plugins: Excel.Sheet.PluginType[]) => void;
 
@@ -139,12 +139,12 @@ export default abstract class SheetRender {
     this.horizontalScrollBar = new HorizontalScrollbar(
       this.layout!,
       this.sheetEventsObserver,
-      this.globalEventsObserver
+      this.globalEventsObserver,
     );
     this.verticalScrollBar = new VerticalScrollbar(
       this.layout!,
       this.sheetEventsObserver,
-      this.globalEventsObserver
+      this.globalEventsObserver,
     );
     this.horizontalScrollBar.addEvent("percent", this.redraw.bind(this));
     this.verticalScrollBar.addEvent("percent", this.redraw.bind(this));
@@ -177,7 +177,7 @@ export default abstract class SheetRender {
       this.width,
       DEFAULT_GRADIENT_OFFSET,
       [DEFAULT_GRADIENT_START_COLOR, DEFAULT_GRADIENT_STOP_COLOR],
-      "vertical"
+      "vertical",
     );
     this.verticalScrollBarShadow = new Shadow(
       this.fixedColWidth,
@@ -185,7 +185,7 @@ export default abstract class SheetRender {
       DEFAULT_GRADIENT_OFFSET,
       this.height,
       [DEFAULT_GRADIENT_START_COLOR, DEFAULT_GRADIENT_STOP_COLOR],
-      "horizontal"
+      "horizontal",
     );
   }
 
@@ -194,7 +194,7 @@ export default abstract class SheetRender {
       this.layout!,
       this.cells,
       this.fixedColWidth,
-      this.fixedRowHeight
+      this.fixedRowHeight,
     );
   }
 
@@ -203,7 +203,7 @@ export default abstract class SheetRender {
       this.layout!,
       this.cells,
       this.fixedColWidth,
-      this.fixedRowHeight
+      this.fixedRowHeight,
     );
   }
 
@@ -213,7 +213,7 @@ export default abstract class SheetRender {
       this.layout!,
       this.cells,
       this.fixedColWidth,
-      this.fixedRowHeight
+      this.fixedRowHeight,
     );
   }
 
@@ -222,7 +222,7 @@ export default abstract class SheetRender {
       this.layout!,
       this.cells,
       this.fixedColWidth,
-      this.fixedRowHeight
+      this.fixedRowHeight,
     );
   }
 
@@ -237,10 +237,10 @@ export default abstract class SheetRender {
             type: "text",
             data: value,
           },
-          true
+          true,
         );
         this.cellInput!.hide();
-      }
+      },
     );
   }
 
@@ -366,7 +366,7 @@ export default abstract class SheetRender {
               type: "text",
               data: cell.cellName,
             },
-            false
+            false,
           );
         }
         if (j === 0) {
@@ -376,7 +376,7 @@ export default abstract class SheetRender {
               type: "text",
               data: i.toString(),
             },
-            false
+            false,
           );
         }
         if (i === 0 && j === 0) {
@@ -459,7 +459,7 @@ export default abstract class SheetRender {
               type: "text",
               data: cell.cellName,
             },
-            false
+            false,
           );
         }
         if (j === 0) {
@@ -469,7 +469,7 @@ export default abstract class SheetRender {
               type: "text",
               data: i.toString(),
             },
-            false
+            false,
           );
         }
         if (i === 0 && j === 0) {
@@ -551,7 +551,7 @@ export default abstract class SheetRender {
     value: number,
     compare: (_binaryIndex: number, value: number, arr: T[]) => boolean,
     complete: (_binaryIndex: number, arr: T[]) => boolean,
-    judge?: (_binaryIndex: number, value: number, arr: T[]) => boolean
+    judge?: (_binaryIndex: number, value: number, arr: T[]) => boolean,
   ) {
     let index = null;
     let binaryIndexStart = 0;
@@ -589,7 +589,7 @@ export default abstract class SheetRender {
     scrollX: number,
     scrollY: number,
     fixedInX: boolean,
-    fixedInY: boolean
+    fixedInY: boolean,
   ) {
     let minYIndex = this.binaryQuery(
       cells,
@@ -599,7 +599,7 @@ export default abstract class SheetRender {
       },
       (binaryIndex, arr) => {
         return binaryIndex === 0;
-      }
+      },
     );
     minYIndex = Math.max(minYIndex, 0);
 
@@ -613,14 +613,14 @@ export default abstract class SheetRender {
         },
         (binaryIndex, arr) => {
           return binaryIndex === arr.length - 1;
-        }
+        },
       );
       maxYIndex =
         this.verticalScrollBar?.percent === 1
           ? cells.length - 1
           : maxYIndex === -1
-          ? cells.length - 1
-          : maxYIndex;
+            ? cells.length - 1
+            : maxYIndex;
     } else {
       maxYIndex = cells.length - 1;
     }
@@ -632,7 +632,7 @@ export default abstract class SheetRender {
       },
       (binaryIndex, arr) => {
         return binaryIndex === 0;
-      }
+      },
     );
     minXIndex = Math.max(minXIndex, 0);
 
@@ -646,14 +646,14 @@ export default abstract class SheetRender {
         },
         (binaryIndex, arr) => {
           return binaryIndex === arr.length - 1;
-        }
+        },
       );
       maxXIndex =
         this.horizontalScrollBar?.percent === 1
           ? cells[0].length - 1
           : maxXIndex === -1
-          ? cells[0].length - 1
-          : maxXIndex;
+            ? cells[0].length - 1
+            : maxXIndex;
     } else {
       maxXIndex = cells[0].length - 1;
     }
@@ -696,7 +696,7 @@ export default abstract class SheetRender {
       false,
       false,
       this.fixedColIndex,
-      this.fixedRowIndex
+      this.fixedRowIndex,
     );
     this.drawCells(this.fixedRowCells, false, true, this.fixedColIndex, null);
     this.drawCells(this.fixedColCells, true, false, null, this.fixedRowIndex);
@@ -708,7 +708,7 @@ export default abstract class SheetRender {
     fixedInX: boolean,
     fixedInY: boolean,
     ignoreXIndex: number | null,
-    ignoreYIndex: number | null
+    ignoreYIndex: number | null,
   ) {
     if (cells.length === 0 || cells[0]?.length === 0) return;
     this.clearCells(fixedInX, fixedInY);
@@ -719,7 +719,7 @@ export default abstract class SheetRender {
       scrollX,
       scrollY,
       fixedInX,
-      fixedInY
+      fixedInY,
     );
     for (let i = minYIndex; i <= maxYIndex; i++) {
       if (ignoreYIndex !== null && i < ignoreYIndex) continue;
@@ -745,7 +745,7 @@ export default abstract class SheetRender {
         }
         cell.render(this._ctx!, scrollX, scrollY, this.mergedCells);
         let index = this.sheetEventsObserver.resize.findIndex(
-          (e) => e === cell
+          (e) => e === cell,
         );
         if (!!~index) {
           this.sheetEventsObserver.resize.splice(index, 1);
@@ -785,7 +785,7 @@ export default abstract class SheetRender {
       this._startCell,
       this.scroll.x || 0,
       this.scroll.y || 0,
-      this.mergedCells
+      this.mergedCells,
     );
   }
 
@@ -794,7 +794,7 @@ export default abstract class SheetRender {
       this._ctx!,
       this.mergedCells,
       this.scroll.x || 0,
-      this.scroll.y || 0
+      this.scroll.y || 0,
     );
   }
 
@@ -815,7 +815,7 @@ export default abstract class SheetRender {
       this._ctx!,
       this.selectedCells,
       this.scroll.x || 0,
-      this.scroll.y || 0
+      this.scroll.y || 0,
     );
   }
 
@@ -824,7 +824,7 @@ export default abstract class SheetRender {
       this._ctx!,
       this.fillingCells,
       this.scroll.x || 0,
-      this.scroll.y || 0
+      this.scroll.y || 0,
     );
   }
 
@@ -833,7 +833,7 @@ export default abstract class SheetRender {
       this.cellInput.render(
         this.editingCell,
         this.scroll.x || 0,
-        this.scroll.y || 0
+        this.scroll.y || 0,
       );
     }
   }
