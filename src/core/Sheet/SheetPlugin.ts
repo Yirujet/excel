@@ -1,10 +1,13 @@
 import { HotKeys } from "../../plugins/HotKeys";
 import CellResizer from "../../plugins/CellResizer";
+import { Formula } from "../../plugins/Formula";
 
 export default abstract class SheetPlugin {
+  declare cells: Excel.Cell.CellInstance[][];
   declare layout: Excel.LayoutInfo | null;
   declare hotKeys: HotKeys | null;
   declare cellResizer: CellResizer | null;
+  declare formula: Formula | null;
 
   initPlugins(plugins: Excel.Sheet.PluginType[]) {
     if (plugins.includes("hotkeys")) {
@@ -12,6 +15,9 @@ export default abstract class SheetPlugin {
     }
     if (plugins.includes("resize")) {
       this.initCellResizer();
+    }
+    if (plugins.includes("formula")) {
+      this.initFormulaPlugin();
     }
   }
 
@@ -25,5 +31,9 @@ export default abstract class SheetPlugin {
 
   initCellResizer() {
     this.cellResizer = new CellResizer(this.layout!);
+  }
+
+  initFormulaPlugin() {
+    this.formula = new Formula(this.cells);
   }
 }

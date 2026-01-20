@@ -22,6 +22,7 @@ import SheetRender from "./SheetRender";
 import SheetEvent from "./SheetEvent";
 import { HotKeys } from "../../plugins/HotKeys";
 import SheetPlugin from "./SheetPlugin";
+import { Formula } from "../../plugins/Formula";
 
 class Sheet
   extends Element<HTMLCanvasElement>
@@ -55,6 +56,7 @@ class Sheet
   filling: Filling | null = null;
   cellInput: CellInput | null = null;
   hotKeys: HotKeys | null = null;
+  formula: Formula | null = null;
   sheetEventsObserver: Excel.Event.ObserverInstance = new EventObserver();
   globalEventsObserver: Excel.Event.ObserverInstance = new EventObserver();
   realWidth = 0;

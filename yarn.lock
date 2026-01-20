@@ -792,6 +792,14 @@
     "@babel/helper-string-parser" "^7.27.1"
     "@babel/helper-validator-identifier" "^7.27.1"
 
+"@handsontable/formulajs@^2.0.2":
+  version "2.0.2"
+  resolved "https://registry.npmjs.org/@handsontable/formulajs/-/formulajs-2.0.2.tgz#5be4b9226cc47811f646ae46b1b985230cd82995"
+  integrity sha512-maIyMJtYjA5e/R9nyA22Qd7Yw73MBSxClJvle0a8XWAS/5l6shc/OFpQqrmwMy4IXUCmywJ9ER0gOGz/YA720w==
+  dependencies:
+    bessel "^1.0.2"
+    jstat "^1.9.2"
+
 "@isaacs/balanced-match@^4.0.1":
   version "4.0.1"
   resolved "https://registry.npmjs.org/@isaacs/balanced-match/-/balanced-match-4.0.1.tgz#3081dadbc3460661b751e7591d7faea5df39dd29"
@@ -1033,6 +1041,11 @@
     "@types/minimatch" "*"
     "@types/node" "*"
 
+"@types/hot-formula-parser@^4.0.4":
+  version "4.0.4"
+  resolved "https://registry.npmjs.org/@types/hot-formula-parser/-/hot-formula-parser-4.0.4.tgz#f3b3780e45ec5bc5149a7403644de604f80e9b2f"
+  integrity sha512-vX1rVPdz4D1Vg3ioCm/ghmbvhRJ0L8y1nhqf32CxQAQ85cXtHf2mbzSTo20y5M3L3O9aawASnL5EyqgibQTt2w==
+
 "@types/minimatch@*", "@types/minimatch@^6.0.0":
   version "6.0.0"
   resolved "https://registry.npmjs.org/@types/minimatch/-/minimatch-6.0.0.tgz#4d207b1cc941367bdcd195a3a781a7e4fc3b1e03"
@@ -1090,6 +1103,11 @@ balanced-match@^1.0.0:
   version "1.0.2"
   resolved "https://registry.npmjs.org/balanced-match/-/balanced-match-1.0.2.tgz#e83e3a7e3f300b34cb9d87f615fa0cbf357690ee"
   integrity sha512-3oSeUO0TMV67hN1AmbXsK4yaqU7tjiHlbxRDZOpH0KW9+CeX4bRAaX0Anxt0tx2MrpRpWwQaPwIlISEJhYU5Pw==
+
+bessel@^1.0.2:
+  version "1.0.2"
+  resolved "https://registry.npmjs.org/bessel/-/bessel-1.0.2.tgz#828812291e0b62e94959cdea43fac186e8a7202d"
+  integrity sha512-Al3nHGQGqDYqqinXhQzmwmcRToe/3WyBv4N8aZc5Pef8xw2neZlR9VPi84Sa23JtgWcucu18HxVZrnI0fn2etw==
 
 brace-expansion@^1.1.7:
   version "1.1.12"
@@ -1332,6 +1350,14 @@ hasown@^2.0.2:
   dependencies:
     function-bind "^1.1.2"
 
+hot-formula-parser@^4.0.0:
+  version "4.0.0"
+  resolved "https://registry.npmjs.org/hot-formula-parser/-/hot-formula-parser-4.0.0.tgz#b406bdc7ed30d855b7bcbe01d9dc2ee954c28e56"
+  integrity sha512-diG1UvuQ3HxtfezVUIpvndk/bVkqZJ9Rfv10MdVF7pJEj8P2Jd4iCZSMJCN3lDhnLegaVlfSYSA6+szYNFQUKg==
+  dependencies:
+    "@handsontable/formulajs" "^2.0.2"
+    tiny-emitter "^2.1.0"
+
 hotkeys-js@^4.0.0:
   version "4.0.0"
   resolved "https://registry.npmjs.org/hotkeys-js/-/hotkeys-js-4.0.0.tgz#75336c0ac610ad384d286c61c519909dcd4bdf6b"
@@ -1440,6 +1466,11 @@ jsonfile@^6.0.1:
     universalify "^2.0.0"
   optionalDependencies:
     graceful-fs "^4.1.6"
+
+jstat@^1.9.2:
+  version "1.9.6"
+  resolved "https://registry.npmjs.org/jstat/-/jstat-1.9.6.tgz#60e801b0d4c26e37aab0f375d1859fe9d60e10c0"
+  integrity sha512-rPBkJbK2TnA8pzs93QcDDPlKcrtZWuuCo2dVR0TFLOJSxhqfWOVCSp8aV3/oSbn+4uY4yw1URtLpHQedtmXfug==
 
 locate-path@^5.0.0:
   version "5.0.0"
@@ -1775,6 +1806,11 @@ terser@^5.0.0:
     acorn "^8.14.0"
     commander "^2.20.0"
     source-map-support "~0.5.20"
+
+tiny-emitter@^2.1.0:
+  version "2.1.0"
+  resolved "https://registry.npmjs.org/tiny-emitter/-/tiny-emitter-2.1.0.tgz#1d1a56edfc51c43e863cbb5382a72330e3555423"
+  integrity sha512-NB6Dk1A9xgQPMoGqC5CVXn123gWyte215ONT5Pp5a0yt4nlEoO1ZWeCwpncaekPHXO60i47ihFnZPiRPjRMq4Q==
 
 to-regex-range@^5.0.1:
   version "5.0.1"

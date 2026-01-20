@@ -70,13 +70,22 @@ namespace Excel {
 
     export type CellDiagonalMeta = CellMeta<"diagonal", CellDiagonalMetaData>;
 
+    export type CellFormulaMetaData = string;
+
+    export type CellFormulaMeta = CellMeta<"formula", CellFormulaMetaData>;
+
     export interface CellMeta<T, D> {
       type: T;
       data: D;
       [key: string]: any;
     }
 
-    export type Meta = CellTextMeta | CellImageMeta | CellDiagonalMeta | null;
+    export type Meta =
+      | CellTextMeta
+      | CellImageMeta
+      | CellDiagonalMeta
+      | CellFormulaMeta
+      | null;
 
     export interface CellInstance extends Excel.Event.EventInstance {
       width: number | null;
@@ -105,7 +114,7 @@ namespace Excel {
         ctx: CanvasRenderingContext2D,
         scrollX: number,
         scrollY: number,
-        mergedCells: Excel.Sheet.CellRange[]
+        mergedCells: Excel.Sheet.CellRange[],
       ): void;
       updatePosition: Excel.Event.FnType;
       getTextAlignOffsetX(w: number): number;

@@ -10,6 +10,7 @@ import {
 import drawBorder from "../utils/drawBorder";
 import getImgDrawInfoByFillMode from "../utils/getImgDrawInfoByFillMode";
 import getTextMetrics from "../utils/getTextMetrics";
+import globalObj from "./globalObj";
 
 class CellMergence extends Element<null> {
   layout: Excel.LayoutInfo;
@@ -20,7 +21,7 @@ class CellMergence extends Element<null> {
     layout: Excel.LayoutInfo,
     cells: Excel.Cell.CellInstance[][],
     fixedColWidth: number,
-    fixedRowHeight: number
+    fixedRowHeight: number,
   ) {
     super("");
     this.layout = layout;
@@ -38,7 +39,7 @@ class CellMergence extends Element<null> {
     cellWidth: number,
     cellHeight: number,
     scrollX: number,
-    scrollY: number
+    scrollY: number,
   ) {
     switch (cell.meta?.type) {
       case "text":
@@ -63,7 +64,7 @@ class CellMergence extends Element<null> {
             scrollY,
             cell.position.leftTop.y! +
               (height / (textList.length + 1)) * (i + 1) -
-              scrollY
+              scrollY,
           );
           if (cell.textStyle.underline) {
             this.drawDataCellUnderline(
@@ -75,7 +76,7 @@ class CellMergence extends Element<null> {
               width,
               height,
               scrollX,
-              scrollY
+              scrollY,
             );
           }
         });
@@ -92,7 +93,7 @@ class CellMergence extends Element<null> {
           cellWidth,
           cellHeight,
           scrollX,
-          scrollY
+          scrollY,
         );
         break;
       case "diagonal":
@@ -104,7 +105,21 @@ class CellMergence extends Element<null> {
           cellWidth,
           cellHeight,
           scrollX,
-          scrollY
+          scrollY,
+        );
+        break;
+      case "formula":
+        this.drawDataCellFormula(
+          ctx,
+          cell,
+          x,
+          y,
+          cellWidth,
+          cellHeight,
+          scrollX,
+          scrollY,
+          width,
+          height,
         );
         break;
     }
@@ -122,7 +137,7 @@ class CellMergence extends Element<null> {
     viewHeight: number,
     scrollX: number,
     scrollY: number,
-    textY: number
+    textY: number,
   ) {
     ctx.save();
     const path = new Path2D();
@@ -132,7 +147,7 @@ class CellMergence extends Element<null> {
     ctx.fillText(
       text,
       cell.position.leftTop.x! + textAlignOffsetX - scrollX,
-      textY
+      textY,
     );
     ctx.restore();
   }
@@ -146,11 +161,11 @@ class CellMergence extends Element<null> {
     width: number,
     height: number,
     scrollX: number,
-    scrollY: number
+    scrollY: number,
   ) {
     const { width: wordWidth, height: wordHeight } = getTextMetrics(
       cell.value,
-      cell.textStyle.fontSize
+      cell.textStyle.fontSize,
     );
     const underlineOffset = cell.getTextAlignOffsetX(wordWidth);
     ctx.save();
@@ -158,23 +173,23 @@ class CellMergence extends Element<null> {
     drawBorder(
       ctx,
       Math.round(
-        cell.position.leftTop.x! + textAlignOffsetX - scrollX - underlineOffset
+        cell.position.leftTop.x! + textAlignOffsetX - scrollX - underlineOffset,
       ),
       Math.round(
-        cell.position.leftTop.y! + height! / 2 - scrollY + wordHeight / 2
+        cell.position.leftTop.y! + height! / 2 - scrollY + wordHeight / 2,
       ),
       Math.round(
         cell.position.leftTop.x! +
           textAlignOffsetX -
           scrollX -
           underlineOffset +
-          wordWidth
+          wordWidth,
       ),
       Math.round(
-        cell.position.leftTop.y! + height! / 2 - scrollY + wordHeight / 2
+        cell.position.leftTop.y! + height! / 2 - scrollY + wordHeight / 2,
       ),
       cell.textStyle.color,
-      0.5
+      0.5,
     );
     ctx.restore();
   }
@@ -189,7 +204,7 @@ class CellMergence extends Element<null> {
     viewWidth: number,
     viewHeight: number,
     scrollX: number,
-    scrollY: number
+    scrollY: number,
   ) {
     const { x, y, width, height } = getImgDrawInfoByFillMode(
       cell.meta!.data as Excel.Cell.CellImageMetaData,
@@ -198,7 +213,7 @@ class CellMergence extends Element<null> {
         y: cell.position.leftTop.y! - scrollY + DEFAULT_CELL_PADDING,
         width: cellWidth - DEFAULT_CELL_PADDING * 2,
         height: cellHeight - DEFAULT_CELL_PADDING * 2,
-      }
+      },
     )!;
     ctx.save();
     const path = new Path2D();
@@ -209,7 +224,7 @@ class CellMergence extends Element<null> {
       x,
       y,
       width,
-      height
+      height,
     );
     ctx.restore();
   }
@@ -222,7 +237,7 @@ class CellMergence extends Element<null> {
     cellX: number,
     cellY: number,
     scrollX: number,
-    scrollY: number
+    scrollY: number,
   ) {
     const preAngle =
       Math.abs(prePoint[1] - cellY) / Math.abs(prePoint[0] - cellX);
@@ -240,7 +255,7 @@ class CellMergence extends Element<null> {
       (prePoint[1] + curPoint[1]) / 2,
     ];
     const d = Math.sqrt(
-      Math.pow(midPoint[0] - cellX, 2) + Math.pow(midPoint[1] - cellY, 2)
+      Math.pow(midPoint[0] - cellX, 2) + Math.pow(midPoint[1] - cellY, 2),
     );
 
     ctx.fillStyle = DEFAULT_CELL_DIAGONAL_TEXT_COLOR;
@@ -249,7 +264,7 @@ class CellMergence extends Element<null> {
 
     const textWidth = getTextMetrics(
       text,
-      DEFAULT_CELL_DIAGONAL_TEXT_FONT_SIZE
+      DEFAULT_CELL_DIAGONAL_TEXT_FONT_SIZE,
     ).width;
     ctx.fillText(text, d / 2 - textWidth / 2, 0);
 
@@ -264,7 +279,7 @@ class CellMergence extends Element<null> {
     cellWidth: number,
     cellHeight: number,
     scrollX: number,
-    scrollY: number
+    scrollY: number,
   ) {
     const { direction, value } = cell.meta!
       .data as Excel.Cell.CellDiagonalMetaData;
@@ -315,7 +330,7 @@ class CellMergence extends Element<null> {
         cellX,
         cellY,
         scrollX,
-        scrollY
+        scrollY,
       );
     });
 
@@ -327,15 +342,49 @@ class CellMergence extends Element<null> {
       cellX,
       cellY,
       scrollX,
-      scrollY
+      scrollY,
     );
+  }
+
+  drawDataCellFormula(
+    ctx: CanvasRenderingContext2D,
+    cell: Excel.Cell.CellInstance,
+    cellX: number,
+    cellY: number,
+    cellWidth: number,
+    cellHeight: number,
+    scrollX: number,
+    scrollY: number,
+    width: number,
+    height: number,
+  ) {
+    const expression = cell.meta!.data as Excel.Cell.CellFormulaMetaData;
+    const result = globalObj.FORMULA_PARSER!.parse(expression);
+    if (result) {
+      const textAlignOffsetX = cell.getTextAlignOffsetX(width);
+      this.drawDataCellText(
+        ctx,
+        cell,
+        result.result!.toString(),
+        textAlignOffsetX,
+        cellX,
+        cellY,
+        width,
+        height,
+        cellWidth,
+        cellHeight,
+        scrollX,
+        scrollY,
+        cell.position.leftTop.y! + height / 2 - scrollY,
+      );
+    }
   }
 
   render(
     ctx: CanvasRenderingContext2D,
     mergedCells: Excel.Sheet.CellRange[] | null,
     scrollX: number,
-    scrollY: number
+    scrollY: number,
   ) {
     if (mergedCells) {
       mergedCells.forEach((e) => {
@@ -384,7 +433,7 @@ class CellMergence extends Element<null> {
               Math.round(topY),
               leftTopCell.border.top.color,
               leftTopCell.border.top.bold ? 2 : 1,
-              !leftTopCell.border.top.solid ? DEFAULT_CELL_LINE_DASH : []
+              !leftTopCell.border.top.solid ? DEFAULT_CELL_LINE_DASH : [],
             );
           }
 
@@ -397,7 +446,7 @@ class CellMergence extends Element<null> {
               Math.round(bottomY),
               leftTopCell.border.right.color,
               leftTopCell.border.right.bold ? 2 : 1,
-              !leftTopCell.border.right.solid ? DEFAULT_CELL_LINE_DASH : []
+              !leftTopCell.border.right.solid ? DEFAULT_CELL_LINE_DASH : [],
             );
           }
 
@@ -410,7 +459,7 @@ class CellMergence extends Element<null> {
               Math.round(bottomY),
               leftTopCell.border.bottom.color,
               leftTopCell.border.bottom.bold ? 2 : 1,
-              !leftTopCell.border.bottom.solid ? DEFAULT_CELL_LINE_DASH : []
+              !leftTopCell.border.bottom.solid ? DEFAULT_CELL_LINE_DASH : [],
             );
           }
 
@@ -423,7 +472,7 @@ class CellMergence extends Element<null> {
               Math.round(bottomY),
               leftTopCell.border.left.color,
               leftTopCell.border.left.bold ? 2 : 1,
-              !leftTopCell.border.left.solid ? DEFAULT_CELL_LINE_DASH : []
+              !leftTopCell.border.left.solid ? DEFAULT_CELL_LINE_DASH : [],
             );
           }
 
@@ -437,7 +486,7 @@ class CellMergence extends Element<null> {
             rightX - leftX,
             bottomY - topY,
             scrollX,
-            scrollY
+            scrollY,
           );
         }
       });

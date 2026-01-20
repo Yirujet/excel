@@ -23,7 +23,7 @@ export default [
     plugins: [
       nodeResolve({
         browser: true, // 针对浏览器环境
-        preferBuiltins: false // 不使用Node.js内置模块
+        preferBuiltins: true // 不使用Node.js内置模块
       }),
       // 配置commonjs插件来转换CommonJS模块
       commonjs({

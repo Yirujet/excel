@@ -21,6 +21,8 @@ import {
 } from "../config/index";
 import getImgDrawInfoByFillMode from "../utils/getImgDrawInfoByFillMode";
 import drawBorder from "../utils/drawBorder";
+import globalObj from "./globalObj";
+import { Parser } from "hot-formula-parser";
 
 class Cell extends Element<null> implements Excel.Cell.CellInstance {
   width: number | null = null;
@@ -175,7 +177,7 @@ class Cell extends Element<null> implements Excel.Cell.CellInstance {
     ctx: CanvasRenderingContext2D,
     scrollX: number,
     scrollY: number,
-    mergedCells: Excel.Sheet.CellRange[]
+    mergedCells: Excel.Sheet.CellRange[],
   ) {
     if (this.isInMergedCells(mergedCells)) {
       return;
@@ -196,7 +198,7 @@ class Cell extends Element<null> implements Excel.Cell.CellInstance {
         this.x! - this.scrollX,
         this.y! - this.scrollY,
         this.width!,
-        this.height!
+        this.height!,
       );
     }
   }
@@ -212,7 +214,7 @@ class Cell extends Element<null> implements Excel.Cell.CellInstance {
         Math.round(this.position.rightTop.y - this.scrollY),
         this.border.top!.color,
         this.border.top!.bold ? 2 : 1,
-        !this.border.top!.solid ? DEFAULT_CELL_LINE_DASH : []
+        !this.border.top!.solid ? DEFAULT_CELL_LINE_DASH : [],
       );
     }
 
@@ -226,7 +228,7 @@ class Cell extends Element<null> implements Excel.Cell.CellInstance {
         Math.round(this.position.leftTop.y - this.scrollY),
         this.border.left!.color,
         this.border.left!.bold ? 2 : 1,
-        !this.border.left!.solid ? DEFAULT_CELL_LINE_DASH : []
+        !this.border.left!.solid ? DEFAULT_CELL_LINE_DASH : [],
       );
     }
 
@@ -240,7 +242,7 @@ class Cell extends Element<null> implements Excel.Cell.CellInstance {
         Math.round(this.position.rightBottom.y - this.scrollY),
         this.border.right!.color,
         this.border.right!.bold ? 2 : 1,
-        !this.border.right!.solid ? DEFAULT_CELL_LINE_DASH : []
+        !this.border.right!.solid ? DEFAULT_CELL_LINE_DASH : [],
       );
     }
 
@@ -254,7 +256,7 @@ class Cell extends Element<null> implements Excel.Cell.CellInstance {
         Math.round(this.position.leftBottom.y - this.scrollY),
         this.border.bottom!.color,
         this.border.bottom!.bold ? 2 : 1,
-        !this.border.bottom!.solid ? DEFAULT_CELL_LINE_DASH : []
+        !this.border.bottom!.solid ? DEFAULT_CELL_LINE_DASH : [],
       );
     }
   }
@@ -272,7 +274,7 @@ class Cell extends Element<null> implements Excel.Cell.CellInstance {
             textAlignOffsetX,
             this.y! +
               (this.height! / (textList.length + 1)) * (i + 1) -
-              this.scrollY
+              this.scrollY,
           );
           if (this.textStyle.underline) {
             this.drawDataCellUnderline(ctx, textAlignOffsetX);
@@ -285,6 +287,9 @@ class Cell extends Element<null> implements Excel.Cell.CellInstance {
       case "diagonal":
         this.drawDataCellDiagonal(ctx);
         break;
+      case "formula":
+        this.drawDataCellFormula(ctx);
+        break;
     }
   }
 
@@ -292,7 +297,7 @@ class Cell extends Element<null> implements Excel.Cell.CellInstance {
     ctx: CanvasRenderingContext2D,
     text: string,
     textAlignOffsetX: number,
-    y: number
+    y: number,
   ) {
     ctx.save();
     this.setTextStyle(ctx);
@@ -302,11 +307,11 @@ class Cell extends Element<null> implements Excel.Cell.CellInstance {
 
   drawDataCellUnderline(
     ctx: CanvasRenderingContext2D,
-    textAlignOffsetX: number
+    textAlignOffsetX: number,
   ) {
     const { width: wordWidth, height: wordHeight } = getTextMetrics(
       this.value,
-      this.textStyle.fontSize
+      this.textStyle.fontSize,
     );
     const underlineOffset = this.getTextAlignOffsetX(wordWidth);
     ctx.save();
@@ -316,11 +321,11 @@ class Cell extends Element<null> implements Excel.Cell.CellInstance {
       Math.round(this.x! + textAlignOffsetX - this.scrollX - underlineOffset),
       Math.round(this.y! + this.height! / 2 - this.scrollY + wordHeight / 2),
       Math.round(
-        this.x! + textAlignOffsetX - this.scrollX - underlineOffset + wordWidth
+        this.x! + textAlignOffsetX - this.scrollX - underlineOffset + wordWidth,
       ),
       Math.round(this.y! + this.height! / 2 - this.scrollY + wordHeight / 2),
       this.textStyle.color,
-      0.5
+      0.5,
     );
     ctx.restore();
   }
@@ -334,14 +339,14 @@ class Cell extends Element<null> implements Excel.Cell.CellInstance {
           y: this.position.leftTop.y - this.scrollY + DEFAULT_CELL_PADDING,
           width: this.width! - DEFAULT_CELL_PADDING * 2,
           height: this.height! - DEFAULT_CELL_PADDING * 2,
-        }
+        },
       )!;
       ctx.drawImage(
         (this.meta!.data as Excel.Cell.CellImageMetaData).img,
         x,
         y,
         width,
-        height
+        height,
       );
     }
   }
@@ -350,7 +355,7 @@ class Cell extends Element<null> implements Excel.Cell.CellInstance {
     ctx: CanvasRenderingContext2D,
     prePoint: [number, number],
     curPoint: [number, number],
-    text: string
+    text: string,
   ) {
     const preAngle =
       Math.abs(prePoint[1] - this.position.leftTop.y) /
@@ -364,7 +369,7 @@ class Cell extends Element<null> implements Excel.Cell.CellInstance {
     ctx.save();
     ctx.translate(
       this.position.leftTop.x - this.scrollX,
-      this.position.leftTop.y - this.scrollY
+      this.position.leftTop.y - this.scrollY,
     );
     ctx.rotate(angle);
 
@@ -374,7 +379,7 @@ class Cell extends Element<null> implements Excel.Cell.CellInstance {
     ];
     const d = Math.sqrt(
       Math.pow(midPoint[0] - this.position.leftTop.x, 2) +
-        Math.pow(midPoint[1] - this.position.leftTop.y, 2)
+        Math.pow(midPoint[1] - this.position.leftTop.y, 2),
     );
 
     ctx.fillStyle = DEFAULT_CELL_DIAGONAL_TEXT_COLOR;
@@ -383,7 +388,7 @@ class Cell extends Element<null> implements Excel.Cell.CellInstance {
 
     const textWidth = getTextMetrics(
       text,
-      DEFAULT_CELL_DIAGONAL_TEXT_FONT_SIZE
+      DEFAULT_CELL_DIAGONAL_TEXT_FONT_SIZE,
     ).width;
     ctx.fillText(text, d / 2 - textWidth / 2, 0);
 
@@ -444,8 +449,24 @@ class Cell extends Element<null> implements Excel.Cell.CellInstance {
       ctx,
       endPoints[endPoints.length - 1],
       [this.position.leftBottom.x, this.position.leftBottom.y],
-      value[value.length - 1]
+      value[value.length - 1],
     );
+  }
+
+  drawDataCellFormula(ctx: CanvasRenderingContext2D) {
+    if (this.meta!.data as Excel.Cell.CellFormulaMetaData) {
+      const expression = this.meta!.data as Excel.Cell.CellFormulaMetaData;
+      const result = (globalObj.FORMULA_PARSER as Parser)!.parse(expression);
+      if (result) {
+        const textAlignOffsetX = this.getTextAlignOffsetX(this.width!);
+        this.drawDataCellText(
+          ctx,
+          result.result!.toString(),
+          textAlignOffsetX,
+          this.y! + this.height! / 2 - this.scrollY,
+        );
+      }
+    }
   }
 }
 
