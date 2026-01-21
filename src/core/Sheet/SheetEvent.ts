@@ -66,6 +66,14 @@ export default abstract class SheetEvent {
     obj: Excel.Event.ObserverTypes,
   ) => void;
 
+  /**
+   * 获取填充范围（根据结束单元格）
+   * @param endCell 结束单元格
+   * @param key 比较索引的键名
+   * @param compareMinIndex 比较最小索引的函数
+   * @param compareMaxIndex 比较最大索引的函数
+   * @returns 填充范围
+   */
   private getFillingRangeByEndCell(
     endCell: Excel.Cell.CellInstance,
     key: "colIndex" | "rowIndex",
@@ -125,6 +133,10 @@ export default abstract class SheetEvent {
     }
   }
 
+  /**
+   * 处理填充单元格范围
+   * @param e 鼠标事件
+   */
   private fillingCellRange(e: MouseEvent) {
     if (this.selectedCells) {
       this.autoScroll(e.x, e.y);
@@ -168,6 +180,13 @@ export default abstract class SheetEvent {
     }
   }
 
+  /**
+   * 填充单元格内容
+   * @param minIndex 最小索引
+   * @param maxIndex 最大索引
+   * @param times 重复次数
+   * @param d 重复方向（1：向右/下，-1：向左/上）
+   */
   private repeatByCommonCells(
     minIndex: number,
     maxIndex: number,
@@ -194,6 +213,14 @@ export default abstract class SheetEvent {
     }
   }
 
+  /**
+   * 填充合并单元格内容
+   * @param minIndex 最小索引
+   * @param maxIndex 最大索引
+   * @param mergedCells 合并单元格范围数组
+   * @param times 重复次数
+   * @param d 重复方向（1：向右/下，-1：向左/上）
+   */
   private repeatByMergedCells(
     minIndex: number,
     maxIndex: number,
@@ -228,6 +255,11 @@ export default abstract class SheetEvent {
     }
   }
 
+  /**
+   * 填充单元格内容
+   * @param minIndex 最小索引
+   * @param maxIndex 最大索引
+   */
   private repeatCells(minIndex: number, maxIndex: number) {
     const mergedRangesInSelectedCells = this.getMergedRangesInSelectedCells();
     const times =
@@ -246,6 +278,9 @@ export default abstract class SheetEvent {
     );
   }
 
+  /**
+   * 填充单元格内容
+   */
   private fillCells() {
     const [minRowIndex, maxRowIndex, minColIndex, maxColIndex] =
       this.selectedCells!;
@@ -268,6 +303,9 @@ export default abstract class SheetEvent {
     }
   }
 
+  /**
+   * 处理填充单元格内容
+   */
   private fill(e: MouseEvent) {
     if (!this.pointInFillHandle(e)) return;
     globalObj.EVENT_LOCKED = true;
@@ -288,6 +326,12 @@ export default abstract class SheetEvent {
     window.addEventListener("mouseup", onEndFill);
   }
 
+  /**
+   * 检查鼠标是否超出布局范围
+   * @param x 鼠标X坐标
+   * @param y 鼠标Y坐标
+   * @returns 超出信息对象
+   */
   private exceed(x: number, y: number) {
     const exceedInfo = {
       x: {
@@ -324,6 +368,11 @@ export default abstract class SheetEvent {
     return exceedInfo;
   }
 
+  /**
+   * 自动滚动滚动条
+   * @param x 鼠标X坐标
+   * @param y 鼠标Y坐标
+   */
   private autoScroll(x: number, y: number) {
     const exceedInfo = this.exceed(x, y);
     if (exceedInfo.x.exceed) {
@@ -383,6 +432,12 @@ export default abstract class SheetEvent {
     }
   }
 
+  /**
+   * 获取选中单元格范围（包含合并单元格）
+   * @param mergedCells 合并单元格范围数组
+   * @param selectedCells 选中单元格范围
+   * @returns 选中单元格范围
+   */
   private mergeIntersectMergedCells(
     mergedCells: Excel.Sheet.CellRange[],
     selectedCells: Excel.Sheet.CellRange,
@@ -429,6 +484,10 @@ export default abstract class SheetEvent {
     return selectedCells;
   }
 
+  /**
+   * 处理选中单元格范围
+   * @param e 鼠标事件
+   */
   private selectingCellRange(e: MouseEvent) {
     if (this._startCell) {
       this.autoScroll(e.x, e.y);
@@ -467,6 +526,10 @@ export default abstract class SheetEvent {
     }
   }
 
+  /**
+   * 处理选中单元格范围事件
+   * @param e 鼠标事件
+   */
   private selectCellRange(e: MouseEvent) {
     if (globalObj.EVENT_LOCKED) {
       return;
@@ -516,6 +579,13 @@ export default abstract class SheetEvent {
     window.addEventListener("mouseup", onEndSelectCells);
   }
 
+  /**
+   * 处理单元格操作事件
+   * @param e 鼠标事件
+   * @param isInX 是否在X轴操作
+   * @param isInY 是否在Y轴操作
+   * @param triggerEvent 触发操作事件回调
+   */
   private handleCellAction(
     e: MouseEvent,
     isInX: boolean,
@@ -566,6 +636,11 @@ export default abstract class SheetEvent {
     window.addEventListener("mouseup", onEnd);
   }
 
+  /**
+   * 处理单元格操作选中事件
+   * @param select 单元格操作选中信息
+   * @param isEnd 是否为结束操作
+   */
   handleCellSelect(select: Excel.Cell.CellAction["select"], isEnd = false) {
     if (this.selectInfo.value === null) {
       if (select.x) {
@@ -635,6 +710,10 @@ export default abstract class SheetEvent {
     this.draw();
   }
 
+  /**
+   * 处理全选单元格事件
+   * @param e 鼠标事件
+   */
   private selectFullCell(e: MouseEvent) {
     if (!this.pointInFixedCell(e)) return;
     const isInFixedYCell =
@@ -661,6 +740,10 @@ export default abstract class SheetEvent {
     );
   }
 
+  /**
+   * 处理单元格编辑结束事件
+   * @param e 鼠标事件
+   */
   private endEditingCell(e: MouseEvent) {
     const x = e.x - this.layout!.x + (this.scroll.x || 0);
     const y = e.y - this.layout!.y + (this.scroll.y || 0);
@@ -669,6 +752,10 @@ export default abstract class SheetEvent {
     this.editingCell = null;
   }
 
+  /**
+   * 处理单元格编辑事件
+   * @param e 鼠标事件
+   */
   private editCell(e: MouseEvent) {
     if (this.pointInFixedCell(e)) return;
     const x = e.x - this.layout!.x + (this.scroll.x || 0);
@@ -700,6 +787,10 @@ export default abstract class SheetEvent {
     this.drawCellEditor();
   }
 
+  /**
+   * 更新光标样式
+   * @param e 鼠标事件
+   */
   private updateCursor(e: MouseEvent) {
     if (this.mode === "view") return;
     if (globalObj.EVENT_LOCKED) return;
@@ -736,6 +827,10 @@ export default abstract class SheetEvent {
     }
   }
 
+  /**
+   * 防止全局滚动事件
+   * @param e 滚动事件
+   */
   private preventGlobalWheel(e: WheelEvent) {
     if (
       e.x >= this.x &&
@@ -748,6 +843,10 @@ export default abstract class SheetEvent {
     }
   }
 
+  /**
+   * 清除选中单元格的元数据
+   * @param e 键盘事件
+   */
   private clearCellsMeta(e: KeyboardEvent) {
     if (e.key.toLocaleLowerCase() !== "delete") return;
     if (this.selectedCells === null) return;
@@ -762,6 +861,9 @@ export default abstract class SheetEvent {
     this.draw();
   }
 
+  /**
+   * 初始化事件
+   */
   initEvents() {
     const globalEventListeners = {
       mousedown: (e: MouseEvent) => {

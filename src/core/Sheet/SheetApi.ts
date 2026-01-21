@@ -41,16 +41,31 @@ export default abstract class SheetApi {
   declare initCells: (cells: Excel.Cell.CellInstance[][] | undefined) => void;
   declare render: (autoRegisteEvents: boolean) => void;
 
+  /**
+   * 获取单元格
+   * @param rowIndex 行索引
+   * @param colIndex 列索引
+   * @returns 单元格实例
+   */
   getCell(rowIndex: number, colIndex: number) {
     return this.cells[rowIndex]?.[colIndex] || null;
   }
 
+  /**
+   * 清除单元格元数据
+   * @param cell 单元格实例
+   */
   clearCellMeta(cell: Excel.Cell.CellInstance) {
     cell.meta = null;
     cell.value = "";
     cell.valueSlices = [];
   }
 
+  /**
+   * 设置单元格样式
+   * @param cell 单元格实例
+   * @param cellStyle 单元格样式
+   */
   setCellStyle(cell: Excel.Cell.CellInstance, cellStyle: Excel.Cell.Style) {
     if (cellStyle.text) {
       cell.textStyle = {
@@ -109,6 +124,11 @@ export default abstract class SheetApi {
     }
   }
 
+  /**
+   * 设置选中单元格样式
+   * @param selectedCells 选中单元格范围
+   * @param cellStyle 单元格样式
+   */
   setSelectionCellsStyle(
     selectedCells: Excel.Sheet.CellRange,
     cellStyle: Excel.Cell.Style,
@@ -125,6 +145,12 @@ export default abstract class SheetApi {
     this.draw();
   }
 
+  /**
+   * 设置单元格元数据
+   * @param cell 单元格实例
+   * @param cellMeta 单元格元数据
+   * @param needDraw 是否需要绘制
+   */
   setCellMeta(
     cell: Excel.Cell.CellInstance,
     cellMeta: Excel.Cell.Meta,
@@ -139,6 +165,11 @@ export default abstract class SheetApi {
     }
   }
 
+  /**
+   * 设置单元格图片元数据
+   * @param cell 单元格实例
+   * @param image 图片文件
+   */
   setCellImageMeta(cell: Excel.Cell.CellInstance, image: File) {
     const reader = new FileReader();
     reader.readAsDataURL(image);
@@ -159,6 +190,10 @@ export default abstract class SheetApi {
     };
   }
 
+  /**
+   * 合并单元格
+   * @param selectedCells 选中单元格范围
+   */
   merge([
     minRowIndex,
     maxRowIndex,
@@ -169,6 +204,10 @@ export default abstract class SheetApi {
     this.draw();
   }
 
+  /**
+   * 取消合并单元格
+   * @param selectedCells 选中单元格范围
+   */
   unmerge([
     minRowIndex,
     maxRowIndex,
@@ -187,6 +226,9 @@ export default abstract class SheetApi {
     this.draw();
   }
 
+  /**
+   * 调整单元格布局
+   */
   adjust() {
     this.clear();
     this.destroy();
@@ -201,6 +243,12 @@ export default abstract class SheetApi {
     this.render(false);
   }
 
+  /**
+   * 根据鼠标位置获取单元格坐标
+   * @param mouseX 鼠标X坐标
+   * @param mouseY 鼠标Y坐标
+   * @returns 单元格坐标
+   */
   getCellPointByMousePosition(mouseX: number, mouseY: number) {
     const x = Math.max(
       Math.min(mouseX - this.layout!.x + (this.scroll.x || 0), this.realWidth),
@@ -216,6 +264,10 @@ export default abstract class SheetApi {
     };
   }
 
+  /**
+   * 获取选中单元格范围内的合并单元格范围
+   * @returns 合并单元格范围数组
+   */
   getMergedRangesInSelectedCells() {
     const [minRowIndex, maxRowIndex, minColIndex, maxColIndex] =
       this.selectedCells!;
@@ -236,6 +288,14 @@ export default abstract class SheetApi {
     return mergedRangesInSelectedCells;
   }
 
+  /**
+   * 根据单元格坐标获取单元格实例
+   * @param x 单元格X坐标
+   * @param y 单元格Y坐标
+   * @param ignoreFixedX 是否忽略固定列
+   * @param ignoreFixedY 是否忽略固定行
+   * @returns 单元格实例
+   */
   findCellByPoint(
     x: number,
     y: number,
@@ -267,18 +327,27 @@ export default abstract class SheetApi {
     return cell;
   }
 
+  /**
+   * 清除选中单元格范围
+   */
   clearSelectCells() {
     if (this.selectedCells) {
       this.selectedCells = null;
     }
   }
 
+  /**
+   * 清除填充单元格范围
+   */
   clearFillingCells() {
     if (this.fillingCells) {
       this.fillingCells = null;
     }
   }
 
+  /**
+   * 销毁工作表实例
+   */
   destroy() {
     this.horizontalScrollBar = null;
     this.verticalScrollBar = null;
@@ -291,10 +360,18 @@ export default abstract class SheetApi {
     this.cellInput = null;
   }
 
+  /**
+   * 清除工作表画布
+   */
   clear() {
     this._ctx!.clearRect(0, 0, this.width, this.height);
   }
 
+  /**
+   * 清除工作表单元格内容
+   * @param fixedInX 是否清除固定列
+   * @param fixedInY 是否清除固定行
+   */
   clearCells(fixedInX: boolean, fixedInY: boolean) {
     let w = this.width;
     let h = this.height;

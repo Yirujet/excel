@@ -84,6 +84,10 @@ export default abstract class SheetRender {
   ) => Excel.Cell.CellInstance[][];
   declare initPlugins: (plugins: Excel.Sheet.PluginType[]) => void;
 
+  /**
+   * 渲染表格
+   * @param autoRegisteEvents 是否自动注册事件
+   */
   render(autoRegisteEvents: boolean = true) {
     this.initSheet();
     this.initScrollbar();
@@ -102,6 +106,9 @@ export default abstract class SheetRender {
     this.draw();
   }
 
+  /**
+   * 初始化表格
+   */
   initSheet() {
     this._ctx = this.$el!.getContext("2d")!;
     this.$el!.style.width = `${this.width}px`;
@@ -112,6 +119,9 @@ export default abstract class SheetRender {
     this._ctx!.scale(window.devicePixelRatio, window.devicePixelRatio);
   }
 
+  /**
+   * 初始化布局信息
+   */
   initLayout() {
     const bodyHeight = this.height - DEFAULT_CELL_HEIGHT;
     const verticalScrollbarShow = bodyHeight < this.realHeight;
@@ -134,6 +144,9 @@ export default abstract class SheetRender {
     };
   }
 
+  /**
+   * 初始化滚动条
+   */
   initScrollbar() {
     this.initLayout();
     this.horizontalScrollBar = new HorizontalScrollbar(
@@ -151,6 +164,9 @@ export default abstract class SheetRender {
     this.autoScrollToCurrentView();
   }
 
+  /**
+   * 自动滚动到当前视图
+   */
   autoScrollToCurrentView() {
     if (this.scroll) {
       const horizontablePercent =
@@ -170,6 +186,9 @@ export default abstract class SheetRender {
     }
   }
 
+  /**
+   * 初始化阴影
+   */
   initShadow() {
     this.horizontalScrollBarShadow = new Shadow(
       this.fixedColWidth,
@@ -189,6 +208,9 @@ export default abstract class SheetRender {
     );
   }
 
+  /**
+   * 初始化单元格选择器
+   */
   initCellSelector() {
     this.cellSelector = new CellSelector(
       this.layout!,
@@ -198,6 +220,9 @@ export default abstract class SheetRender {
     );
   }
 
+  /**
+   * 初始化单元格合并
+   */
   initCellMergence() {
     this.cellMergence = new CellMergence(
       this.layout!,
@@ -207,6 +232,9 @@ export default abstract class SheetRender {
     );
   }
 
+  /**
+   * 初始化填充手柄
+   */
   initFillHandle() {
     this.fillHandle = new FillHandle(
       this.sheetEventsObserver,
@@ -217,6 +245,9 @@ export default abstract class SheetRender {
     );
   }
 
+  /**
+   * 初始化填充
+   */
   initFilling() {
     this.filling = new Filling(
       this.layout!,
@@ -226,6 +257,9 @@ export default abstract class SheetRender {
     );
   }
 
+  /**
+   * 初始化单元格编辑器
+   */
   initCellEditor() {
     this.cellInput = new CellInput(this.layout!);
     this.cellInput.addEvent(
@@ -244,10 +278,16 @@ export default abstract class SheetRender {
     );
   }
 
+  /**
+   * 初始化插件
+   */
   initPlugin() {
     this.initPlugins(this.plugins);
   }
 
+  /**
+   * 初始化单元格矩阵
+   */
   initCells(cells: Excel.Cell.CellInstance[][] | undefined) {
     if (cells) {
       this.initConfigCells(cells);
@@ -261,6 +301,10 @@ export default abstract class SheetRender {
     }
   }
 
+  /**
+   * 初始化配置单元格矩阵
+   * @param cells 配置单元格矩阵
+   */
   initConfigCells(cells: Excel.Cell.CellInstance[][]) {
     cells = this.transformCells(cells);
     this.cells = [];
@@ -428,6 +472,9 @@ export default abstract class SheetRender {
     }
   }
 
+  /**
+   * 初始化默认单元格矩阵
+   */
   initDefaultCells() {
     this.cells = [];
     this.fixedColWidth = 0;
@@ -528,6 +575,11 @@ export default abstract class SheetRender {
     }
   }
 
+  /**
+   * 更新滚动条位置
+   * @param percent 滚动百分比
+   * @param type 滚动条类型
+   */
   updateScroll(percent: number, type: Excel.Scrollbar.Type) {
     if (type === "horizontal") {
       this.scroll.x =
@@ -546,6 +598,15 @@ export default abstract class SheetRender {
     }
   }
 
+  /**
+   * 二分查询
+   * @param arr 数组
+   * @param value 目标值
+   * @param compare 比较函数
+   * @param complete 完成函数
+   * @param judge 可选的判断函数
+   * @returns 目标值在数组中的索引
+   */
   private binaryQuery<T>(
     arr: T[],
     value: number,
@@ -584,6 +645,15 @@ export default abstract class SheetRender {
     return index!;
   }
 
+  /**
+   * 获取视图内的单元格范围
+   * @param cells 单元格矩阵
+   * @param scrollX 水平滚动位置
+   * @param scrollY 垂直滚动位置
+   * @param fixedInX 是否固定在X轴
+   * @param fixedInY 是否固定在Y轴
+   * @returns 视图内的单元格范围
+   */
   getRangeInView(
     cells: Excel.Cell.CellInstance[][],
     scrollX: number,
@@ -660,6 +730,11 @@ export default abstract class SheetRender {
     return [minXIndex, maxXIndex, minYIndex, maxYIndex];
   }
 
+  /**
+   * 重绘视图
+   * @param percent 滚动百分比
+   * @param type 滚动条类型
+   */
   redraw(percent: number, type: Excel.Scrollbar.Type) {
     this.updateScroll(percent, type);
 
@@ -673,6 +748,9 @@ export default abstract class SheetRender {
     }, 16);
   }
 
+  /**
+   * 绘制视图
+   */
   draw() {
     if (this._animationFrameId) {
       cancelAnimationFrame(this._animationFrameId);
@@ -689,6 +767,9 @@ export default abstract class SheetRender {
     });
   }
 
+  /**
+   * 绘制单元格
+   */
   drawSheetCells() {
     this.sheetEventsObserver.clearEventsWhenReRender();
     this.drawCells(
@@ -703,6 +784,14 @@ export default abstract class SheetRender {
     this.drawCells(this.fixedCells, true, true, null, null);
   }
 
+  /**
+   * 绘制单元格
+   * @param cells 单元格矩阵
+   * @param fixedInX 是否固定在X轴
+   * @param fixedInY 是否固定在Y轴
+   * @param ignoreXIndex 忽略的X索引
+   * @param ignoreYIndex 忽略的Y索引
+   */
   drawCells(
     cells: Excel.Cell.CellInstance[][],
     fixedInX: boolean,
@@ -754,6 +843,9 @@ export default abstract class SheetRender {
     }
   }
 
+  /**
+   * 绘制滚动条
+   */
   drawScrollbar() {
     if (this.verticalScrollBar!.show) {
       this.verticalScrollBar!.render(this._ctx!);
@@ -767,6 +859,9 @@ export default abstract class SheetRender {
     }
   }
 
+  /**
+   * 绘制单元格调整大小器
+   */
   drawCellResizer() {
     if (!this.cellResizer) return;
     if (this.cellResizer.resizeInfo.x || this.cellResizer.resizeInfo.y) {
@@ -778,6 +873,9 @@ export default abstract class SheetRender {
     }
   }
 
+  /**
+   * 绘制单元格选择器
+   */
   drawCellSelector() {
     this.cellSelector!.render(
       this._ctx!,
@@ -789,6 +887,9 @@ export default abstract class SheetRender {
     );
   }
 
+  /**
+   * 绘制合并单元格
+   */
   drawMergedCells() {
     this.cellMergence!.render(
       this._ctx!,
@@ -798,6 +899,9 @@ export default abstract class SheetRender {
     );
   }
 
+  /**
+   * 绘制滚动条阴影
+   */
   drawShadow() {
     if (this.verticalScrollBar!.show && this.verticalScrollBar!.percent > 0) {
       this.horizontalScrollBarShadow!.render(this._ctx!);
@@ -810,6 +914,9 @@ export default abstract class SheetRender {
     }
   }
 
+  /**
+   * 绘制填充句柄
+   */
   drawFillHandle() {
     this.fillHandle!.render(
       this._ctx!,
@@ -819,6 +926,9 @@ export default abstract class SheetRender {
     );
   }
 
+  /**
+   * 绘制填充区域
+   */
   drawFilling() {
     this.filling!.render(
       this._ctx!,
@@ -828,6 +938,9 @@ export default abstract class SheetRender {
     );
   }
 
+  /**
+   * 绘制单元格输入框
+   */
   drawCellEditor() {
     if (this.cellInput && this.editingCell) {
       this.cellInput.render(

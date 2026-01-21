@@ -21,6 +21,9 @@ export default abstract class SheetPlugin {
     }
   }
 
+  /**
+   * 初始化热键插件
+   */
   initHotKeysPlugin() {
     this.hotKeys = new HotKeys();
 
@@ -29,10 +32,16 @@ export default abstract class SheetPlugin {
     this.hotKeys.addEvent("ctrl+x", this.hotKeys.cut.bind(this));
   }
 
+  /**
+   * 初始化单元格调整大小插件
+   */
   initCellResizer() {
     this.cellResizer = new CellResizer(this.layout!);
   }
 
+  /**
+   * 初始化公式插件
+   */
   initFormulaPlugin() {
     this.formula = new Formula(this.cells);
   }

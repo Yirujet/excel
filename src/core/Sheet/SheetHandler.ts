@@ -23,26 +23,31 @@ export default abstract class SheetHandler {
   declare mode: Excel.Sheet.Mode;
   declare getCellPointByMousePosition: (
     mouseX: number,
-    mouseY: number
+    mouseY: number,
   ) => Excel.PositionPoint;
   declare findCellByPoint: (
     x: number,
     y: number,
     ignoreFixedX?: boolean,
-    ignoreFixedY?: boolean
+    ignoreFixedY?: boolean,
   ) => Excel.Cell.CellInstance | null;
   declare getCell: (
     rowIndex: number,
-    colIndex: number
+    colIndex: number,
   ) => Excel.Cell.CellInstance;
 
+  /**
+   * 判断鼠标事件是否在滚动条范围内
+   * @param e 鼠标事件
+   * @returns 是否在滚动条范围内
+   */
   private pointInScrollbar(e: MouseEvent) {
     const { offsetX, offsetY } = e;
     if (this.verticalScrollBar || this.horizontalScrollBar) {
       const checkInScrollbar = (
         offsetX: number,
         offsetY: number,
-        scrollbar: Scrollbar | null
+        scrollbar: Scrollbar | null,
       ) => {
         if (scrollbar) {
           return !(
@@ -64,6 +69,11 @@ export default abstract class SheetHandler {
     }
   }
 
+  /**
+   * 判断鼠标事件是否在画布范围内
+   * @param e 鼠标事件
+   * @returns 是否在画布范围内
+   */
   private pointInCellRange(e: MouseEvent) {
     const { x, y, offsetX, offsetY } = e;
     return (
@@ -78,6 +88,11 @@ export default abstract class SheetHandler {
     );
   }
 
+  /**
+   * 判断鼠标事件是否在绝对固定单元格范围内(冻结行列交叉区域)
+   * @param e 鼠标事件
+   * @returns 是否在绝对固定单元格范围内
+   */
   private pointInAbsFixedCell(e: MouseEvent) {
     if (this.pointInCellRange(e)) {
       const { x, y } = this.getCellPointByMousePosition(e.x, e.y);
@@ -85,7 +100,7 @@ export default abstract class SheetHandler {
         x - this.scroll.x,
         y - this.scroll.y,
         false,
-        false
+        false,
       );
       if (cell) {
         return cell.fixed.x && cell.fixed.y;
@@ -94,6 +109,11 @@ export default abstract class SheetHandler {
     return false;
   }
 
+  /**
+   * 判断鼠标事件是否在冻结单元格范围内(冻结行或列)
+   * @param e 鼠标事件
+   * @returns 是否在冻结单元格范围内
+   */
   private pointInFixedCell(e: MouseEvent) {
     if (this.pointInCellRange(e)) {
       const { x, y } = this.getCellPointByMousePosition(e.x, e.y);
@@ -101,7 +121,7 @@ export default abstract class SheetHandler {
         x - this.scroll.x,
         y - this.scroll.y,
         false,
-        false
+        false,
       );
       if (cell) {
         return cell.fixed.x || cell.fixed.y;
@@ -110,6 +130,11 @@ export default abstract class SheetHandler {
     return false;
   }
 
+  /**
+   * 判断鼠标事件是否在冻结行单元格范围内
+   * @param e 鼠标事件
+   * @returns 是否在冻结行单元格范围内
+   */
   private pointInFixedXCell(e: MouseEvent) {
     if (this.pointInFixedCell(e)) {
       const { x, y } = this.getCellPointByMousePosition(e.x, e.y);
@@ -117,7 +142,7 @@ export default abstract class SheetHandler {
         x - this.scroll.x,
         y - this.scroll.y,
         false,
-        false
+        false,
       );
       if (cell) {
         return cell.fixed.x;
@@ -126,6 +151,11 @@ export default abstract class SheetHandler {
     return false;
   }
 
+  /**
+   * 判断鼠标事件是否在冻结列单元格范围内
+   * @param e 鼠标事件
+   * @returns 是否在冻结列单元格范围内
+   */
   private pointInFixedYCell(e: MouseEvent) {
     if (this.pointInFixedCell(e)) {
       const { x, y } = this.getCellPointByMousePosition(e.x, e.y);
@@ -133,7 +163,7 @@ export default abstract class SheetHandler {
         x - this.scroll.x,
         y - this.scroll.y,
         false,
-        false
+        false,
       );
       if (cell) {
         return cell.fixed.y;
@@ -142,6 +172,11 @@ export default abstract class SheetHandler {
     return false;
   }
 
+  /**
+   * 判断鼠标事件是否在普通单元格范围内
+   * @param e 鼠标事件
+   * @returns 是否在普通单元格范围内
+   */
   private pointInNormalCell(e: MouseEvent) {
     if (this.pointInCellRange(e)) {
       return !this.pointInFixedCell(e);
@@ -149,6 +184,11 @@ export default abstract class SheetHandler {
     return false;
   }
 
+  /**
+   * 判断鼠标事件是否在填充手柄范围内
+   * @param e 鼠标事件
+   * @returns 是否在填充手柄范围内
+   */
   private pointInFillHandle(e: MouseEvent) {
     const { offsetX, offsetY } = e;
     if (this.fillHandle) {
@@ -163,6 +203,11 @@ export default abstract class SheetHandler {
     }
   }
 
+  /**
+   * 判断鼠标事件是否在行调整手柄范围内
+   * @param e 鼠标事件
+   * @returns 是否在行调整手柄范围内
+   */
   private pointInRowResize(e: MouseEvent) {
     const { offsetX, offsetY } = e;
     if (this.pointInFixedCell(e)) {
@@ -187,6 +232,11 @@ export default abstract class SheetHandler {
     }
   }
 
+  /**
+   * 判断鼠标事件是否在列调整手柄范围内
+   * @param e 鼠标事件
+   * @returns 是否在列调整手柄范围内
+   */
   private pointInColResize(e: MouseEvent) {
     const { offsetX, offsetY } = e;
     if (this.pointInFixedCell(e)) {
@@ -211,6 +261,12 @@ export default abstract class SheetHandler {
     }
   }
 
+  /**
+   * 检查单元格是否在合并单元格范围内
+   * @param rowIndex 行索引
+   * @param colIndex 列索引
+   * @returns 是否在合并单元格范围内
+   */
   private checkCellInMergedCells(rowIndex: number, colIndex: number): boolean {
     return this.mergedCells.some((item) => {
       const [startRowIndex, endRowIndex, startColIndex, endColIndex] = item;
@@ -223,6 +279,10 @@ export default abstract class SheetHandler {
     });
   }
 
+  /**
+   * 转换合并单元格的位置
+   * @returns 转换后的合并单元格范围
+   */
   private transformMergedCells() {
     let rowAdjust: Record<number, number> = {};
     return this.mergedCells.map((range) => {
@@ -243,14 +303,19 @@ export default abstract class SheetHandler {
           minRowIndex,
           minColIndex,
           w,
-          rowAdjust
+          rowAdjust,
         );
       }
     });
   }
 
+  /**
+   * 转换单元格的位置
+   * @param cells 单元格矩阵
+   * @returns 转换后的单元格矩阵
+   */
   private transformCells(
-    cells: Excel.Cell.CellInstance[][]
+    cells: Excel.Cell.CellInstance[][],
   ): Excel.Cell.CellInstance[][] {
     const transformedCells = [...cells];
     let rowAdjust: Record<number, number> = {};
@@ -267,12 +332,12 @@ export default abstract class SheetHandler {
           rowIndex,
           colIndex,
           transformedCells,
-          currentX
+          currentX,
         );
 
         const cellInMergedCells = this.checkCellInMergedCells(
           this.mode === "view" ? rowIndex : rowIndex + 1,
-          this.mode === "view" ? colIndex : colIndex + 1
+          this.mode === "view" ? colIndex : colIndex + 1,
         );
 
         if (this.shouldProcessTextCell(cell, cellInMergedCells)) {
@@ -282,7 +347,7 @@ export default abstract class SheetHandler {
             rowIndex,
             colIndex,
             cell.width!,
-            rowAdjust
+            rowAdjust,
           );
         }
 
@@ -296,12 +361,20 @@ export default abstract class SheetHandler {
     return transformedCells;
   }
 
+  /**
+   * 设置单元格的位置
+   * @param cell 单元格实例
+   * @param rowIndex 行索引
+   * @param colIndex 列索引
+   * @param transformedCells 转换后的单元格矩阵
+   * @param currentX 当前X坐标
+   */
   private setCellPosition(
     cell: Excel.Cell.CellInstance,
     rowIndex: number,
     colIndex: number,
     transformedCells: Excel.Cell.CellInstance[][],
-    currentX: number
+    currentX: number,
   ): void {
     cell.x = currentX;
 
@@ -318,9 +391,15 @@ export default abstract class SheetHandler {
     }
   }
 
+  /**
+   * 判断是否需要处理文本单元格
+   * @param cell 单元格实例
+   * @param cellInMergedCells 是否在合并单元格范围内
+   * @returns 是否需要处理文本单元格
+   */
   private shouldProcessTextCell(
     cell: Excel.Cell.CellInstance,
-    cellInMergedCells: boolean
+    cellInMergedCells: boolean,
   ): boolean {
     return (
       cell.meta?.type === "text" &&
@@ -330,11 +409,19 @@ export default abstract class SheetHandler {
     );
   }
 
+  /**
+   * 处理图片单元格的位置调整
+   * @param cell 单元格实例
+   * @param rowIndex 行索引
+   * @param transformedCells 转换后的单元格矩阵
+   * @param rowAdjust 行调整记录
+   * @returns
+   */
   private processImageCell(
     cell: Excel.Cell.CellInstance,
     rowIndex: number,
     transformedCells: Excel.Cell.CellInstance[][],
-    rowAdjust: Record<number, number>
+    rowAdjust: Record<number, number>,
   ): void {
     if (
       !(cell.meta?.data as Excel.Cell.CellImageMetaData)?.height ||
@@ -355,7 +442,7 @@ export default abstract class SheetHandler {
       const offset = this.calculateHeightOffset(
         rowAdjust,
         rowIndex,
-        heightIncrease
+        heightIncrease,
       );
       rowAdjust[rowIndex] = heightIncrease;
 
@@ -363,10 +450,17 @@ export default abstract class SheetHandler {
     }
   }
 
+  /**
+   * 计算高度调整偏移量
+   * @param rowAdjust 行调整记录
+   * @param rowIndex 行索引
+   * @param heightIncrease 高度增加量
+   * @returns 高度调整偏移量
+   */
   private calculateHeightOffset(
     rowAdjust: Record<number, number>,
     rowIndex: number,
-    heightIncrease: number
+    heightIncrease: number,
   ): number {
     if (!rowAdjust[rowIndex]) {
       return heightIncrease;
@@ -375,10 +469,16 @@ export default abstract class SheetHandler {
     }
   }
 
+  /**
+   * 调整行高
+   * @param cells 单元格矩阵
+   * @param rowIndex 行索引
+   * @param offset 高度调整偏移量
+   */
   private adjustRowHeight(
     cells: Excel.Cell.CellInstance[][],
     rowIndex: number,
-    offset: number
+    offset: number,
   ): void {
     const currentRow = cells[rowIndex];
     currentRow.forEach((cell) => {
@@ -398,10 +498,18 @@ export default abstract class SheetHandler {
       });
     }
   }
+
+  /**
+   * 截断文本内容以适应单元格宽度
+   * @param content 要截断的内容
+   * @param width 单元格宽度
+   * @param fontSize 字体大小
+   * @returns 截断后的内容数组
+   */
   private truncateContent(
     content: string,
     width: number,
-    fontSize: number
+    fontSize: number,
   ): string[] {
     const value = String(content || "");
 
@@ -445,17 +553,26 @@ export default abstract class SheetHandler {
     return result;
   }
 
+  /**
+   * 调整单元格位置
+   * @param cell 单元格实例
+   * @param cells 单元格矩阵
+   * @param rowIndex 行索引
+   * @param colIndex 列索引
+   * @param width 单元格宽度
+   * @param rowAdjust 行调整记录
+   */
   private adjustCellPosition(
     cell: Excel.Cell.CellInstance,
     cells: Excel.Cell.CellInstance[][],
     rowIndex: number,
     colIndex: number,
     width: number,
-    rowAdjust: Record<number, number>
+    rowAdjust: Record<number, number>,
   ) {
     const { width: textWidth } = getTextMetrics(
       cell.value,
-      cell.textStyle.fontSize
+      cell.textStyle.fontSize,
     );
     if (textWidth > width) {
       if (cell.wrap === "no-wrap") {
